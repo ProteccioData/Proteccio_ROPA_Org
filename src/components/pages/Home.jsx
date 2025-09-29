@@ -2,14 +2,31 @@ import React, { useState, useEffect, useRef } from "react";
 import { MoreHorizontal, ChevronDown } from "lucide-react";
 import useTheme from "../hooks/useTheme";
 import { RoundedPieChart } from "../ui/rounded-pie-chart";
+import { DefaultMultipleBarChart } from "../ui/default-multiple-bar-chart";
+import { DottedMultiLineChart } from "../ui/dotted-multi-line";
+import { GlowingStrokeRadarChart } from "../ui/glowing-stroke-radar-chart";
+import { Bar } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const Home = () => {
   const [mounted, setMounted] = useState(false);
-  const chartRef = useRef(null);
-  const progressRef = useRef(null);
-  const cardsRef = useRef([]);
-  const activitiesRef = useRef(null);
-  const { theme } = useTheme();
 
   // Animation states
   const [animateNumbers, setAnimateNumbers] = useState({
@@ -73,15 +90,6 @@ const Home = () => {
     { label: "OffDurf", value: 187, color: "#1E40AF" },
   ];
 
-  const barData = [
-    { month: "Jan", value: 35 },
-    { month: "Feb", value: 45 },
-    { month: "Mar", value: 30 },
-    { month: "Apr", value: 50 },
-    { month: "May", value: 40 },
-    { month: "Jun", value: 45 },
-  ];
-
   const activities = [
     {
       id: 1,
@@ -108,6 +116,41 @@ const Home = () => {
       performedBy: "Admin",
     },
   ];
+  const ropaOptions = {
+    indexAxis: "y",
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { stacked: true, display: false },
+      y: { stacked: true, display: false },
+    },
+    elements: { bar: { borderSkipped: false } },
+  };
+  const [ropaStatus] = useState(55);
+  const ropaStages = { Infovoyage: 350, CheckSync: 450, Beam: 200 };
+  const ropaData = {
+    labels: [""],
+    datasets: [
+      {
+        label: ">90%",
+        data: [ropaStages.Infovoyage],
+        backgroundColor: "#10b981",
+        borderRadius: { topLeft: 15, bottomLeft: 15 },
+      },
+      {
+        label: "60%-90%",
+        data: [ropaStages.CheckSync],
+        backgroundColor: "#facc15",
+      },
+      {
+        label: "<60%",
+        data: [ropaStages.Beam],
+        backgroundColor: "#ef4444",
+        borderRadius: { topRight: 15, bottomRight: 15 },
+      },
+    ],
+  };
 
   return (
     <>
@@ -117,32 +160,25 @@ const Home = () => {
         {/* Total RoPA Records */}
         <div
           className={`
-            rounded-2xl p-6 shadow-sm border border-[#828282] transition-all duration-500 hover:shadow-md hover:-translate-y-1
-            ${
-              theme === "dark"
-                ? "bg-gray-800 border-gray-700"
-                : "bg-white border-gray-200"
-            }
+            rounded-2xl p-6 shadow-sm border border-[#828282] transition duration-300 hover:shadow-md hover:-translate-y-1 flex justify-between items-center
+          dark:bg-gray-800 bg-white
             transform ${
               mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }
           `}
           style={{ transitionDelay: "100ms" }}
         >
-          <div className="flex items-start justify-between mb-4">
+          <div className="flex flex-col gap-8 justify-between mb-4">
             <div>
               <p
-                className={`text-sm font-medium ${
-                  theme === "dark" ? "text-gray-400" : "text-gray-600"
-                }`}
+                className={`text-md font-medium dark:text-gray-400 text-gray-600
+                `}
               >
                 Total RoPA Records
               </p>
               <div className="flex items-baseline gap-2 mt-2">
                 <h2
-                  className={`text-4xl font-bold ${
-                    theme === "dark" ? "text-white" : "text-[#5DE992]"
-                  } transition-all duration-1000`}
+                  className={`text-4xl font-bold dark:text-white text-[#5DE992] transition-all duration-1000`}
                 >
                   {animateNumbers.ropa}
                 </h2>
@@ -150,33 +186,28 @@ const Home = () => {
               <p className="text-sm text-gray-500 mt-1">+ 12 This month</p>
             </div>
 
-            {/* Donut Chart */}
-            <div className="w-48 h-auto">
-              <RoundedPieChart data={chartData} />
+            {/* Legend */}
+            <div className="flex flex-col gap-2 text-xs">
+              {chartData.map((item, index) => (
+                <div
+                  key={index}
+                  className={`flex items-center gap-2 transform transition-all duration-500`}
+                  style={{ transitionDelay: `${1600 + index * 100}ms` }}
+                >
+                  <div
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: item.color }}
+                  />
+                  <span className="dark:text-gray-300 text-gray-600">
+                    {item.label}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
-
-          {/* Legend */}
-          <div className="flex flex-col gap-2 text-xs">
-            {chartData.map((item, index) => (
-              <div
-                key={index}
-                className={`flex items-center gap-2 transform transition-all duration-500`}
-                style={{ transitionDelay: `${1600 + index * 100}ms` }}
-              >
-                <div
-                  className="w-2 h-2 rounded-full"
-                  style={{ backgroundColor: item.color }}
-                />
-                <span
-                  className={
-                    theme === "dark" ? "text-gray-300" : "text-gray-600"
-                  }
-                >
-                  {item.label}
-                </span>
-              </div>
-            ))}
+          {/* Donut Chart */}
+          <div className="w-56 h-auto">
+            <RoundedPieChart data={chartData} />
           </div>
         </div>
 
@@ -184,11 +215,8 @@ const Home = () => {
         <div
           className={`
             rounded-2xl p-6 shadow-sm border transition-all duration-500 hover:shadow-md hover:-translate-y-1
-            ${
-              theme === "dark"
-                ? "bg-gray-800 border-gray-700"
-                : "bg-white border-gray-200"
-            }
+            dark:bg-gray-800 border-gray-700
+                bg-white border-gray-200"
             transform ${
               mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }
@@ -198,9 +226,8 @@ const Home = () => {
           <div className="flex items-start justify-between mb-4">
             <div>
               <p
-                className={`text-sm font-medium ${
-                  theme === "dark" ? "text-gray-400" : "text-gray-600"
-                }`}
+                className={`text-sm font-medium dark:text-gray-400 text-gray-600
+                `}
               >
                 Assessments
               </p>
@@ -215,72 +242,40 @@ const Home = () => {
             </div>
             <div className="flex items-center gap-2">
               <select
-                className={`text-xs px-2 py-1 rounded border ${
-                  theme === "dark"
-                    ? "bg-gray-700 border-gray-600 text-gray-300"
-                    : "bg-white border-gray-300"
-                }`}
+                className={`text-xs px-2 py-1 rounded border dark:bg-gray-700 border-gray-600 text-black bg-white border-gray-300"
+                `}
               >
                 <option>Jan</option>
               </select>
               <select
-                className={`text-xs px-2 py-1 rounded border ${
-                  theme === "dark"
-                    ? "bg-gray-700 border-gray-600 text-gray-300"
-                    : "bg-white border-gray-300"
-                }`}
+                className={`text-xs px-2 py-1 rounded border dark:bg-gray-700 border-gray-600 text-black bg-white `}
               >
                 <option>2025</option>
               </select>
-              <button
-                className={`p-1 rounded hover:bg-gray-100 ${
-                  theme === "dark" ? "hover:bg-gray-700" : ""
-                }`}
+              {/* <button
+                className={`p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700
+                `}
               >
                 <MoreHorizontal
-                  className={`w-4 h-4 ${
-                    theme === "dark" ? "text-gray-400" : "text-gray-600"
-                  }`}
+                  className={`w-4 h-4 dark:text-gray-400 text-gray-600
+                  `}
                 />
-              </button>
+              </button> */}
             </div>
           </div>
 
           {/* Bar Chart */}
-          <div className="flex items-end justify-between h-24 gap-1">
-            {barData.map((bar, index) => (
-              <div key={index} className="flex flex-col items-center flex-1">
-                <div className="w-full flex items-end h-16">
-                  <div
-                    className="w-full bg-green-500 rounded-t transition-all duration-1000 ease-out"
-                    style={{
-                      height: mounted ? `${bar.value}%` : "0%",
-                      transitionDelay: `${1000 + index * 100}ms`,
-                    }}
-                  />
-                </div>
-                <span
-                  className={`text-xs mt-1 ${
-                    theme === "dark" ? "text-gray-400" : "text-gray-500"
-                  }`}
-                >
-                  {bar.month}
-                </span>
-              </div>
-            ))}
+
+          <div className="w-auto h-48">
+            <DottedMultiLineChart />
+            {/* <DefaultMultipleBarChart /> */}
           </div>
         </div>
 
         {/* Data Transfers */}
         <div
           className={`
-            rounded-2xl p-6 shadow-sm border transition-all duration-500 hover:shadow-md hover:-translate-y-1
-            ${
-              theme === "dark"
-                ? "bg-gray-800 border-gray-700"
-                : "bg-white border-gray-200"
-            }
-            transform ${
+            rounded-2xl p-6 shadow-sm border transition-all duration-500 hover:shadow-md hover:-translate-y-1 dark:bg-gray-800 border-gray-700 bg-white transform ${
               mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }
           `}
@@ -289,17 +284,13 @@ const Home = () => {
           <div className="flex items-start justify-between mb-4">
             <div>
               <p
-                className={`text-sm font-medium ${
-                  theme === "dark" ? "text-gray-400" : "text-gray-600"
-                }`}
+                className={`text-sm font-medium dark:text-gray-400 text-gray-600`}
               >
                 Data Transfers
               </p>
               <div className="flex items-center gap-2 mt-2">
                 <h2
-                  className={`text-4xl font-bold ${
-                    theme === "dark" ? "text-white" : "text-gray-900"
-                  } transition-all duration-1000`}
+                  className={`text-4xl font-bold dark:text-white text-gray-900 transition-all duration-1000`}
                 >
                   {animateNumbers.transfers}
                 </h2>
@@ -309,57 +300,8 @@ const Home = () => {
           </div>
 
           {/* Area Chart Placeholder */}
-          <div className="h-24 relative">
-            <svg className="w-full h-full" viewBox="0 0 200 60">
-              <defs>
-                <linearGradient
-                  id="areaGradient"
-                  x1="0%"
-                  y1="0%"
-                  x2="0%"
-                  y2="100%"
-                >
-                  <stop offset="0%" stopColor="#F97316" stopOpacity="0.3" />
-                  <stop offset="100%" stopColor="#F97316" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              <path
-                d="M10,45 Q50,25 90,35 T170,20 L170,55 L10,55 Z"
-                fill="url(#areaGradient)"
-                className="transition-all duration-1500 ease-out"
-                style={{
-                  opacity: mounted ? 1 : 0,
-                  transitionDelay: "1200ms",
-                }}
-              />
-              <path
-                d="M10,45 Q50,25 90,35 T170,20"
-                fill="none"
-                stroke="#F97316"
-                strokeWidth="2"
-                className="transition-all duration-1500 ease-out"
-                style={{
-                  strokeDasharray: "300",
-                  strokeDashoffset: mounted ? "0" : "300",
-                  transitionDelay: "1000ms",
-                }}
-              />
-            </svg>
-
-            {/* Month labels */}
-            <div className="absolute bottom-0 left-0 right-0 flex justify-between text-xs text-gray-400 px-2">
-              {["January", "February", "March", "April", "May", "June"].map(
-                (month, index) => (
-                  <span
-                    key={index}
-                    className={`transform transition-all duration-500`}
-                    style={{ transitionDelay: `${1400 + index * 50}ms` }}
-                  >
-                    {month.slice(0, 3)}
-                  </span>
-                )
-              )}
-            </div>
+          <div className="w-96">
+            <GlowingStrokeRadarChart />
           </div>
         </div>
       </div>
@@ -367,143 +309,72 @@ const Home = () => {
       {/* Bottom Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {/* Compliance Score */}
-        <div
-          className={`
-            rounded-2xl p-6 shadow-sm border transition-all duration-500 hover:shadow-md hover:-translate-y-1
-            ${
-              theme === "dark"
-                ? "bg-gray-800 border-gray-700"
-                : "bg-white border-gray-200"
-            }
-            transform ${
-              mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-            }
-          `}
-          style={{ transitionDelay: "400ms" }}
-        >
-          <h3
-            className={`text-lg font-semibold mb-2 ${
-              theme === "dark" ? "text-white" : "text-gray-900"
-            }`}
-          >
-            Compliance Score
-          </h3>
-          <div className="flex items-baseline gap-2 mb-2">
-            <h2
-              className={`text-4xl font-bold ${
-                theme === "dark" ? "text-white" : "text-gray-900"
-              } transition-all duration-1000`}
-            >
-              {animateNumbers.compliance}%
-            </h2>
-          </div>
-          <p className="text-sm text-gray-500 mb-4">+ 2% improved</p>
-
-          {/* Progress Bar */}
-          <div
-            className={`w-full h-3 rounded-full mb-4 ${
-              theme === "dark" ? "bg-gray-700" : "bg-gray-200"
-            }`}
-          >
-            <div
-              className="h-3 rounded-full transition-all duration-1500 ease-out"
-              style={{
-                width: mounted ? "95%" : "0%",
-                background:
-                  "linear-gradient(to right, #10B981 0%, #10B981 70%, #F59E0B 70%, #F59E0B 85%, #EF4444 85%, #EF4444 100%)",
-                transitionDelay: "1500ms",
-              }}
-            />
-          </div>
-
-          {/* Legend */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                <span
-                  className={
-                    theme === "dark" ? "text-gray-300" : "text-gray-600"
-                  }
-                >
-                  {"> 90 %"}
-                </span>
+        <div className="bg-white dark:bg-gray-800 border border-[#828282] dark:border-gray-600 rounded-xl shadow-sm p-4 transition-all duration-300 hover:shadow-lg flex flex-col gap-4">
+          <div className="flex flex-row justify-between pb-3">
+            <div className="flex flex-col">
+              <h3 className="text-gray-700 dark:text-gray-300 text-lg font-medium mb-2">
+                Compliance Info
+              </h3>
+              <div className="text-3xl font-bold text-[#1F6B3B] mb-2">
+                {ropaStatus}%
               </div>
-              <span
-                className={`text-sm ${
-                  theme === "dark" ? "text-gray-400" : "text-gray-500"
-                }`}
-              >
+            </div>
+            <div className="flex flex-col">
+              <div className="text-right text-sm text-gray-700 dark:text-gray-300 mb-1">
                 No. of Reports
-              </span>
+              </div>
+              <div className="space-y-1 mb-2">
+                <div className="flex items-center gap-1 text-xs">
+                  <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                  <span className="text-gray-700 dark:text-gray-300 text-xs">
+                    &gt; 90%
+                  </span>
+                </div>
+                <div className="flex items-center gap-1 text-xs">
+                  <div className="w-2 h-2 rounded-full bg-yellow-400"></div>
+                  <span className="text-gray-700 dark:text-gray-300 text-xs">
+                    60% - 90%
+                  </span>
+                </div>
+                <div className="flex items-center gap-1 text-xs">
+                  <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                  <span className="text-gray-700 dark:text-gray-300 text-xs">
+                    &lt; 60%
+                  </span>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-2 text-sm">
-              <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-              <span
-                className={theme === "dark" ? "text-gray-300" : "text-gray-600"}
-              >
-                60 % - 90 %
-              </span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <div className="w-3 h-3 rounded-full bg-red-500"></div>
-              <span
-                className={theme === "dark" ? "text-gray-300" : "text-gray-600"}
-              >
-                {"< 60 %"}
-              </span>
-            </div>
+          </div>
+          <div className="w-full mt-5 h-6">
+            <Bar data={ropaData} options={ropaOptions} />
           </div>
         </div>
 
         {/* Data Transfer Map */}
         <div
           className={`
-            rounded-2xl p-6 shadow-sm border transition-all duration-500 hover:shadow-md hover:-translate-y-1
-            ${
-              theme === "dark"
-                ? "bg-gray-800 border-gray-700"
-                : "bg-white border-gray-200"
-            }
+            rounded-2xl p-6 shadow-sm border transition-all duration-500 hover:shadow-md hover:-translate-y-1 col-span-2 dark:bg-gray-800 border-gray-700 bg-white 
             transform ${
               mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }
           `}
-          style={{ transitionDelay: "500ms" }}
         >
           <div className="flex items-center justify-between mb-4">
             <h3
-              className={`text-lg font-semibold ${
-                theme === "dark" ? "text-white" : "text-gray-900"
-              }`}
+              className={`text-lg font-semibold dark:text-white text-gray-900
+              `}
             >
               Data Transfer Map
             </h3>
             <button
-              className={`p-1 rounded hover:bg-gray-100 ${
-                theme === "dark" ? "hover:bg-gray-700" : ""
-              }`}
+              className={`p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700`}
             >
               <MoreHorizontal
-                className={`w-4 h-4 ${
-                  theme === "dark" ? "text-gray-400" : "text-gray-600"
-                }`}
+                className={`w-4 h-4 dark:text-gray-400 text-gray-600`}
               />
             </button>
           </div>
-          <div
-            className={`w-full h-32 rounded-lg flex items-center justify-center ${
-              theme === "dark" ? "bg-gray-700" : "bg-gray-200"
-            }`}
-          >
-            <span
-              className={`text-sm ${
-                theme === "dark" ? "text-gray-400" : "text-gray-500"
-              }`}
-            >
-              Map Placeholder
-            </span>
-          </div>
+          <div className="w-full h-32 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700"></div>
         </div>
       </div>
 
@@ -511,32 +382,21 @@ const Home = () => {
       <div
         className={`
           rounded-2xl p-6 shadow-sm border transition-all duration-500
-          ${
-            theme === "dark"
-              ? "bg-gray-800 border-gray-700"
-              : "bg-white border-gray-200"
-          }
+          dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200
           transform ${
             mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
           }
         `}
-        style={{ transitionDelay: "600ms" }}
       >
         <h3
-          className={`text-lg font-semibold mb-6 ${
-            theme === "dark" ? "text-white" : "text-gray-900"
-          }`}
+          className={`text-lg font-semibold mb-6 dark:text-white text-gray-900`}
         >
           Recent Activities
         </h3>
 
         {/* Table Header */}
         <div
-          className={`grid grid-cols-5 gap-4 pb-3 mb-3 border-b text-sm font-medium ${
-            theme === "dark"
-              ? "border-gray-700 text-gray-400"
-              : "border-gray-200 text-gray-600"
-          }`}
+          className={`grid grid-cols-5 gap-4 pb-3 mb-3 border-b text-sm font-medium dark:border-gray-700 dark:text-gray-400 border-gray-200 text-gray-600`}
         >
           <div>Activity</div>
           <div>Date</div>
@@ -551,8 +411,7 @@ const Home = () => {
             <div
               key={activity.id}
               className={`
-                grid grid-cols-5 gap-4 py-3 rounded-lg transition-all duration-500 hover:bg-gray-50
-                ${theme === "dark" ? "hover:bg-gray-700" : "hover:bg-gray-50"}
+                grid grid-cols-5 gap-4 py-3 rounded-lg transition-all duration-500 hover:bg-gray-50 dark:hover:bg-gray-700
                 transform ${
                   mounted
                     ? "opacity-100 translate-x-0"
@@ -562,23 +421,17 @@ const Home = () => {
               style={{ transitionDelay: `${1800 + index * 100}ms` }}
             >
               <div
-                className={`text-sm ${
-                  theme === "dark" ? "text-gray-300" : "text-gray-900"
-                }`}
+                className={`text-sm dark:text-gray-300 text-gray-900`}
               >
                 {activity.activity}
               </div>
               <div
-                className={`text-sm ${
-                  theme === "dark" ? "text-gray-400" : "text-gray-600"
-                }`}
+                className={`text-sm dark:text-gray-400 text-gray-600`}
               >
                 {activity.date}
               </div>
               <div
-                className={`text-sm ${
-                  theme === "dark" ? "text-gray-400" : "text-gray-600"
-                }`}
+                className={`text-sm dark:text-gray-400 text-gray-600`}
               >
                 {activity.time}
               </div>

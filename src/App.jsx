@@ -3,6 +3,10 @@ import Sidebar from "./components/layout/Sidebar";
 import Topbar from "./components/layout/Topbar";
 import Footer from "./components/layout/Footer";
 import Home from "./components/pages/Home";
+import { Route, Routes } from "react-router-dom";
+import RoPA from "./components/pages/RoPA";
+import Assessments from "./components/pages/Assessments";
+import DataMapping from "./components/pages/DataMapping";
 
 export default function App() {
   const [collapsed, setCollapsed] = useState(false);
@@ -25,7 +29,12 @@ export default function App() {
       ${collapsed ? "ml-24" : "ml-48"}`}
           // style={{ minHeight: "calc(100vh - 4rem)" }} // ensures main fills viewport minus topbar
         >
-          <Home />
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/RoPA" element={<RoPA />} />
+            <Route path="/assessments" element={<Assessments />} />
+            <Route path="/data-mapping" element={<DataMapping />} />
+          </Routes>
         </main>
       </div>
 

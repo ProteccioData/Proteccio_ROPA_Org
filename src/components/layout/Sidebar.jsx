@@ -26,7 +26,7 @@ const menuItems = [
   {
     name: "Data Mapping",
     icon: Database,
-    path: "/audit-trail",
+    path: "/data-mapping",
   },
   {
     name: "Setup",

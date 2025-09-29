@@ -1,43 +1,37 @@
-"use client";
-
 import { LabelList, Pie, PieChart } from "recharts";
-
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from "@/components/ui/chart";
+} from "./chart";
 
 export const description = "A pie chart with a label list";
 
 const chartData = [
-  { browser: "chrome", visitors: 275, fill: "var(--color-chrome)" },
-  { browser: "safari", visitors: 200, fill: "var(--color-safari)" },
-  { browser: "firefox", visitors: 187, fill: "var(--color-firefox)" },
-  { browser: "edge", visitors: 173, fill: "var(--color-edge)" },
+  { Stage: "infovoyage", RoPA: 275, fill: "var(--color-chart-1)" },
+  { Stage: "checksync", RoPA: 200, fill: "var(--color-chart-2)" },
+  { Stage: "beam", RoPA: 187, fill: "var(--color-chart-3)" },
+  { Stage: "offdoff", RoPA: 173, fill: "var(--color-chart-4)" },
 ];
 
 const chartConfig = {
-  visitors: {
-    label: "Visitors",
+  RoPA: {
+    label: "RoPA",
   },
-  chrome: {
-    label: "Chrome",
+  infovoyage: {
+    label: "InfoVoyage",
     color: "var(--chart-1)",
   },
-  safari: {
-    label: "Safari",
+  checksync: {
+    label: "CheckSync",
     color: "var(--chart-2)",
   },
-  firefox: {
-    label: "Firefox",
+  beam: {
+    label: "Beam",
+    color: "var(--chart-3)",
+  },
+  offdoff: {
+    label: "OffDoff",
     color: "var(--chart-3)",
   },
 };
@@ -50,18 +44,19 @@ export function RoundedPieChart() {
     >
       <PieChart>
         <ChartTooltip
-          content={<ChartTooltipContent nameKey="visitors" hideLabel />}
+          content={<ChartTooltipContent nameKey="Stage" />}
         />
         <Pie
           data={chartData}
           innerRadius={30}
-          dataKey="visitors"
+          dataKey="RoPA"
+          nameKey="Stage"
           radius={10}
           cornerRadius={8}
           paddingAngle={4}
         >
           <LabelList
-            dataKey="visitors"
+            dataKey="RoPA"
             stroke="none"
             fontSize={12}
             fontWeight={500}
