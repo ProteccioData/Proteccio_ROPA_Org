@@ -7,7 +7,7 @@ import {
   Download,
   EllipsisVertical,
   Filter,
-  Plus,
+  CirclePlus,
 } from "lucide-react";
 import Button from "../ui/Button";
 
@@ -86,7 +86,7 @@ export default function DataMappingTable() {
               console.log("Create New Flow modal open");
             }}
             text="Create New Flow"
-            icon={<Plus size={16} />}
+            icon={CirclePlus}
           />
         </div>
       </div>

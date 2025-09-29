@@ -8,6 +8,8 @@ import RoPA from "./components/pages/RoPA";
 import Assessments from "./components/pages/Assessments";
 import DataMapping from "./components/pages/DataMapping";
 import Setup from "./components/pages/Setup";
+import AuditLogs from "./components/pages/AuditLogs";
+import ReportsPage from "./components/pages/Reports";
 
 export default function App() {
   const [collapsed, setCollapsed] = useState(false);
@@ -36,6 +38,8 @@ export default function App() {
             <Route path="/assessments" element={<Assessments />} />
             <Route path="/data-mapping" element={<DataMapping />} />
             <Route path="/setup" element={<Setup />} />
+            <Route path="/audit-logs" element={<AuditLogs />} />
+            <Route path="/reports" element={<ReportsPage />} />
           </Routes>
         </main>
       </div>

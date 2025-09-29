@@ -242,13 +242,13 @@ const Home = () => {
             </div>
             <div className="flex items-center gap-2">
               <select
-                className={`text-xs px-2 py-1 rounded border dark:bg-gray-700 border-gray-600 text-black bg-white border-gray-300"
+                className={`text-xs px-2 py-1 rounded border dark:bg-gray-700 border-gray-600 text-black dark:text-gray-200 bg-white border-gray-300"
                 `}
               >
                 <option>Jan</option>
               </select>
               <select
-                className={`text-xs px-2 py-1 rounded border dark:bg-gray-700 border-gray-600 text-black bg-white `}
+                className={`text-xs px-2 py-1 rounded border dark:bg-gray-700 border-gray-600 text-black dark:text-gray-200 bg-white `}
               >
                 <option>2025</option>
               </select>

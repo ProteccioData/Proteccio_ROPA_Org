@@ -36,12 +36,12 @@ const menuItems = [
   {
     name: "Audit Logs",
     icon: Clock,
-    path: "/revenue",
+    path: "/audit-logs",
   },
   {
     name: "Reports",
     icon: FileChartLine,
-    path: "/knowledge-articles",
+    path: "/reports",
   },
 ];
 
@@ -120,7 +120,7 @@ export default function Sidebar({ collapsed, setCollapsed }) {
         ${
           isActive
             ? "bg-[#5DEE92] text-black"
-            : "hover:bg-gray-50 dark:hover:bg-gray-700"
+            : "hover:bg-gray-200 dark:hover:bg-gray-700"
         }`}
               >
                 <Icon size={`${collapsed ? 24 : 20}`} />
@@ -151,7 +151,7 @@ export default function Sidebar({ collapsed, setCollapsed }) {
               ${
                 isActive
                   ? "bg-[#5DEE92] text-black"
-                  : "hover:bg-gray-200 hover:text-black dark:hover:bg-gray-700"
+                  : "hover:bg-gray-200 hover:text-black dark:hover:bg-gray-700 dark:hover:text-gray-200"
               }`
           }
         >
