@@ -6,6 +6,7 @@ import {
   HardDrive,
   Database,
   Server,
+  CirclePlus,
 } from "lucide-react";
 
 const setupOptions = [
@@ -32,23 +33,23 @@ const setupOptions = [
   },
 ];
 
-export default function SetupGrid() {
+export default function Setup() {
   return (
-    <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div className="min-h-screen">
       {/* Action Buttons */}
-      <div className="flex flex-wrap gap-4 justify-center mb-8">
+      <div className="flex w-full gap-8 items-center mb-8">
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.97 }}
-          className="flex items-center gap-2 bg-[#5DEE92] px-6 py-3 rounded-lg text-black font-medium shadow-md hover:bg-green-500 transition"
+          className="flex items-center justify-center w-full gap-2 bg-[#5DEE92] px-6 py-3 rounded-lg text-black font-medium shadow-md hover:opacity-90 transition hover:cursor-pointer"
         >
-          <Plus size={18} /> Add New Asset
+          <CirclePlus size={18} /> Add New Asset
         </motion.button>
 
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.97 }}
-          className="flex items-center gap-2 bg-[#5DEE92] px-6 py-3 rounded-lg text-black font-medium shadow-md hover:bg-green-500 transition"
+          className="flex items-center justify-center w-full gap-2 bg-[#5DEE92] px-6 py-3 rounded-lg text-black font-medium shadow-md hover:opacity-90 transition hover:cursor-pointer"
         >
           <Download size={18} /> Bulk Import
         </motion.button>
@@ -56,7 +57,7 @@ export default function SetupGrid() {
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.97 }}
-          className="flex items-center gap-2 bg-[#5DEE92] px-6 py-3 rounded-lg text-black font-medium shadow-md hover:bg-green-500 transition"
+          className="flex items-center w-full justify-center gap-2 bg-[#5DEE92] px-6 py-3 rounded-lg text-black font-medium shadow-md hover:opacity-90 transition hover:cursor-pointer"
         >
           <ShieldCheck size={18} /> Security Review
         </motion.button>

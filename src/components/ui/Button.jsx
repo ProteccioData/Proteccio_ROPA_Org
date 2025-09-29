@@ -3,8 +3,7 @@ import { CirclePlus } from "lucide-react";
 export default function Button({
   onClick,
   text = "Add Organization",
-  icon: Icon,
-  iconSrc,
+  icon: Icon = CirclePlus,
 }) {
   return (
     <button
@@ -14,8 +13,9 @@ export default function Button({
                  focus:outline-none focus:ring-2 focus:ring-green-300 
                  transition cursor-pointer"
     >
-      <CirclePlus className="h-4 w-4"  />
+      {Icon && <Icon className="h-4 w-4" />}
       <span className="hidden sm:inline md:text-sm pr-2">{text}</span>
     </button>
   );
 }
+

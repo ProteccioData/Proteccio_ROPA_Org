@@ -31,7 +31,7 @@ const menuItems = [
   {
     name: "Setup",
     icon: FilePlus2,
-    path: "/reports",
+    path: "/setup",
   },
   {
     name: "Audit Logs",

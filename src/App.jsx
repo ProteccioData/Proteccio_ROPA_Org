@@ -7,6 +7,7 @@ import { Route, Routes } from "react-router-dom";
 import RoPA from "./components/pages/RoPA";
 import Assessments from "./components/pages/Assessments";
 import DataMapping from "./components/pages/DataMapping";
+import Setup from "./components/pages/Setup";
 
 export default function App() {
   const [collapsed, setCollapsed] = useState(false);
@@ -34,6 +35,7 @@ export default function App() {
             <Route path="/RoPA" element={<RoPA />} />
             <Route path="/assessments" element={<Assessments />} />
             <Route path="/data-mapping" element={<DataMapping />} />
+            <Route path="/setup" element={<Setup />} />
           </Routes>
         </main>
       </div>
