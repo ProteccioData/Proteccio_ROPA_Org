@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import { MoreHorizontal, ChevronDown } from "lucide-react";
 import useTheme from "../hooks/useTheme";
 import { RoundedPieChart } from "../ui/rounded-pie-chart";
-import { DefaultMultipleBarChart } from "../ui/default-multiple-bar-chart";
 import { DottedMultiLineChart } from "../ui/dotted-multi-line";
 import { GlowingStrokeRadarChart } from "../ui/glowing-stroke-radar-chart";
 import { Bar } from "react-chartjs-2";
@@ -15,6 +13,10 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+import { NetworkDiagram } from "../ui/network-diagram";
+import { Modal } from "../ui/modal";
+import { TransferDetailsModal } from "../ui/transfer-detail-modal";
+import { motion } from "framer-motion"
 
 ChartJS.register(
   CategoryScale,
@@ -24,6 +26,8 @@ ChartJS.register(
   Tooltip,
   Legend
 );
+
+
 
 const Home = () => {
   const [mounted, setMounted] = useState(false);
@@ -152,15 +156,17 @@ const Home = () => {
     ],
   };
 
+  const [showTransferModal, setShowTransferModal] = useState(false);
+
   return (
     <>
       {/* <div className={` min-h-screen transition-colors duration-300 ${theme === "dark" ? 'bg-gray-900' : 'bg-gray-50'}`}> */}
       {/* Top Row Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
         {/* Total RoPA Records */}
         <div
           className={`
-            rounded-2xl p-6 shadow-sm border border-[#828282] transition duration-300 hover:shadow-md hover:-translate-y-1 flex justify-between items-center
+            rounded-2xl p-6 shadow-sm border border-[#828282] transition duration-300 hover:shadow-md hover:-translate-y-1 flex flex-col
           dark:bg-gray-800 bg-white
             transform ${
               mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
@@ -168,8 +174,8 @@ const Home = () => {
           `}
           style={{ transitionDelay: "100ms" }}
         >
-          <div className="flex flex-col gap-8 justify-between mb-4">
-            <div>
+          <div className="flex flex-col lg:flex-row lg:gap-8 lg:justify-between lg:items-center mb-4">
+            <div className="flex-1">
               <p
                 className={`text-md font-medium dark:text-gray-400 text-gray-600
                 `}
@@ -186,8 +192,14 @@ const Home = () => {
               <p className="text-sm text-gray-500 mt-1">+ 12 This month</p>
             </div>
 
-            {/* Legend */}
-            <div className="flex flex-col gap-2 text-xs">
+            {/* Donut Chart */}
+            <div className="w-full lg:w-56 h-auto mt-4 lg:mt-0">
+              <RoundedPieChart data={chartData} />
+            </div>
+          </div>
+          {/* Legend */}
+          <div className="">
+            <div className="flex flex-wrap justify-around gap-2 text-xs">
               {chartData.map((item, index) => (
                 <div
                   key={index}
@@ -205,10 +217,6 @@ const Home = () => {
               ))}
             </div>
           </div>
-          {/* Donut Chart */}
-          <div className="w-56 h-auto">
-            <RoundedPieChart data={chartData} />
-          </div>
         </div>
 
         {/* Assessments */}
@@ -216,15 +224,15 @@ const Home = () => {
           className={`
             rounded-2xl p-6 shadow-sm border transition-all duration-500 hover:shadow-md hover:-translate-y-1
             dark:bg-gray-800 border-gray-700
-                bg-white border-gray-200"
+                bg-white overflow-hidden"
             transform ${
               mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }
           `}
           style={{ transitionDelay: "200ms" }}
         >
-          <div className="flex items-start justify-between mb-4">
-            <div>
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4">
+            <div className="flex-1">
               <p
                 className={`text-sm font-medium dark:text-gray-400 text-gray-600
                 `}
@@ -245,61 +253,47 @@ const Home = () => {
                 className={`text-xs px-2 py-1 rounded border dark:bg-gray-700 border-gray-600 text-black dark:text-gray-200 bg-white border-gray-300"
                 `}
               >
-                <option>Jan</option>
+                <option>Monthly</option>
               </select>
               <select
                 className={`text-xs px-2 py-1 rounded border dark:bg-gray-700 border-gray-600 text-black dark:text-gray-200 bg-white `}
               >
                 <option>2025</option>
               </select>
-              {/* <button
-                className={`p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700
-                `}
-              >
-                <MoreHorizontal
-                  className={`w-4 h-4 dark:text-gray-400 text-gray-600
-                  `}
-                />
-              </button> */}
             </div>
           </div>
 
           {/* Bar Chart */}
 
-          <div className="w-auto h-48">
+          <div className="relative w-full h-[220px] md:h-[240px] lg:h-[260px] overflow-hidden">
             <DottedMultiLineChart />
-            {/* <DefaultMultipleBarChart /> */}
           </div>
         </div>
 
         {/* Data Transfers */}
         <div
           className={`
-            rounded-2xl p-6 shadow-sm border transition-all duration-500 hover:shadow-md hover:-translate-y-1 dark:bg-gray-800 border-gray-700 bg-white transform ${
+            rounded-2xl flex flex-col gap-4 items-center p-6 shadow-sm border transition-all duration-500 hover:shadow-md hover:-translate-y-1 dark:bg-gray-800 border-gray-700 bg-white transform ${
               mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }
           `}
           style={{ transitionDelay: "300ms" }}
         >
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <p
-                className={`text-sm font-medium dark:text-gray-400 text-gray-600`}
+          <div className="flex items-center gap-24">
+            <p
+              className={`text-lg font-medium dark:text-gray-400 text-gray-600`}
+            >
+              Data Mapping
+            </p>
+            <div className="flex items-center gap-4 mt-2">
+              <h2
+                className={`text-4xl font-bold dark:text-white text-gray-900 transition-all duration-1000`}
               >
-                Data Transfers
-              </p>
-              <div className="flex items-center gap-2 mt-2">
-                <h2
-                  className={`text-4xl font-bold dark:text-white text-gray-900 transition-all duration-1000`}
-                >
-                  {animateNumbers.transfers}
-                </h2>
-                <p className="text-sm text-gray-500">+ 8 This Week</p>
-              </div>
+                {animateNumbers.transfers}
+              </h2>
+              <p className="text-sm text-gray-500">+ 8 This Week</p>
             </div>
           </div>
-
-          {/* Area Chart Placeholder */}
           <div className="w-96">
             <GlowingStrokeRadarChart />
           </div>
@@ -307,7 +301,7 @@ const Home = () => {
       </div>
 
       {/* Bottom Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
         {/* Compliance Score */}
         <div className="bg-white dark:bg-gray-800 border border-[#828282] dark:border-gray-600 rounded-xl shadow-sm p-4 transition-all duration-300 hover:shadow-lg flex flex-col gap-4">
           <div className="flex flex-row justify-between pb-3">
@@ -349,9 +343,8 @@ const Home = () => {
             <Bar data={ropaData} options={ropaOptions} />
           </div>
         </div>
-
         {/* Data Transfer Map */}
-        <div
+        {/* <div
           className={`
             rounded-2xl p-6 shadow-sm border transition-all duration-500 hover:shadow-md hover:-translate-y-1 col-span-2 dark:bg-gray-800 border-gray-700 bg-white 
             transform ${
@@ -373,8 +366,26 @@ const Home = () => {
                 className={`w-4 h-4 dark:text-gray-400 text-gray-600`}
               />
             </button>
+            
           </div>
-          <div className="w-full h-32 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700"></div>
+
+        </div> */}
+        <div className="rounded-2xl p-6 shadow-sm border transition-all duration-500 hover:shadow-md hover:-translate-y-1 col-span-2 dark:bg-gray-800 border-gray-700 bg-white transform">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold dark:text-white text-gray-900">
+              Data Transfer Stats
+            </h3>
+            <button
+              className="px-3 py-1.5 text-sm bg-[#5DE992] hover:bg-[#5DE992]/70 text-white rounded-lg transition-colors duration-200 flex items-center gap-2"
+              onClick={() => setShowTransferModal(!showTransferModal)}
+            >
+              <span>View Details</span>
+            </button>
+          </div>
+
+          <div className="h-auto">
+            <NetworkDiagram />
+          </div>
         </div>
       </div>
 
@@ -420,19 +431,13 @@ const Home = () => {
               `}
               style={{ transitionDelay: `${1800 + index * 100}ms` }}
             >
-              <div
-                className={`text-sm dark:text-gray-300 text-gray-900`}
-              >
+              <div className={`text-sm dark:text-gray-300 text-gray-900`}>
                 {activity.activity}
               </div>
-              <div
-                className={`text-sm dark:text-gray-400 text-gray-600`}
-              >
+              <div className={`text-sm dark:text-gray-400 text-gray-600`}>
                 {activity.date}
               </div>
-              <div
-                className={`text-sm dark:text-gray-400 text-gray-600`}
-              >
+              <div className={`text-sm dark:text-gray-400 text-gray-600`}>
                 {activity.time}
               </div>
               <div>
@@ -449,6 +454,14 @@ const Home = () => {
           ))}
         </div>
       </div>
+      <Modal
+        isOpen={showTransferModal}
+        onClose={() => setShowTransferModal(false)}
+        title="Data Transfer Details"
+        size="xl"
+      >
+        <TransferDetailsModal />
+      </Modal>
       {/* </div> */}
     </>
   );

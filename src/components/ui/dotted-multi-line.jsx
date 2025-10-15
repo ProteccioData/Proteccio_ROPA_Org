@@ -1,89 +1,138 @@
-import { CartesianGrid, Line, LineChart, XAxis } from "recharts";
-
+import React, { useEffect, useRef } from "react";
 import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
+  Chart as ChartJS,
+  LineElement,
+  PointElement,
+  LinearScale,
+  CategoryScale,
+  Tooltip,
+  Legend,
+} from "chart.js";
+import { Line } from "react-chartjs-2";
 
-const chartData = [
-  { month: "January", Assessments: 186, LIA: 87, DPIA: 74, TIA: 204 },
-  { month: "February", Assessments: 305, LIA: 163, DPIA: 24, TIA: 24 },
-  { month: "March", Assessments: 237, LIA: 142, DPIA: 104, TIA: 74 },
-  { month: "April", Assessments: 73, LIA: 195, DPIA: 124, TIA: 94 },
-  { month: "May", Assessments: 209, LIA: 118, DPIA: 14, TIA: 24 },
-  { month: "June", Assessments: 214, LIA: 231, DPIA: 34, TIA: 204 },
-];
+ChartJS.register(LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Legend);
 
-const chartConfig = {
-  Assessments: {
-    label: "Assessments",
-    color: "var(--chart-1)",
+const chartData = {
+  labels: [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ],
+  datasets: [
+    {
+      label: "Assessments",
+      data: [186, 305, 237, 73, 209, 214, 186, 305, 237, 73, 209, 214],
+      borderColor: "#10B981",
+      backgroundColor: "#10B981",
+      borderWidth: 2,
+      tension: 0.4,
+      pointRadius: 0,
+    },
+    {
+      label: "LIA",
+      data: [87, 163, 142, 195, 118, 231, 87, 163, 142, 195, 118, 231],
+      borderColor: "#F97316",
+      backgroundColor: "#F97316",
+      borderWidth: 2,
+      borderDash: [6, 6],
+      tension: 0.4,
+      pointRadius: 0,
+    },
+    {
+      label: "DPIA",
+      data: [74, 24, 104, 124, 14, 34, 74, 24, 104, 124, 14, 34],
+      borderColor: "#8B5CF6",
+      backgroundColor: "#8B5CF6",
+      borderWidth: 2,
+      borderDash: [4, 6],
+      tension: 0.4,
+      pointRadius: 0,
+    },
+    {
+      label: "TIA",
+      data: [204, 24, 74, 94, 24, 204, 204, 24, 74, 94, 24, 204],
+      borderColor: "#1E40AF",
+      backgroundColor: "#1E40AF",
+      borderWidth: 2,
+      borderDash: [2, 6],
+      tension: 0.4,
+      pointRadius: 0,
+    },
+  ],
+};
+
+const chartOptions = {
+  responsive: true,
+  maintainAspectRatio: false, // fixed height behavior
+  plugins: {
+    legend: {
+      display: false,
+    },
+    tooltip: {
+      mode: "index",
+      intersect: false,
+      backgroundColor: "rgba(17, 24, 39, 0.8)",
+      titleColor: "#fff",
+      bodyColor: "#fff",
+      borderWidth: 0,
+      padding: 8,
+    },
   },
-  LIA: {
-    label: "LIA",
-    color: "var(--chart-2)",
+  interaction: {
+    mode: "nearest",
+    axis: "x",
+    intersect: false,
   },
-  DPIA: {
-    label: "DPIA",
-    color: "var(--chart-3)",
+  scales: {
+    x: {
+      grid: {
+        display: false,
+      },
+      ticks: {
+        color: "#9CA3AF",
+        font: { size: 12 },
+      },
+    },
+    y: {
+      grid: {
+        color: "rgba(156,163,175,0.1)",
+        borderDash: [4, 4],
+      },
+      ticks: {
+        color: "#9CA3AF",
+        font: { size: 12 },
+      },
+    },
   },
-  TIA: {
-    label: "TIA",
-    color: "var(--chart-4)",
+  elements: {
+    line: {
+      fill: false,
+    },
   },
 };
 
 export function DottedMultiLineChart() {
+  const chartRef = useRef(null);
+
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (chart) {
+      chart.update();
+    }
+  }, []);
+
   return (
-    <ChartContainer config={chartConfig}>
-      <LineChart
-        accessibilityLayer
-        data={chartData}
-        margin={{
-          left: 12,
-          right: 12,
-        }}
-      >
-        <CartesianGrid vertical={false} />
-        <XAxis
-          dataKey="month"
-          tickLine={false}
-          axisLine={false}
-          tickMargin={8}
-          tickFormatter={(value) => value.slice(0, 3)}
-        />
-        <ChartTooltip
-          cursor={false}
-          content={<ChartTooltipContent hideLabel />}
-        />
-        <Line
-          dataKey="Assessments"
-          type="linear"
-          stroke="var(--color-chart-1)"
-        />
-        <Line
-          dataKey="LIA"
-          type="linear"
-          stroke="var(--color-chart-2)"
-          dot={false}
-          strokeDasharray="4 4"
-        />
-        <Line
-          dataKey="DPIA"
-          type="linear"
-          stroke="var(--color-chart-3)"
-          dot={false}
-          strokeDasharray="4 4"
-        />
-        <Line
-          dataKey="TIA"
-          type="linear"
-          stroke="var(--color-chart-4)"
-          dot={false}
-          strokeDasharray="4 4"
-        />
-      </LineChart>
-    </ChartContainer>
+    <div className="w-full h-[220px]">
+      <Line ref={chartRef} data={chartData} options={chartOptions} />
+    </div>
   );
 }

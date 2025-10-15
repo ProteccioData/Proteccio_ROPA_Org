@@ -40,7 +40,7 @@ export function RoundedPieChart() {
   return (
     <ChartContainer
       config={chartConfig}
-      className="[&_.recharts-text]:fill-background mx-auto aspect-square max-h-[250px]"
+      className="[&_.recharts-text]:fill-background aspect-square "
     >
       <PieChart>
         <ChartTooltip
