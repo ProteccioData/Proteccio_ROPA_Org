@@ -7,8 +7,10 @@ import {
   EllipsisVertical,
   Link,
   Filter,
+  Archive,
 } from "lucide-react";
 import Button from "../ui/Button";
+import AddROPAModal from "./AddRoPA";
 
 const ropasData = [
   {
@@ -59,6 +61,10 @@ export default function RoPARecords() {
     };
   }, []);
 
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const handleOpen = () => setIsModalOpen(true);
+  const handleClose = () => setIsModalOpen(false); 
+
   return (
     <div className="bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 border border-[#828282] rounded-lg shadow-sm overflow-hidden">
       {/* Header */}
@@ -75,12 +81,10 @@ export default function RoPARecords() {
               Filter
             </button>
             <Button
-              onClick={() => {
-                setEditingUser(null); 
-                setIsNewOpen(true); 
-              }}
+              onClick={handleOpen}
               text="New RoPA"
             />
+            {isModalOpen && <AddROPAModal isOpen={handleOpen} onClose={handleClose} />}
           </div>
       </div>
 
@@ -147,10 +151,10 @@ export default function RoPARecords() {
                           isLast ? "bottom-full mb-2" : "top-full mt-2"
                         }`}
                       >
-                        <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
-                          <Trash2 size={14} className="mr-2" /> Delete
+                        <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
+                          <Archive size={14} className="mr-2" /> Archive
                         </button>
-                        <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
                           <Link size={14} className="mr-2" /> Link RoPA
                         </button>
                       </div>

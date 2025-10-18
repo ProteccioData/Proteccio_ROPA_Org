@@ -26,7 +26,7 @@ export default function App() {
         </div>
 
         <main
-          className={`flex-1 overflow-y-auto bg-white dark:bg-gray-900 text-black
+          className={`flex-1 overflow-y-auto bg-green-50 dark:bg-gray-900 text-black
             p-6
           transition-all duration-300 
       ${collapsed ? "ml-24" : "ml-48"}`}

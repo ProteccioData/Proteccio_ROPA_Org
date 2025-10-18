@@ -23,7 +23,7 @@ export function GlowingStrokeRadarChart() {
   return (
     <ChartContainer
       config={chartConfig}
-      className="mx-auto max-h-[250px]"
+      className="mx-auto max-h-[250px] pb-4"
     >
       <RadarChart data={chartData}>
         <ChartTooltip cursor={false} content={<ChartTooltipContent />} />

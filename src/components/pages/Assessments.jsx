@@ -10,9 +10,13 @@ import {
   Filter,
 } from "lucide-react";
 import { Tabs } from "../ui/tabs";
+import LIAssessmentModal from "../modules/AddLIA";
+import { useState } from "react";
+import DPIAModal from "../modules/AdDPIA";
+import TIAModal from "../modules/AddTIA";
 
 // Reusable Stat Card
-const StatCard = ({ icon: Icon, title, description, count, buttonText }) => (
+const StatCard = ({ icon: Icon, title, description, count, buttonText, onButtonClick }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
@@ -38,7 +42,7 @@ const StatCard = ({ icon: Icon, title, description, count, buttonText }) => (
         <p className="pl-4">Assessments</p>
       </div>
 
-      <button className="rounded-md bg-[#5DEE92] px-3 py-1.5 text-sm font-medium text-gray-900 hover:opacity-90 transition hover:cursor-pointer">
+      <button onClick={onButtonClick} className="rounded-md bg-[#5DEE92] px-3 py-1.5 text-sm font-medium text-gray-900 hover:opacity-90 transition hover:cursor-pointer">
         {buttonText}
       </button>
     </div>
@@ -107,6 +111,11 @@ const TableRow = ({ id, stage, impact, likelihood, createdBy, date }) => (
 );
 
 export default function Assessments() {
+  const [openModal, setOpenModal] = useState(null); // can be "lia" | "dpia" | "tia" 
+
+  const handleClose = () => setOpenModal(null);
+  const handleOpen = () => openModal;
+
   return (
     <div className="min-h-screen w-full">
       {/* Top Cards */}
@@ -117,6 +126,7 @@ export default function Assessments() {
           description="Assess privacy risks and mitigation measures"
           count="1"
           buttonText="Start new DPIA"
+          onButtonClick={() => setOpenModal("dpia")}
         />
         <StatCard
           icon={ClipboardList}
@@ -124,6 +134,7 @@ export default function Assessments() {
           description="Evaluate legitimate interests for data processing"
           count="2"
           buttonText="Start new LIA"
+          onButtonClick={() => setOpenModal("lia")}
         />
         <StatCard
           icon={ArrowLeftRight}
@@ -131,12 +142,17 @@ export default function Assessments() {
           description="Evaluate risks of cross-border data transfers"
           count="0"
           buttonText="Start new TIA"
+          onButtonClick={() => setOpenModal("tia")}
         />
       </div>
       {/* Tabs */}
       <div className="pt-8">
         <Tabs tabs={tabData} />
       </div>
+
+      {openModal === "dpia" && <DPIAModal isOpen={openModal} onClose={handleClose} />}
+      {openModal === "lia" && <LIAssessmentModal isOpen={openModal} onClose={handleClose} />}
+      {openModal === "tia" && <TIAModal isOpen={openModal} onClose={handleClose} />}
     </div>
   );
 }
