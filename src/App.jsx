@@ -10,6 +10,8 @@ import DataMapping from "./components/pages/DataMapping";
 import Setup from "./components/pages/Setup";
 import AuditLogs from "./components/pages/AuditLogs";
 import ReportsPage from "./components/pages/Reports";
+import UserManagement from "./components/pages/UserManagement";
+import SettingsPage from "./components/pages/Settings";
 
 export default function App() {
   const [collapsed, setCollapsed] = useState(false);
@@ -40,6 +42,8 @@ export default function App() {
             <Route path="/setup" element={<Setup />} />
             <Route path="/audit-logs" element={<AuditLogs />} />
             <Route path="/reports" element={<ReportsPage />} />
+            <Route path="/user-setup" element={<UserManagement />} />
+            <Route path="/settings" element={<SettingsPage />} />
           </Routes>
         </main>
       </div>

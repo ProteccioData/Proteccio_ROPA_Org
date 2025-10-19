@@ -11,6 +11,7 @@ import {
   Database,
   FilePlus2,
   FileChartLine,
+  User2,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import useTheme from "../hooks/useTheme";
@@ -42,6 +43,11 @@ const menuItems = [
     name: "Reports",
     icon: FileChartLine,
     path: "/reports",
+  },
+  {
+    name: "User Setup",
+    icon: User2,
+    path: "/user-setup",
   },
 ];
 

@@ -10,7 +10,7 @@ export default function SearchBar() {
       <input
         type="text"
         placeholder="Start searching..."
-        className="w-full border dark:border-gray-500 rounded-full py-1.5 sm:py-2 pl-9 pr-3 text-sm 
+        className="w-full border border-[#828282] dark:border-gray-500 rounded-full py-1.5 sm:py-2 pl-9 pr-3 text-sm 
                    placeholder-gray-400 focus:outline-none focus:ring-2 
                    focus:ring-green-400 focus:border-green-400"
       />
