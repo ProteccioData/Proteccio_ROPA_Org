@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import Button from "../ui/Button";
 import AddROPAModal from "./AddRoPA";
+import { useNavigate } from "react-router-dom";
 
 const ropasData = [
   {
@@ -43,6 +44,7 @@ export default function RoPARecords() {
   const [ropas] = useState(ropasData);
   const [openMenu, setOpenMenu] = useState(null);
   const dropdownRef = useRef(null);
+  const navigate = useNavigate();
 
   const toggleMenu = (id) => {
     setOpenMenu(openMenu === id ? null : id);
@@ -62,7 +64,10 @@ export default function RoPARecords() {
   }, []);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const handleOpen = () => setIsModalOpen(true);
+  const handleOpen = () => {
+    navigate("/new-ropa")
+  } 
+  // const handleOpen = () => setIsModalOpen(true);
   const handleClose = () => setIsModalOpen(false); 
 
   return (
@@ -84,7 +89,7 @@ export default function RoPARecords() {
               onClick={handleOpen}
               text="New RoPA"
             />
-            {isModalOpen && <AddROPAModal isOpen={handleOpen} onClose={handleClose} />}
+            {/* {isModalOpen && <AddROPAModal isOpen={handleOpen} onClose={handleClose} />} */}
           </div>
       </div>
 
@@ -133,9 +138,6 @@ export default function RoPARecords() {
                   </button>
                   <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer">
                     <SquarePen size={16} />
-                  </button>
-                  <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer">
-                    <Copy size={16} />
                   </button>
                   <div className="relative" ref={dropdownRef}>
                     <button

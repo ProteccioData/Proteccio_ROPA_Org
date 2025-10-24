@@ -9,7 +9,7 @@ const TIAModal = ({ isOpen, onClose, onTIACreated }) => {
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [errors, setErrors] = useState({});
-//   const { addToast } = useToast();
+  const { addToast } = useToast();
 
   // Form data state
   const [formData, setFormData] = useState({
@@ -106,10 +106,10 @@ const TIAModal = ({ isOpen, onClose, onTIACreated }) => {
       await new Promise(resolve => setTimeout(resolve, 1000));
       setLastSaved(new Date());
       console.log("Auto-saved TIA:", formData);
-    //   addToast("success", "Progress auto-saved");
+      addToast("success", "Progress auto-saved");
     } catch (error) {
       console.error("Auto-save failed:", error);
-    //   addToast("error", "Auto-save failed");
+      addToast("error", "Auto-save failed");
     } finally {
       setSaving(false);
     }
@@ -195,10 +195,10 @@ const TIAModal = ({ isOpen, onClose, onTIACreated }) => {
     setErrors(newErrors);
     
     if (Object.keys(newErrors).length === 0) {
-    //   addToast("success", "Stage validation passed!");
+      addToast("success", "Stage validation passed!");
       return true;
     } else {
-    //   addToast("error", "Please fill all required fields");
+      addToast("error", "Please fill all required fields");
       return false;
     }
   };
@@ -264,7 +264,7 @@ const TIAModal = ({ isOpen, onClose, onTIACreated }) => {
     const validFiles = newFiles.filter(file => allowedTypes.includes(file.type));
     
     if (validFiles.length !== newFiles.length) {
-    //   addToast("error", "Some files were skipped due to invalid format");
+      addToast("error", "Some files were skipped due to invalid format");
     }
 
     setFormData((prev) => ({
@@ -275,7 +275,7 @@ const TIAModal = ({ isOpen, onClose, onTIACreated }) => {
       },
     }));
 
-    // addToast("success", `${validFiles.length} file(s) uploaded successfully`);
+    addToast("success", `${validFiles.length} file(s) uploaded successfully`);
   };
 
   const removeFile = (section, field, fileIndex) => {
@@ -506,7 +506,7 @@ const TIAModal = ({ isOpen, onClose, onTIACreated }) => {
     if (validateStage(currentStage)) {
       if (currentStage < 5) {
         setCurrentStage(currentStage + 1);
-        // addToast("info", `Moving to ${stages[currentStage].title}`);
+        addToast("info", `Moving to ${stages[currentStage].title}`);
       }
     }
   };
@@ -514,7 +514,7 @@ const TIAModal = ({ isOpen, onClose, onTIACreated }) => {
   const handlePreviousStage = () => {
     if (currentStage > 1) {
       setCurrentStage(currentStage - 1);
-    //   addToast("info", `Returning to ${stages[currentStage - 2].title}`);
+      addToast("info", `Returning to ${stages[currentStage - 2].title}`);
     }
   };
 
@@ -522,7 +522,7 @@ const TIAModal = ({ isOpen, onClose, onTIACreated }) => {
     try {
       setLoading(true);
       console.log("Saving TIA assessment:", formData);
-    //   addToast("success", "TIA assessment saved successfully!");
+      addToast("success", "TIA assessment saved successfully!");
       resetForm();
       onClose();
       if (onTIACreated) {
@@ -530,7 +530,7 @@ const TIAModal = ({ isOpen, onClose, onTIACreated }) => {
       }
     } catch (error) {
       console.error("Failed to save TIA:", error);
-    //   addToast("error", "Failed to save TIA assessment");
+      addToast("error", "Failed to save TIA assessment");
     } finally {
       setLoading(false);
     }
@@ -540,7 +540,7 @@ const TIAModal = ({ isOpen, onClose, onTIACreated }) => {
     try {
       setLoading(true);
       console.log("Completing TIA assessment:", formData);
-    //   addToast("success", "TIA assessment completed and linked!");
+      addToast("success", "TIA assessment completed and linked!");
       resetForm();
       onClose();
       if (onTIACreated) {
@@ -548,7 +548,7 @@ const TIAModal = ({ isOpen, onClose, onTIACreated }) => {
       }
     } catch (error) {
       console.error("Failed to complete TIA:", error);
-    //   addToast("error", "Failed to complete TIA assessment");
+      addToast("error", "Failed to complete TIA assessment");
     } finally {
       setLoading(false);
     }

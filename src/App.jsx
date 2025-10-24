@@ -12,6 +12,7 @@ import AuditLogs from "./components/pages/AuditLogs";
 import ReportsPage from "./components/pages/Reports";
 import UserManagement from "./components/pages/UserManagement";
 import SettingsPage from "./components/pages/Settings";
+import AddROPAModal from "./components/modules/AddRoPA";
 
 export default function App() {
   const [collapsed, setCollapsed] = useState(false);
@@ -44,6 +45,7 @@ export default function App() {
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/user-setup" element={<UserManagement />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/new-ropa" element={<AddROPAModal />} />
           </Routes>
         </main>
       </div>

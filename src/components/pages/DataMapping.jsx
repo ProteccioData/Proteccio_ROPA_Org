@@ -216,9 +216,6 @@ export default function DataMappingTable() {
                     <button className="text-gray-400 hover:text-[#5DEE92] transition">
                       <Eye size={16} />
                     </button>
-                    <button className="text-gray-400 hover:text-[#5DEE92] transition">
-                      <Copy size={16} />
-                    </button>
                     <div className="relative" ref={dropdownRef}>
                       <button
                         onClick={() => toggleMenu(flow.id)}

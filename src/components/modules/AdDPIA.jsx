@@ -9,7 +9,7 @@ const DPIAModal = ({ isOpen, onClose, onDPIACreated }) => {
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [errors, setErrors] = useState({});
-//   const { addToast } = useToast();
+  const { addToast } = useToast();
 
   // Form data state
   const [formData, setFormData] = useState({
@@ -104,10 +104,10 @@ const DPIAModal = ({ isOpen, onClose, onDPIACreated }) => {
       await new Promise(resolve => setTimeout(resolve, 1000));
       setLastSaved(new Date());
       console.log("Auto-saved DPIA:", formData);
-    //   addToast("success", "Progress auto-saved");
+      addToast("success", "Progress auto-saved");
     } catch (error) {
       console.error("Auto-save failed:", error);
-    //   addToast("error", "Auto-save failed");
+      addToast("error", "Auto-save failed");
     } finally {
       setSaving(false);
     }
@@ -196,10 +196,10 @@ const DPIAModal = ({ isOpen, onClose, onDPIACreated }) => {
     setErrors(newErrors);
     
     if (Object.keys(newErrors).length === 0) {
-    //   addToast("success", "Stage validation passed!");
+      addToast("success", "Stage validation passed!");
       return true;
     } else {
-    //   addToast("error", "Please fill all required fields");
+      addToast("error", "Please fill all required fields");
       return false;
     }
   };
@@ -265,7 +265,7 @@ const DPIAModal = ({ isOpen, onClose, onDPIACreated }) => {
     const validFiles = newFiles.filter(file => allowedTypes.includes(file.type));
     
     if (validFiles.length !== newFiles.length) {
-    //   addToast("error", "Some files were skipped due to invalid format");
+      addToast("error", "Some files were skipped due to invalid format");
     }
 
     setFormData((prev) => ({
@@ -276,7 +276,7 @@ const DPIAModal = ({ isOpen, onClose, onDPIACreated }) => {
       },
     }));
 
-    // addToast("success", `${validFiles.length} file(s) uploaded successfully`);
+    addToast("success", `${validFiles.length} file(s) uploaded successfully`);
   };
 
   const removeFile = (section, field, fileIndex) => {
@@ -475,7 +475,7 @@ const DPIAModal = ({ isOpen, onClose, onDPIACreated }) => {
     if (validateStage(currentStage)) {
       if (currentStage < 5) {
         setCurrentStage(currentStage + 1);
-        // addToast("info", `Moving to ${stages[currentStage].title}`);
+        addToast("info", `Moving to ${stages[currentStage].title}`);
       }
     }
   };
@@ -483,7 +483,7 @@ const DPIAModal = ({ isOpen, onClose, onDPIACreated }) => {
   const handlePreviousStage = () => {
     if (currentStage > 1) {
       setCurrentStage(currentStage - 1);
-    //   addToast("info", `Returning to ${stages[currentStage - 2].title}`);
+      addToast("info", `Returning to ${stages[currentStage - 2].title}`);
     }
   };
 
@@ -491,7 +491,7 @@ const DPIAModal = ({ isOpen, onClose, onDPIACreated }) => {
     try {
       setLoading(true);
       console.log("Saving DPIA assessment:", formData);
-    //   addToast("success", "DPIA assessment saved successfully!");
+      addToast("success", "DPIA assessment saved successfully!");
       resetForm();
       onClose();
       if (onDPIACreated) {
@@ -499,7 +499,7 @@ const DPIAModal = ({ isOpen, onClose, onDPIACreated }) => {
       }
     } catch (error) {
       console.error("Failed to save DPIA:", error);
-    //   addToast("error", "Failed to save DPIA assessment");
+      addToast("error", "Failed to save DPIA assessment");
     } finally {
       setLoading(false);
     }
@@ -509,7 +509,7 @@ const DPIAModal = ({ isOpen, onClose, onDPIACreated }) => {
     try {
       setLoading(true);
       console.log("Completing DPIA assessment:", formData);
-    //   addToast("success", "DPIA assessment completed and linked!");
+      addToast("success", "DPIA assessment completed and linked!");
       resetForm();
       onClose();
       if (onDPIACreated) {
@@ -517,7 +517,7 @@ const DPIAModal = ({ isOpen, onClose, onDPIACreated }) => {
       }
     } catch (error) {
       console.error("Failed to complete DPIA:", error);
-    //   addToast("error", "Failed to complete DPIA assessment");
+      addToast("error", "Failed to complete DPIA assessment");
     } finally {
       setLoading(false);
     }

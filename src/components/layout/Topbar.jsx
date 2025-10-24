@@ -2,8 +2,11 @@ import { motion } from "framer-motion";
 import { Bell, Search, User } from "lucide-react";
 import logo from "../../assets/logo.svg"
 import SearchBar from "../ui/SearchBar";
+import { useNavigate } from "react-router-dom";
 
 export default function Topbar() {
+  const navigate  = useNavigate();
+
   return (
     <header className="fixed top-0 left-0 w-full z-50 border-b border-[#828282] dark:border-gray-700/50 bg-[#FAFAFA] dark:bg-gray-800 backdrop-blur-md px-8 py-2 flex items-center justify-between shadow-sm">
       {/* Logo */}
@@ -17,6 +20,7 @@ export default function Topbar() {
             src={logo}
             alt="Proteccio"
             className="w-28 sm:w-32 md:w-40"
+            onClick={() => navigate("/")}
           />
         </motion.div>
       </div>

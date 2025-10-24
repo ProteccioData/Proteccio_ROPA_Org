@@ -9,7 +9,7 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated }) => {
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [errors, setErrors] = useState({});
-//   const { addToast } = useToast();
+  const { addToast } = useToast();
 
   // Form data state
   const [formData, setFormData] = useState({
@@ -95,10 +95,10 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated }) => {
       await new Promise(resolve => setTimeout(resolve, 1000));
       setLastSaved(new Date());
       console.log("Auto-saved LIA:", formData);
-    //   addToast("success", "Progress auto-saved");
+      addToast("success", "Progress auto-saved");
     } catch (error) {
       console.error("Auto-save failed:", error);
-    //   addToast("error", "Auto-save failed");
+      addToast("error", "Auto-save failed");
     } finally {
       setSaving(false);
     }
@@ -187,10 +187,10 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated }) => {
     setErrors(newErrors);
     
     if (Object.keys(newErrors).length === 0) {
-    //   addToast("success", "Stage validation passed!");
+      addToast("success", "Stage validation passed!");
       return true;
     } else {
-    //   addToast("error", "Please fill all required fields");
+      addToast("error", "Please fill all required fields");
       return false;
     }
   };
@@ -235,7 +235,7 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated }) => {
     const validFiles = newFiles.filter(file => allowedTypes.includes(file.type));
     
     if (validFiles.length !== newFiles.length) {
-    //   addToast("error", "Some files were skipped due to invalid format");
+      addToast("error", "Some files were skipped due to invalid format");
     }
 
     setFormData((prev) => ({
@@ -246,7 +246,7 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated }) => {
       },
     }));
 
-    // addToast("success", `${validFiles.length} file(s) uploaded successfully`);
+    addToast("success", `${validFiles.length} file(s) uploaded successfully`);
   };
 
   const removeFile = (section, field, fileIndex) => {
@@ -414,7 +414,7 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated }) => {
     if (validateStage(currentStage)) {
       if (currentStage < 5) {
         setCurrentStage(currentStage + 1);
-        // addToast("info", `Moving to ${stages[currentStage].title}`);
+        addToast("info", `Moving to ${stages[currentStage].title}`);
       }
     }
   };
@@ -422,7 +422,7 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated }) => {
   const handlePreviousStage = () => {
     if (currentStage > 1) {
       setCurrentStage(currentStage - 1);
-    //   addToast("info", `Returning to ${stages[currentStage - 2].title}`);
+      addToast("info", `Returning to ${stages[currentStage - 2].title}`);
     }
   };
 
@@ -430,7 +430,7 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated }) => {
     try {
       setLoading(true);
       console.log("Saving LIA assessment:", formData);
-    //   addToast("success", "LIA assessment saved successfully!");
+      addToast("success", "LIA assessment saved successfully!");
       resetForm();
       onClose();
       if (onLIACreated) {
@@ -438,7 +438,7 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated }) => {
       }
     } catch (error) {
       console.error("Failed to save LIA:", error);
-    //   addToast("error", "Failed to save LIA assessment");
+      addToast("error", "Failed to save LIA assessment");
     } finally {
       setLoading(false);
     }
@@ -448,7 +448,7 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated }) => {
     try {
       setLoading(true);
       console.log("Completing LIA assessment:", formData);
-    //   addToast("success", "LIA assessment completed and linked!");
+      addToast("success", "LIA assessment completed and linked!");
       resetForm();
       onClose();
       if (onLIACreated) {
@@ -456,7 +456,7 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated }) => {
       }
     } catch (error) {
       console.error("Failed to complete LIA:", error);
-    //   addToast("error", "Failed to complete LIA assessment");
+      addToast("error", "Failed to complete LIA assessment");
     } finally {
       setLoading(false);
     }

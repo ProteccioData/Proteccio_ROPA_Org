@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
-import { X, Upload, FileText, Save, Clock } from "lucide-react";
+import { Upload, FileText, Save, Clock, Home, User, Settings } from "lucide-react";
 import { useToast } from "../ui/ToastProvider";
 
+// All the schemas remain the same
 const operationalLensSchema = {
   parse: (data) => {
     const requiredFields = [
@@ -123,7 +124,7 @@ const dataTransitSchema = {
   }
 };
 
-const AddROPAModal = ({ isOpen, onClose, onROPACreated }) => {
+const RoPAPage = () => {
   const [currentStage, setCurrentStage] = useState("infovoyage");
   const [currentTab, setCurrentTab] = useState("operationalLens");
   const [hoveredStep, setHoveredStep] = useState(null);
@@ -131,7 +132,7 @@ const AddROPAModal = ({ isOpen, onClose, onROPACreated }) => {
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [errors, setErrors] = useState({});
-//   const { addToast } = useToast();
+  const { addToast } = useToast();
 
   // Form data state with ALL fields
   const [formData, setFormData] = useState({
@@ -232,8 +233,6 @@ const AddROPAModal = ({ isOpen, onClose, onROPACreated }) => {
 
   // Auto-save functionality
   useEffect(() => {
-    if (!isOpen) return;
-
     const autoSaveInterval = setInterval(async () => {
       if (hasFormData()) {
         await handleAutoSave();
@@ -241,7 +240,7 @@ const AddROPAModal = ({ isOpen, onClose, onROPACreated }) => {
     }, 5000);
 
     return () => clearInterval(autoSaveInterval);
-  }, [isOpen, formData]);
+  }, [formData]);
 
   const hasFormData = () => {
     return Object.values(formData).some(section => 
@@ -270,10 +269,10 @@ const AddROPAModal = ({ isOpen, onClose, onROPACreated }) => {
   };
 
   const stages = [
-    { id: "infovoyage", title: "Infovoyage", shortTitle: "Info" },
-    { id: "checksync", title: "CheckSync", shortTitle: "Check" },
+    { id: "infovoyage", title: "Infovoyage", shortTitle: "InfoVoyage" },
+    { id: "checksync", title: "CheckSync", shortTitle: "CheckSync" },
     { id: "beam", title: "Beam", shortTitle: "Beam" },
-    { id: "offdoff", title: "OffDoff", shortTitle: "Off" },
+    { id: "offdoff", title: "OffDoff", shortTitle: "OffDoff" },
   ];
 
   const infovoyageTabs = [
@@ -283,7 +282,7 @@ const AddROPAModal = ({ isOpen, onClose, onROPACreated }) => {
     { id: "dataTransit", title: "Data Transit" },
   ];
 
-  // ALL Dropdown options as per your requirements
+  // All Dropdown options (same as before)
   const actingRoles = ["Fiduciary", "Processor", "Joint Fiduciary", "Joint Processor"];
   const mainLevels = ["1. HR Onboarding", "2. HR Hiring", "3. HR Firing", "4. Marketing", "5. Sales", "6. Finance"];
   const subLevels = ["1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "1.10"];
@@ -326,6 +325,7 @@ const AddROPAModal = ({ isOpen, onClose, onROPACreated }) => {
   const frequencies = ["One-time", "Daily", "Weekly", "Monthly", "Quarterly", "Yearly"];
   const dataRights = ["Access", "Rectification", "Erasure", "Restriction", "Portability", "Objection", "Consent Withdrawal"];
 
+  // All the helper functions remain the same
   const validateTab = (tab) => {
     try {
       let schema;
@@ -354,7 +354,7 @@ const AddROPAModal = ({ isOpen, onClose, onROPACreated }) => {
 
       schema.parse(dataToValidate);
       setErrors({});
-    //   addToast("success", "Validation passed!");
+      addToast("success", "Validation passed!");
       return true;
     } catch (error) {
       const newErrors = {};
@@ -365,7 +365,7 @@ const AddROPAModal = ({ isOpen, onClose, onROPACreated }) => {
         });
       }
       setErrors(newErrors);
-    //   addToast("error", "Please fill all required fields correctly");
+      addToast("error", "Please fill all required fields correctly");
       return false;
     }
   };
@@ -559,7 +559,7 @@ const AddROPAModal = ({ isOpen, onClose, onROPACreated }) => {
 
   const handleFileUpload = (actionId, files) => {
     console.log("Uploading files for action:", actionId, files);
-    // addToast("success", "Files uploaded successfully!");
+    addToast("success", "Files uploaded successfully!");
   };
 
   // Stage Navigation
@@ -602,15 +602,13 @@ const AddROPAModal = ({ isOpen, onClose, onROPACreated }) => {
     try {
       setLoading(true);
       console.log("Creating RoPA with data:", formData);
-    //   addToast("success", "RoPA created successfully!");
+      addToast("success", "RoPA created successfully!");
       resetForm();
-      onClose();
-      if (onROPACreated) {
-        onROPACreated(formData);
-      }
+      // You might want to navigate to another page here
+      // navigate('/ropa-list');
     } catch (error) {
       console.error("Failed to create RoPA:", error);
-    //   addToast("error", "Failed to create RoPA");
+      addToast("error", "Failed to create RoPA");
     } finally {
       setLoading(false);
     }
@@ -656,7 +654,7 @@ const AddROPAModal = ({ isOpen, onClose, onROPACreated }) => {
     setErrors({});
   };
 
-  // Render Components for each section
+  // All the render functions remain exactly the same
   const renderLevelSection = () => (
     <div className="bg-gray-50 dark:bg-gray-900 border border-[#828282] p-4 rounded-lg mb-4">
       <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-4">Level Information</h3>
@@ -700,7 +698,7 @@ const AddROPAModal = ({ isOpen, onClose, onROPACreated }) => {
   );
 
   const renderOperationalLens = () => (
-    <div className="space-y-6 max-h-96 overflow-y-auto pr-2">
+    <div className="space-y-6">
       {renderLevelSection()}
       <div className="bg-gray-50 dark:bg-gray-900 border border-[#828282] p-4 rounded-lg">
         <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-4">Operational Lens</h3>
@@ -828,7 +826,7 @@ const AddROPAModal = ({ isOpen, onClose, onROPACreated }) => {
   );
 
   const renderProcessGrid = () => (
-    <div className="space-y-6 max-h-96 overflow-y-auto pr-2">
+    <div className="space-y-6">
       <div className="bg-gray-50 dark:bg-gray-900 border border-[#828282] p-4 rounded-lg">
         <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-4">Process Grid</h3>
         <div className="grid grid-cols-2 gap-4">
@@ -894,7 +892,7 @@ const AddROPAModal = ({ isOpen, onClose, onROPACreated }) => {
   );
 
   const renderDefenseGrid = () => (
-    <div className="space-y-6 max-h-96 overflow-y-auto pr-2">
+    <div className="space-y-6">
       <div className="bg-gray-50 dark:bg-gray-900 border border-[#828282] p-4 rounded-lg">
         <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-4">Defense Grid</h3>
         <div className="grid grid-cols-2 gap-4">
@@ -922,7 +920,7 @@ const AddROPAModal = ({ isOpen, onClose, onROPACreated }) => {
   );
 
   const renderDataTransit = () => (
-    <div className="space-y-6 max-h-96 overflow-y-auto pr-2">
+    <div className="space-y-6">
       <div className="bg-gray-50 dark:bg-gray-900 border border-[#828282] p-4 rounded-lg">
         <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-4">Data Transit</h3>
         <div className="grid grid-cols-2 gap-4">
@@ -1098,7 +1096,7 @@ const AddROPAModal = ({ isOpen, onClose, onROPACreated }) => {
   );
 
   const renderCheckSync = () => (
-    <div className="space-y-6 max-h-96 overflow-y-auto pr-2">
+    <div className="space-y-6">
       <div className="bg-gray-50 dark:bg-gray-900 border border-[#828282] p-4 rounded-lg">
         <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-4">CheckSync - Action Items</h3>
         
@@ -1202,7 +1200,7 @@ const AddROPAModal = ({ isOpen, onClose, onROPACreated }) => {
   );
 
   const renderBeam = () => (
-    <div className="space-y-6 max-h-96 overflow-y-auto pr-2">
+    <div className="space-y-6">
       <div className="bg-gray-50 dark:bg-gray-900 border border-[#828282] p-4 rounded-lg">
         <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-4">Beam Stage</h3>
         <div className="space-y-4">
@@ -1235,7 +1233,7 @@ const AddROPAModal = ({ isOpen, onClose, onROPACreated }) => {
   );
 
   const renderOffDoff = () => (
-    <div className="space-y-6 max-h-96 overflow-y-auto pr-2">
+    <div className="space-y-6">
       <div className="bg-gray-50 dark:bg-gray-900 border border-[#828282] p-4 rounded-lg">
         <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-4">OffDoff Stage</h3>
         <div className="grid grid-cols-2 gap-4">
@@ -1337,17 +1335,15 @@ const AddROPAModal = ({ isOpen, onClose, onROPACreated }) => {
     }
   };
 
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black/30 backdrop-blur-[0.5px] flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 dark:border-gray-600 rounded-lg w-full max-w-6xl max-h-[90vh] flex flex-col">
-        {/* Modal Header */}
-        <div className="bg-white dark:bg-gray-800 dark:border-gray-600 px-6 py-4 rounded-t-2xl border-b border-[#828282] flex items-center justify-between flex-shrink-0">
+  // Simple header for the page
+  const PageHeader = () => (
+    <div className="bg-white dark:bg-gray-800 rounded-lg ">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="flex justify-between items-center py-4">
           <div className="flex items-center space-x-4">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-              Add RoPA
-            </h2>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              Create RoPA
+            </h1>
             {saving && (
               <div className="flex items-center space-x-2 text-sm text-gray-500">
                 <Save className="w-4 h-4 animate-pulse" />
@@ -1361,57 +1357,71 @@ const AddROPAModal = ({ isOpen, onClose, onROPACreated }) => {
               </div>
             )}
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
-          >
-            <X className="w-6 h-6" />
-          </button>
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={resetForm}
+              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors cursor-pointer"
+            >
+              Reset Form
+            </button>
+          </div>
         </div>
+      </div>
+    </div>
+  );
 
+  return (
+    <div className="min-h-screen">
+      {/* Page Header */}
+      <PageHeader />
+
+      {/* Main Content */}
+      <div className="mx-auto py-6">
         {/* Progress Bar */}
-        <div className="px-6 py-4 bg-white dark:bg-gray-800 dark:border-gray-600 flex-shrink-0">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
           <ProgressBar />
         </div>
 
-        {/* Modal Content (scrollable area) */}
-        <div className="px-6 py-4 flex-1 overflow-y-auto">
+        {/* Form Content */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
           {getCurrentContent()}
         </div>
 
-        {/* Modal Footer (always visible) */}
-        <div className="px-6 py-4 rounded-2xl flex justify-between flex-shrink-0">
-          <div>
-            {(currentStage !== "infovoyage" || currentTab !== "operationalLens") && (
-              <button
-                onClick={handlePreviousStage}
-                className="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer"
-              >
-                Previous
-              </button>
-            )}
-          </div>
-          <div>
-            {currentStage !== "offdoff" ? (
-              <button
-                onClick={handleNextStage}
-                className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors cursor-pointer"
-              >
-                {currentStage === "infovoyage" && currentTab === "dataTransit" ? "Next Stage" : "Next"}
-              </button>
-            ) : (
-              <button
-                onClick={handleCreateRoPA}
-                disabled={loading}
-                className={`px-6 py-2 rounded-lg transition-colors ${
-                  loading
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-green-600 hover:bg-green-700 cursor-pointer"
-                } text-white`}
-              >
-                {loading ? "Creating..." : "Create RoPA"}
-              </button>
-            )}
+        {/* Navigation Footer */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mt-6">
+          <div className="flex justify-between">
+            <div>
+              {(currentStage !== "infovoyage" || currentTab !== "operationalLens") && (
+                <button
+                  onClick={handlePreviousStage}
+                  className="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer"
+                >
+                  Previous
+                </button>
+              )}
+            </div>
+            <div>
+              {currentStage !== "offdoff" ? (
+                <button
+                  onClick={handleNextStage}
+                  className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors cursor-pointer"
+                >
+                  {currentStage === "infovoyage" && currentTab === "dataTransit" ? "Next Stage" : "Next"}
+                </button>
+              ) : (
+                <button
+                  onClick={handleCreateRoPA}
+                  disabled={loading}
+                  className={`px-6 py-2 rounded-lg transition-colors ${
+                    loading
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-green-600 hover:bg-green-700 cursor-pointer"
+                  } text-white`}
+                >
+                  {loading ? "Creating..." : "Create RoPA"}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -1419,4 +1429,4 @@ const AddROPAModal = ({ isOpen, onClose, onROPACreated }) => {
   );
 };
 
-export default AddROPAModal;
+export default RoPAPage;
