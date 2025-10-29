@@ -655,10 +655,6 @@ export default function SettingsPage() {
                   <Toggle checked={state.backups.manualExportEnabled} onChange={(v)=>update("backups.manualExportEnabled", v)} />
                   <div className="text-sm text-gray-500">Enable manual data export</div>
                 </div>
-
-                <div className="mt-4">
-                  <button onClick={()=>alert("Trigger export (demo)")} className="px-4 py-2 rounded bg-[#5DEE92] text-black">Export Now</button>
-                </div>
               </div>
 
               <div>
@@ -727,9 +723,6 @@ export default function SettingsPage() {
               <div className="md:col-span-2">
                 <label className="text-sm font-medium">Field visibility & role-based control</label>
                 <div className="mt-2 text-sm text-gray-500">Manage field-level visibility and whether fields are required/optional by role. For demo, this opens a role-based editor.</div>
-                <div className="mt-3">
-                  <button onClick={() => { setShowRoleModal(true); setRoleToEdit(null); }} className="px-3 py-2 rounded bg-[#5DEE92] text-black">Open Role Editor</button>
-                </div>
               </div>
             </div>
           </Card>

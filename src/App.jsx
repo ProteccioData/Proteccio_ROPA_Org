@@ -13,6 +13,10 @@ import ReportsPage from "./components/pages/Reports";
 import UserManagement from "./components/pages/UserManagement";
 import SettingsPage from "./components/pages/Settings";
 import AddROPAModal from "./components/modules/AddRoPA";
+import ProfileSettings from "./components/pages/ProfileSettings";
+import ArticlesPage from "./components/pages/Article";
+import ArticleDetail from "./components/pages/ArticleDetail";
+import ActionDashboard from "./components/pages/ActionItem";
 
 export default function App() {
   const [collapsed, setCollapsed] = useState(false);
@@ -46,6 +50,10 @@ export default function App() {
             <Route path="/user-setup" element={<UserManagement />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/new-ropa" element={<AddROPAModal />} />
+            <Route path="/profile-settings" element={<ProfileSettings />} />
+            <Route path="/articles" element={<ArticlesPage />} />
+            <Route path="/article/:id" element={<ArticleDetail />} />
+            <Route path="/action-item" element={<ActionDashboard />} />
           </Routes>
         </main>
       </div>

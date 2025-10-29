@@ -12,6 +12,7 @@ import {
   FilePlus2,
   FileChartLine,
   User2,
+  ListCheck,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import useTheme from "../hooks/useTheme";
@@ -48,6 +49,11 @@ const menuItems = [
     name: "User Setup",
     icon: User2,
     path: "/user-setup",
+  },
+  {
+    name: "Action Items",
+    icon: ListCheck,
+    path: "/action-item",
   },
 ];
 
