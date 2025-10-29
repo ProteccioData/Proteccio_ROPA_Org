@@ -18,7 +18,7 @@ export default function App() {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className="flex flex-col min-h-screen bg-white text-black transition-colors duration-300">
+    <div className="flex flex-col min-h-screen bg-white dark:bg-gray-900 text-black transition-colors duration-300">
       <div className="fixed top-0 left-0 right-0 z-50">
         <Topbar />
       </div>
