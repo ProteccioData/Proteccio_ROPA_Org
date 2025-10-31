@@ -1,349 +1,442 @@
-import React, { useCallback, useEffect, useState, useRef } from "react";
+// ExcalFlowBuilder.jsx
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import ReactFlow, {
-  MiniMap,
   Controls,
   Background,
+  MiniMap,
+  addEdge,
   useNodesState,
   useEdgesState,
-  addEdge,
-  Panel,
+  Handle,
 } from "reactflow";
 import "reactflow/dist/style.css";
-import dagre from "dagre";
-import { toPng, toSvg } from "html-to-image";
+import { toPng } from "html-to-image";
 import { motion } from "framer-motion";
 import {
+  Plus,
   Save,
   Download,
-  Archive,
   Trash2,
-  Plus,
   Zap,
-  CheckCircle,
-  AlertCircle,
+  X,
   ChevronLeft,
   ChevronRight,
-  X,
 } from "lucide-react";
 
-/* ---------- constants ---------- */
-const STORAGE_KEY = "ropa_flows_v3";
-const BRAND_COLOR = "#5DEE92";
-const BORDER_GRAY = "#828282";
+/* ---------- Constants & Styles ---------- */
+const STORAGE_KEY = "excal_flow_v1";
+const BRAND = "#5DEE92";
+const BORDER = "#828282";
+const DEFAULT_NODE_SIZE = { w: 180, h: 80 };
 
-const NODE_TYPE_STYLES = {
-  controller: { border: `2px solid ${BRAND_COLOR}`, background: "var(--bg-primary)" },
-  dataSubject: { border: `2px dashed #F59E0B`, background: "var(--bg-primary)" },
-  dataStore: { border: `2px solid #60A5FA`, background: "var(--bg-primary)" },
-  thirdParty: { border: `2px solid #EF4444`, background: "var(--bg-primary)" },
-  process: { border: `2px solid #A78BFA`, background: "var(--bg-primary)" },
-};
+/* ---------- Utility helpers ---------- */
+const uid = (prefix = "n") => `${prefix}_${Date.now()}_${Math.floor(Math.random()*1000)}`;
 
-const dagreGraph = new dagre.graphlib.Graph();
-dagreGraph.setDefaultEdgeLabel(() => ({}));
-const nodeWidth = 180;
-const nodeHeight = 60;
+/* ---------- Custom Node: supports shapes + editable text ---------- */
+function ShapeNode({ id, data, selected }) {
+  // data: { label, shape, style: { bg, border, textColor, fontSize, bold }, isTextOnly }
+  const { label = "", shape = "rect", style = {}, isTextOnly } = data;
+  const [editing, setEditing] = useState(false);
+  const textRef = useRef();
 
-function getLayoutedElements(nodes, edges, direction = "LR") {
-  const isHorizontal = direction === "LR";
-  dagreGraph.setGraph({ rankdir: direction });
-  nodes.forEach((n) => dagreGraph.setNode(n.id, { width: nodeWidth, height: nodeHeight }));
-  edges.forEach((e) => dagreGraph.setEdge(e.source, e.target));
-  dagre.layout(dagreGraph);
-  const layoutedNodes = nodes.map((n) => {
-    const pos = dagreGraph.node(n.id);
-    n.position = { x: pos.x - nodeWidth / 2, y: pos.y - nodeHeight / 2 };
-    return { ...n, position: n.position };
-  });
-  return { nodes: layoutedNodes, edges };
+  useEffect(() => {
+    if (editing && textRef.current) {
+      textRef.current.focus();
+      // place caret at end
+      const range = document.createRange();
+      range.selectNodeContents(textRef.current);
+      range.collapse(false);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+  }, [editing]);
+
+  const baseStyles = {
+    fontSize: style.fontSize || 14,
+    color: style.textColor || "#111827",
+    fontWeight: style.bold ? 700 : 400,
+    padding: 8,
+    userSelect: editing ? "text" : "none",
+    fontFamily: "'Jakarta Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto",
+  };
+
+  // SVG shape renderer
+  const shapeElement = (() => {
+    const w = DEFAULT_NODE_SIZE.w;
+    const h = DEFAULT_NODE_SIZE.h;
+    const rx = 12;
+    const fill = style.bg || "#fff";
+    const stroke = style.border || BORDER;
+    switch (shape) {
+      case "ellipse":
+        return <ellipse cx={w/2} cy={h/2} rx={w/2} ry={h/2} fill={fill} stroke={stroke} strokeWidth={2} />;
+      case "diamond": {
+        const cx = w/2, cy = h/2;
+        const points = `${cx},0 ${w},${cy} ${cx},${h} 0,${cy}`;
+        return <polygon points={points} fill={fill} stroke={stroke} strokeWidth={2} />;
+      }
+      case "rounded":
+        return <rect x={0} y={0} width={w} height={h} rx={rx} ry={rx} fill={fill} stroke={stroke} strokeWidth={2} />;
+      default:
+        return <rect x={0} y={0} width={w} height={h} fill={fill} stroke={stroke} strokeWidth={2} />;
+    }
+  })();
+
+  // label area uses foreignObject for HTML editing
+  return (
+    <div style={{ width: DEFAULT_NODE_SIZE.w, height: DEFAULT_NODE_SIZE.h, position: "relative" }}>
+      <svg width={DEFAULT_NODE_SIZE.w} height={DEFAULT_NODE_SIZE.h}>
+        {shapeElement}
+      </svg>
+
+      {/* Handles for React Flow */}
+      <Handle type="target" position="top" style={{ left: DEFAULT_NODE_SIZE.w/2 - 8 }} />
+      <Handle type="source" position="bottom" style={{ left: DEFAULT_NODE_SIZE.w/2 - 8 }} />
+
+      <foreignObject
+        x={0} y={0} width={DEFAULT_NODE_SIZE.w} height={DEFAULT_NODE_SIZE.h}
+        style={{ pointerEvents: "none" }}
+      >
+        <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "auto" }}>
+          <div
+            onDoubleClick={() => setEditing(true)}
+            onBlur={() => setEditing(false)}
+            contentEditable={editing}
+            suppressContentEditableWarning
+            ref={textRef}
+            style={{ ...baseStyles, textAlign: "center", minHeight: 24, outline: editing ? "2px solid rgba(0,0,0,0.06)" : "none", padding: 6 }}
+            onInput={(e) => {
+              const txt = e.currentTarget.textContent || "";
+              if (data.onChange) data.onChange(id, { label: txt });
+            }}
+          >
+            {label}
+          </div>
+        </div>
+      </foreignObject>
+
+      {/* Selected outline */}
+      {selected && (
+        <div style={{ position: "absolute", inset: 6, border: `2px dashed ${BRAND}`, borderRadius: 8, pointerEvents: "none" }} />
+      )}
+    </div>
+  );
 }
 
-/* ---------- localStorage ---------- */
-function loadSavedFlows() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch (e) {
-    console.error("Failed to load flows", e);
-    return [];
-  }
-}
-function saveSavedFlows(flows) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(flows));
-  } catch (e) {
-    console.error("Failed to save flows", e);
-  }
-}
+/* map node type to renderer */
+const nodeTypes = { shapeNode: ShapeNode };
 
-/* ---------- initial ---------- */
-const initialNodes = [];
-const initialEdges = [];
+/* ---------- Main Component ---------- */
+export default function RoPAFlowBuilder({ onClose, saveEndpoint = "/api/flows" }) {
+  // React Flow state
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [reactFlowInstance, setReactFlowInstance] = useState(null);
 
-export default function RoPAFlowBuilder({ onSave: externalSaveHandler, onClose }) {
-  /* ---------- React Flow state ---------- */
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-  const [rfInstance, setRfInstance] = useState(null);
-
-  /* ---------- UI state ---------- */
-  const [flowName, setFlowName] = useState("");
-  const [selectedNodeId, setSelectedNodeId] = useState(null);
-  const [savedFlows, setSavedFlows] = useState(loadSavedFlows());
-  const [archivedFilter, setArchivedFilter] = useState(false);
-  const [validationErrors, setValidationErrors] = useState([]);
+  // UI state
+  const [selected, setSelected] = useState(null); // node id
+  const [showLeft, setShowLeft] = useState(true);
+  const [showRight, setShowRight] = useState(true);
   const wrapperRef = useRef(null);
 
-  const [nodeMetadata, setNodeMetadata] = useState({});
-  const [leftSidebarWidth, setLeftSidebarWidth] = useState(280);
-  const [rightSidebarWidth, setRightSidebarWidth] = useState(320);
-  const [showLeftSidebar, setShowLeftSidebar] = useState(true);
-  const [showRightSidebar, setShowRightSidebar] = useState(true);
-
-  /* ---------- init ---------- */
+  // load initial starter node
   useEffect(() => {
     if (nodes.length === 0) {
-      const starter = createNode({ type: "process", label: "Start", x: 80, y: 80 });
+      const id = uid("start");
+      const baseStyle = { bg: "#ffffff", border: BORDER, textColor: "#111827", fontSize: 14, bold: false };
+      const starter = {
+        id,
+        type: "shapeNode",
+        position: { x: 40, y: 40 },
+        data: { label: "Start", shape: "rounded", style: baseStyle, onChange: handleNodeTextChange },
+      };
       setNodes([starter]);
     }
+    // eslint-disable-next-line
   }, []);
 
-  useEffect(() => saveSavedFlows(savedFlows), [savedFlows]);
-
-  /* ---------- Node Helpers ---------- */
-  const createNodeId = useCallback(() => `${Date.now()}_${Math.floor(Math.random() * 1000)}`, []);
-
-  function createNode({ type = "process", label = "Node", x = 200, y = 200 } = {}) {
-    const id = createNodeId();
-    const style = NODE_TYPE_STYLES[type] || NODE_TYPE_STYLES.process;
-    setNodeMetadata((meta) => ({
-      ...meta,
-      [id]: { type, label, dataCategory: "", processingActivity: "", legalBasis: "", retention: "", description: "" },
-    }));
-    return { id, type: "default", data: { label }, position: { x, y }, style: { padding: 8, borderRadius: 8, minWidth: nodeWidth, ...style } };
+  // helper to create nodes of given type
+  function createNode(shape = "rect", x = 200, y = 200, label = "Node", options = {}) {
+    const id = uid("n");
+    const defaultStyle = { bg: "#ffffff", border: BORDER, textColor: "#111827", fontSize: 14, bold: false };
+    const node = {
+      id,
+      type: "shapeNode",
+      position: { x, y },
+      data: { label, shape, style: { ...defaultStyle, ...(options.style||{}) }, isTextOnly: options.isTextOnly || false, onChange: handleNodeTextChange },
+      selectable: true,
+      draggable: true,
+    };
+    setNodes((nds) => nds.concat(node));
+    return node;
   }
 
-  const addNodeOfType = (type) => {
-    const node = createNode({ type, label: `${capitalize(type)} Node`, x: Math.random() * 400, y: Math.random() * 300 });
-    setNodes((nds) => nds.concat(node));
+  /* ---------- Event handlers ---------- */
+  const onConnect = useCallback((params) => setEdges((eds) => addEdge({ ...params, animated: true, style: { stroke: BRAND } }, eds)), [setEdges]);
+
+  function handleNodeTextChange(nodeId, patch) {
+    setNodes((nds) => nds.map(n => n.id === nodeId ? { ...n, data: { ...n.data, ...patch, onChange: handleNodeTextChange } } : n));
+  }
+
+  const handleSelect = (e) => {
+    // e contains nodes/edges in selection; we set selected as first node or null
+    const sel = (e?.nodes && e.nodes[0]) || null;
+    setSelected(sel ? sel.id : null);
   };
 
-  const capitalize = (t) => (t ? t.charAt(0).toUpperCase() + t.slice(1) : "");
+  const onInit = (rfi) => setReactFlowInstance(rfi);
 
-  /* ---------- Diagram Callbacks ---------- */
-  const onConnect = useCallback((params) => setEdges((eds) => addEdge(params, eds)), [setEdges]);
-  const onInit = useCallback((rfi) => setRfInstance(rfi), []);
-  const validateDiagram = useCallback(() => {
-    const errors = [];
-    nodes.forEach((n) => { if (!(n.data.label || "").trim()) errors.push({ nodeId: n.id, message: `Node ${n.id} missing label` }); });
-    const connected = new Set(edges.flatMap((e) => [e.source, e.target]));
-    nodes.forEach((n) => { if (!connected.has(n.id) && nodes.length > 1) errors.push({ nodeId: n.id, message: `Node "${n.data.label}" isolated` }); });
-    edges.forEach((e) => { if (!nodes.find((n) => n.id === e.source) || !nodes.find((n) => n.id === e.target)) errors.push({ edge: e, message: `Edge ${e.source}->${e.target} invalid` }); });
-    setValidationErrors(errors);
-    return errors;
-  }, [nodes, edges]);
-
-  const runAutoLayout = useCallback(
-    (dir = "LR") => {
-      const { nodes: layouted, edges: newEdges } = getLayoutedElements([...nodes], [...edges], dir);
-      setNodes(layouted); setEdges(newEdges);
-    },
-    [nodes, edges]
-  );
-
-  /* ---------- Save/Version ---------- */
-  const saveFlow = useCallback(({ name = "" } = {}) => {
-    if (!rfInstance) return;
-    const snapshot = { nodes, edges, nodeMetadata };
-    const payload = { name: name || flowName || `Untitled Flow`, versions: [{ snapshot, timestamp: new Date().toISOString() }], archived: false, lastUpdated: new Date().toISOString() };
-    setSavedFlows((prev) => [payload, ...prev]);
-    if (externalSaveHandler) externalSaveHandler(payload);
-  }, [rfInstance, nodes, edges, nodeMetadata, flowName, externalSaveHandler]);
-
-  const loadSavedFlow = (index) => {
-    const f = savedFlows[index]; if (!f || !f.versions.length) return;
-    const latest = f.versions[0].snapshot;
-    setNodes(latest.nodes || []); setEdges(latest.edges || []); setNodeMetadata(latest.nodeMetadata || {}); setFlowName(f.name);
+  // delete selected node
+  const deleteSelected = () => {
+    if (!selected) return;
+    setNodes((nds) => nds.filter(n => n.id !== selected));
+    setEdges((eds) => eds.filter(e => e.source !== selected && e.target !== selected));
+    setSelected(null);
   };
 
-  /* ---------- Export ---------- */
-  const exportAsPng = async () => {
-    if (!wrapperRef.current) return;
+  /* ---------- Inspector updates ---------- */
+  const updateSelectedStyle = (patch) => {
+    if (!selected) return;
+    setNodes((nds) => nds.map(n => {
+      if (n.id !== selected) return n;
+      const newStyle = { ...(n.data.style || {}), ...patch };
+      const newData = { ...n.data, style: newStyle };
+      return { ...n, data: { ...newData, onChange: handleNodeTextChange } };
+    }));
+  };
+
+  const updateShape = (shape) => {
+    if (!selected) return;
+    setNodes((nds) => nds.map(n => n.id === selected ? { ...n, data: { ...n.data, shape, onChange: handleNodeTextChange } } : n));
+  };
+
+  /* ---------- Export & Save ---------- */
+  const exportJSON = () => {
+    const payload = { nodes: nodes.map(n => ({ id: n.id, position: n.position, data: n.data })), edges, exportedAt: new Date().toISOString() };
+    const href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(payload, null, 2));
+    const a = document.createElement("a"); a.href = href; a.download = `${(nodes[0]?.data?.label || "diagram").replace(/\s+/g, "_")}.json`; a.click(); a.remove();
+  };
+
+  const exportPNG = async () => {
+    if (!wrapperRef.current) return alert("Canvas not ready");
     try {
-      const dataUrl = await toPng(wrapperRef.current, { cacheBust: true });
-      const a = document.createElement("a"); a.href = dataUrl; a.download = `${flowName.replace(/\s+/g, "_") || "flow"}.png`; document.body.appendChild(a); a.click(); a.remove();
-    } catch (e) { console.error(e); }
+      const dataUrl = await toPng(wrapperRef.current);
+      const a = document.createElement("a"); a.href = dataUrl; a.download = `diagram.png`; a.click(); a.remove();
+    } catch (e) {
+      console.error(e);
+      alert("Export failed");
+    }
   };
-  const exportAsSvg = async () => {
-    if (!wrapperRef.current) return;
+
+  const saveToServer = async () => {
+    // Create payload including node visual style
+    const payload = { nodes: nodes.map(n => ({ id: n.id, position: n.position, data: n.data })), edges, name: nodes[0]?.data?.label || "diagram", updatedAt: new Date().toISOString() };
+    // try generating thumbnail
     try {
-      const svgData = await toSvg(wrapperRef.current);
-      const blob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a"); a.href = url; a.download = `${flowName.replace(/\s+/g, "_") || "flow"}.svg`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-    } catch (e) { console.error(e); }
-  };
-
-  /* ---------- Metadata ---------- */
-  const updateSelectedNodeMetadata = (patch) => {
-    if (!selectedNodeId) return;
-    setNodeMetadata((meta) => ({ ...meta, [selectedNodeId]: { ...meta[selectedNodeId], ...patch } }));
-    if (patch.label) setNodes((nds) => nds.map((n) => n.id === selectedNodeId ? { ...n, data: { ...n.data, label: patch.label } } : n));
-  };
-
-  const selectedNodeMeta = nodeMetadata[selectedNodeId];
-  const visibleSavedFlows = savedFlows.filter((f) => (archivedFilter ? f.archived : !f.archived));
-
-  /* ---------- Resize Logic ---------- */
-  const resizingRef = useRef({ active: false, side: null, startX: 0, startWidth: 0 });
-  const initResize = (e, side) => {
-    e.preventDefault();
-    resizingRef.current = { active: true, side, startX: e.clientX, startWidth: side === "left" ? leftSidebarWidth : rightSidebarWidth };
-  };
-  useEffect(() => {
-    const onMouseMove = (e) => {
-      if (!resizingRef.current.active) return;
-      const delta = e.clientX - resizingRef.current.startX;
-      if (resizingRef.current.side === "left") {
-        const newWidth = Math.min(Math.max(resizingRef.current.startWidth + delta, 200), 400);
-        setLeftSidebarWidth(newWidth);
-      } else if (resizingRef.current.side === "right") {
-        const newWidth = Math.min(Math.max(resizingRef.current.startWidth - delta, 250), 450);
-        setRightSidebarWidth(newWidth);
+      if (wrapperRef.current) {
+        const png = await toPng(wrapperRef.current);
+        payload.thumbnail = png;
       }
-    };
-    const onMouseUp = () => { resizingRef.current.active = false; };
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", onMouseUp);
-    return () => { window.removeEventListener("mousemove", onMouseMove); window.removeEventListener("mouseup", onMouseUp); };
-  }, []);
+    } catch (e) {
+      console.warn("thumbnail failed", e);
+    }
 
-  /* ---------- Responsive Fullscreen ---------- */
+    // Save locally as optimistic
+    const local = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    local.unshift({ id: uid("saved"), ...payload });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(local));
+
+    // Attempt server save (placeholder)
+    try {
+      const res = await fetch(saveEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" /* add auth if needed */ },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error("Server save failed");
+      const json = await res.json();
+      alert("Saved to server");
+      return json;
+    } catch (err) {
+      console.warn("server save failed", err);
+      alert("Saved locally (server call failed or endpoint not configured)");
+    }
+  };
+
+  /* ---------- Selection derived state ---------- */
+  const selectedNode = nodes.find(n => n.id === selected);
+
+  /* ---------- Render ---------- */
   return (
-    <div className="fixed inset-0 flex bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 z-[9999]">
-      {/* Close Button */}
-      <button onClick={onClose} className="absolute top-4 right-4 z-[10000] p-2 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600">
-        <X size={20} />
+    <div className="fixed inset-0 flex bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 z-50">
+      {/* Close */}
+      <button onClick={onClose} className="absolute top-4 right-4 z-50 p-2 bg-gray-200 dark:bg-gray-700 rounded-full">
+        <X size={18} />
       </button>
 
-      {/* Left Sidebar */}
-      {showLeftSidebar && (
-        <motion.aside
-          initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}
-          className="flex-shrink-0 bg-white dark:bg-gray-800 border-r border-gray-300 dark:border-gray-700 relative"
-          style={{ width: leftSidebarWidth, minWidth: 200, maxWidth: 400 }}
-        >
-          <div className="p-4 flex justify-between items-center border-b border-gray-300 dark:border-gray-700">
+      {/* Left palette */}
+      {showLeft && (
+        <motion.aside initial={{ x: -10, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="w-56 bg-white dark:bg-gray-800 border-r border-gray-300 dark:border-gray-700 p-3">
+          <div className="flex justify-between items-center mb-2">
             <div>
-              <h3 className="text-lg font-semibold">Saved Flows</h3>
-              <div className="text-xs text-gray-500 dark:text-gray-400">Local versioned flows</div>
+              <h3 className="text-lg font-semibold">Palette</h3>
+              <div className="text-xs text-gray-500 dark:text-gray-400">Click to add</div>
             </div>
-            <div className="flex gap-2">
-              <button onClick={() => setArchivedFilter((s) => !s)} className="p-1 rounded-md border border-gray-300 dark:border-gray-600">
-                <Archive size={16} />
-              </button>
-              <button onClick={() => setShowLeftSidebar(false)} className="p-1 rounded-md border border-gray-300 dark:border-gray-600">
-                <ChevronLeft size={16} />
-              </button>
+            <div className="flex items-center gap-1">
+              <button onClick={() => setShowLeft(false)} className="p-1 border rounded"><ChevronLeft size={14} /></button>
             </div>
           </div>
-          <div className="p-3 overflow-auto h-[calc(100vh-80px)] space-y-2">
-            {visibleSavedFlows.length === 0 && <div className="text-sm text-gray-500 dark:text-gray-400">No saved flows</div>}
-            {visibleSavedFlows.map((f, idx) => (
-              <div key={idx} className="p-2 border rounded-md flex justify-between items-center hover:shadow-md transition dark:border-gray-600">
-                <div>
-                  <div className="font-medium">{f.name}</div>
-                  <div className="text-xs text-gray-400 dark:text-gray-500">{new Date(f.lastUpdated).toLocaleString()}</div>
-                </div>
-                <div className="flex gap-1">
-                  <button onClick={() => loadSavedFlow(idx)} className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"><CheckCircle size={16} /></button>
-                  <button onClick={() => saveFlow({ name: f.name })} className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"><Save size={16} /></button>
-                </div>
-              </div>
-            ))}
+
+          <div className="space-y-2">
+            <button onClick={() => createNode("rect", 200, 200, "Rectangle")} className="w-full px-2 py-2 border rounded text-left">Rectangle</button>
+            <button onClick={() => createNode("rounded", 220, 240, "Rounded")} className="w-full px-2 py-2 border rounded text-left">Rounded</button>
+            <button onClick={() => createNode("ellipse", 240, 280, "Ellipse")} className="w-full px-2 py-2 border rounded text-left">Ellipse</button>
+            <button onClick={() => createNode("diamond", 260, 320, "Decision")} className="w-full px-2 py-2 border rounded text-left">Diamond</button>
+            <button onClick={() => createNode("rect", 280, 360, "Text", { isTextOnly: true, style: { bg: "transparent", border: "transparent" } })} className="w-full px-2 py-2 border rounded text-left">Text</button>
           </div>
-          {/* Left Resize Handle */}
-          <div
-            className="absolute top-0 right-0 h-full w-1 cursor-col-resize z-50 hover:bg-gray-300 dark:hover:bg-gray-600"
-            onMouseDown={(e) => initResize(e, "left")}
-          />
+
+          <div className="mt-4 border-t pt-3 space-y-2">
+            <button onClick={() => { runAutoLayout(); }} className="w-full px-2 py-2 border rounded">Auto Layout</button>
+            <button onClick={() => exportJSON()} className="w-full px-2 py-2 border rounded">Export JSON</button>
+            <button onClick={() => exportPNG()} className="w-full px-2 py-2 border rounded">Export PNG</button>
+            <button onClick={() => saveToServer()} className="w-full px-2 py-2 bg-green-400 rounded text-white">Save</button>
+            <button onClick={() => deleteSelected()} className="w-full px-2 py-2 border rounded text-red-600">Delete Selected</button>
+          </div>
         </motion.aside>
       )}
 
-      {/* Center Canvas */}
-      <div className="flex-1 flex flex-col relative">
-        {/* Toolbar */}
-        <div className="flex flex-wrap items-center justify-between p-4 border-b border-gray-300 dark:border-gray-700 gap-2">
-          <input type="text" placeholder="Flow name..." value={flowName} onChange={(e) => setFlowName(e.target.value)}
-            className="px-3 py-2 border rounded-md w-full md:w-1/3 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-1 focus:ring-green-400"
-          />
-          <div className="flex gap-2 flex-wrap">
-            <button onClick={() => addNodeOfType("process")} className="px-3 py-2 border rounded-md hover:bg-green-100 dark:hover:bg-green-800">Add Process</button>
-            <button onClick={() => addNodeOfType("dataStore")} className="px-3 py-2 border rounded-md hover:bg-blue-100 dark:hover:bg-blue-800">Add Data Store</button>
-            <button onClick={() => addNodeOfType("thirdParty")} className="px-3 py-2 border rounded-md hover:bg-red-100 dark:hover:bg-red-800">Add Third Party</button>
-            <button onClick={() => runAutoLayout("LR")} className="px-3 py-2 border rounded-md hover:bg-green-100 dark:hover:bg-green-800"><Zap size={16} /> Auto Layout</button>
-            <button onClick={validateDiagram} className="px-3 py-2 border rounded-md hover:bg-yellow-100 dark:hover:bg-yellow-800"><AlertCircle size={16} /> Validate</button>
-            <button onClick={saveFlow} className="px-3 py-2 bg-green-400 rounded-md hover:opacity-90">Save</button>
-            <button onClick={exportAsPng} className="px-3 py-2 border rounded-md">PNG</button>
-            <button onClick={exportAsSvg} className="px-3 py-2 border rounded-md">SVG</button>
+      {/* Canvas */}
+      <div className="flex-1 relative">
+        <div className="flex items-center justify-between p-3 border-b border-gray-300 dark:border-gray-700 gap-2">
+          <div className="flex items-center gap-2 w-full">
+            <input
+              className="px-3 py-2 border rounded w-full md:w-1/3 bg-white dark:bg-gray-700"
+              placeholder="Diagram name..."
+              value={selectedNode?.data?.label || ""}
+              onChange={(e) => {
+                if (!selected) return;
+                handleNodeTextChange(selected, { label: e.target.value });
+              }}
+            />
+            <div className="flex gap-2 ml-auto">
+              <button onClick={() => saveToServer()} className="px-3 py-2 bg-green-400 rounded text-white"><Save size={14} /></button>
+              <button onClick={() => exportPNG()} className="px-3 py-2 border rounded"><Download size={14} /></button>
+            </div>
           </div>
         </div>
 
-        {/* React Flow Canvas */}
-        <div ref={wrapperRef} className="flex-1 relative bg-gray-50 dark:bg-gray-900 border-t border-gray-300 dark:border-gray-700">
+        <div ref={wrapperRef} className="h-[calc(100vh-72px)] bg-gray-50 dark:bg-gray-900">
           <ReactFlow
-            nodes={nodes} edges={edges} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} onInit={onInit}
-            fitView attributionPosition="bottom-left" onNodeClick={(e, n) => setSelectedNodeId(n.id)} onPaneClick={() => setSelectedNodeId(null)}
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onInit={onInit}
+            onConnect={onConnect}
+            onSelectionChange={handleSelect}
+            fitView
+            nodeTypes={nodeTypes}
           >
             <Controls />
             <MiniMap />
             <Background variant="dots" gap={12} size={1} />
           </ReactFlow>
-
-          {/* Validation Panel */}
-          <div className="absolute bottom-4 left-4 bg-white dark:bg-gray-800 p-2 rounded-md shadow-md max-w-xs">
-            <div className="text-sm font-medium">Validation ({validationErrors.length})</div>
-            {validationErrors.length > 0 ? (
-              <ul className="text-xs mt-1 max-h-40 overflow-auto space-y-1 text-red-600">{validationErrors.map((e,i)=><li key={i}>• {e.message}</li>)}</ul>
-            ) : <div className="text-xs text-green-600 mt-1">No issues</div>}
-          </div>
         </div>
       </div>
 
-      {/* Right Sidebar */}
-      {showRightSidebar && (
-        <motion.aside
-          className="flex-shrink-0 bg-white dark:bg-gray-800 border-l border-gray-300 dark:border-gray-700 p-4 relative"
-          style={{ width: rightSidebarWidth, minWidth: 250, maxWidth: 450 }}
-        >
+      {/* Right inspector */}
+      {showRight && (
+        <motion.aside initial={{ x: 10, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="w-80 bg-white dark:bg-gray-800 border-l border-gray-300 dark:border-gray-700 p-4">
           <div className="flex justify-between items-center mb-3">
-            <h4 className="text-lg font-semibold">Node Metadata</h4>
-            <button onClick={() => setShowRightSidebar(false)} className="p-1 rounded-md border border-gray-300 dark:border-gray-600"><ChevronRight size={16} /></button>
+            <div>
+              <h4 className="text-lg font-semibold">Inspector</h4>
+              <div className="text-xs text-gray-500 dark:text-gray-400">Selected node settings</div>
+            </div>
+            <button onClick={() => setShowRight(false)} className="p-1 border rounded"><ChevronRight size={14} /></button>
           </div>
-          {!selectedNodeMeta && <div className="text-sm text-gray-500 dark:text-gray-400">Select a node to edit metadata</div>}
-          {selectedNodeMeta && (
+
+          {!selectedNode && <div className="text-sm text-gray-500">Select a node to edit its style</div>}
+
+          {selectedNode && (
             <div className="space-y-3 text-sm">
-              <input placeholder="Label" value={selectedNodeMeta.label} onChange={(e)=>updateSelectedNodeMetadata({label:e.target.value})} className="w-full px-2 py-1 border rounded-md dark:bg-gray-700"/>
-              <select value={selectedNodeMeta.type} onChange={(e)=>updateSelectedNodeMetadata({type:e.target.value})} className="w-full px-2 py-1 border rounded-md dark:bg-gray-700">
-                <option value="controller">Controller</option><option value="process">Process</option><option value="dataStore">Data Store</option><option value="thirdParty">Third Party</option><option value="dataSubject">Data Subject</option>
-              </select>
-              <input placeholder="Data Category" value={selectedNodeMeta.dataCategory} onChange={(e)=>updateSelectedNodeMetadata({dataCategory:e.target.value})} className="w-full px-2 py-1 border rounded-md dark:bg-gray-700"/>
-              <input placeholder="Processing Activity" value={selectedNodeMeta.processingActivity} onChange={(e)=>updateSelectedNodeMetadata({processingActivity:e.target.value})} className="w-full px-2 py-1 border rounded-md dark:bg-gray-700"/>
-              <select value={selectedNodeMeta.legalBasis} onChange={(e)=>updateSelectedNodeMetadata({legalBasis:e.target.value})} className="w-full px-2 py-1 border rounded-md dark:bg-gray-700">
-                <option value="">Legal Basis...</option>
-                <option value="consent">Consent</option><option value="contract">Contract</option><option value="legalObligation">Legal Obligation</option><option value="legitimateInterest">Legitimate Interest</option>
-              </select>
-              <input placeholder="Retention Period" value={selectedNodeMeta.retention} onChange={(e)=>updateSelectedNodeMetadata({retention:e.target.value})} className="w-full px-2 py-1 border rounded-md dark:bg-gray-700"/>
-              <textarea placeholder="Description" value={selectedNodeMeta.description} onChange={(e)=>updateSelectedNodeMetadata({description:e.target.value})} className="w-full px-2 py-1 border rounded-md dark:bg-gray-700" rows={3}/>
+              <div className="font-medium">Label</div>
+              <input value={selectedNode.data.label || ""} onChange={(e) => handleNodeTextChange(selected, { label: e.target.value })} className="w-full px-2 py-1 border rounded bg-white dark:bg-gray-700" />
+
+              <div className="grid grid-cols-2 gap-2">
+                <label className="text-xs">Shape</label>
+                <select value={selectedNode.data.shape} onChange={(e) => updateShape(e.target.value)} className="w-full px-2 py-1 border rounded bg-white dark:bg-gray-700">
+                  <option value="rect">Rectangle</option>
+                  <option value="rounded">Rounded</option>
+                  <option value="ellipse">Ellipse</option>
+                  <option value="diamond">Diamond</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <label className="text-xs">Fill</label>
+                <input type="color" value={selectedNode.data.style?.bg || "#ffffff"} onChange={(e) => updateSelectedStyle({ bg: e.target.value })} className="w-full h-9" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <label className="text-xs">Border</label>
+                <input type="color" value={selectedNode.data.style?.border || BORDER} onChange={(e) => updateSelectedStyle({ border: e.target.value })} className="w-full h-9" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <label className="text-xs">Text Color</label>
+                <input type="color" value={selectedNode.data.style?.textColor || "#111827"} onChange={(e) => updateSelectedStyle({ textColor: e.target.value })} className="w-full h-9" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <label className="text-xs">Font Size</label>
+                <input type="number" min={10} max={36} value={selectedNode.data.style?.fontSize || 14} onChange={(e) => updateSelectedStyle({ fontSize: Number(e.target.value) })} className="w-full px-2 py-1 border rounded bg-white dark:bg-gray-700" />
+              </div>
+
+              <div className="flex gap-2">
+                <button onClick={() => updateSelectedStyle({ bold: !selectedNode.data.style?.bold })} className="px-2 py-1 border rounded">Toggle Bold</button>
+                <button onClick={() => updateSelectedStyle({ bg: "#FEF3C7", border: "#F59E0B" })} className="px-2 py-1 border rounded">Preset</button>
+              </div>
+
+              <div className="border-t pt-2">
+                <div className="text-xs text-gray-500 mb-1">Advanced</div>
+                <div className="flex gap-2">
+                  <button onClick={() => { /* bring to front */ setNodes((nds)=> {
+                    const pick = nds.find(n=>n.id===selected);
+                    if(!pick) return nds;
+                    const rest = nds.filter(n=>n.id!==selected);
+                    return [...rest, pick];
+                  })}} className="px-2 py-1 border rounded">Bring Front</button>
+                  <button onClick={() => { /* send to back */ setNodes((nds)=> {
+                    const pick = nds.find(n=>n.id===selected);
+                    if(!pick) return nds;
+                    const rest = nds.filter(n=>n.id!==selected);
+                    return [pick, ...rest];
+                  })}} className="px-2 py-1 border rounded">Send Back</button>
+                </div>
+              </div>
             </div>
           )}
-          {/* Right Resize Handle */}
-          <div
-            className="absolute top-0 left-0 h-full w-1 cursor-col-resize z-50 hover:bg-gray-300 dark:hover:bg-gray-600"
-            onMouseDown={(e) => initResize(e, "right")}
-          />
         </motion.aside>
       )}
     </div>
   );
+}
+
+/* ---------- Auto layout (simple dagre) ---------- */
+import dagre from "dagre";
+async function runAutoLayout(nodesInput = [], edgesInput = [], direction = "LR") {
+  // this helper is used by palette auto layout button - kept separate to avoid hoisting issues
+  const g = new dagre.graphlib.Graph();
+  g.setDefaultEdgeLabel(() => ({}));
+  g.setGraph({ rankdir: direction });
+  const nodeW = DEFAULT_NODE_SIZE.w, nodeH = DEFAULT_NODE_SIZE.h;
+  nodesInput.forEach(n => g.setNode(n.id, { width: nodeW, height: nodeH }));
+  edgesInput.forEach(e => g.setEdge(e.source, e.target));
+  dagre.layout(g);
+  const layouted = nodesInput.map(n => {
+    const pos = g.node(n.id);
+    return { ...n, position: { x: pos.x - nodeW/2, y: pos.y - nodeH/2 } };
+  });
+  return { nodes: layouted, edges: edgesInput };
 }
