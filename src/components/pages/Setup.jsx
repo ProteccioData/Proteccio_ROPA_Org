@@ -23,7 +23,7 @@ import {
   Trash2,
   Gavel,
 } from "lucide-react";
-import { Modal, FormInput, FormSelect, FileUpload } from "../ui/SetUpModal";
+import { Modal, FormInput, FormSelect, FileUpload, BulkImportModal } from "../ui/SetUpModal";
 
 const setupOptions = [
   {
@@ -310,11 +310,84 @@ export default function Setup() {
   const [nestedModal, setNestedModal] = useState(null);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [bulkImportModal, setBulkImportModal] = useState(null);
 
   const generateId = () => `ID_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
   const handleFilesSelected = (files) => {
     setSelectedFiles(files);
+  };
+
+  const generateAssetTemplate = () => {
+    const headers = ['Asset Name', 'Asset Type', 'Asset ID', 'Short Description', 'Purchase Date', 'Location', 'Condition/Status', 'Owner/Assigned to', 'Warranty Information', 'Is Supplier/Vendor Managed'];
+    const sampleData = ['Laptop Dell XPS 13', 'Physical', 'AST-001', 'High-performance laptop for development', '2024-01-15', 'Office A1', 'In Use', 'John Doe', '2026-01-15', 'No'];
+    return [headers, sampleData].map(row => row.join(',')).join('\n');
+  };
+
+  const generateDataCollectionTemplate = () => {
+    const headers = ['Data Source Type', 'Description'];
+    const sampleData = ['Web Form', 'Customer registration form data collection'];
+    return [headers, sampleData].map(row => row.join(',')).join('\n');
+  };
+
+  const handleFileUpload = async (file, configType) => {
+    console.log(`Uploading ${file.name} for ${configType}`);
+    
+    // Here you would implement the actual file processing
+    // This could involve:
+    // 1. Reading the file content
+    // 2. Parsing CSV/Excel/JSON
+    // 3. Validating data
+    // 4. Mapping to your data structure
+    // 5. Saving to your backend
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target.result;
+      console.log('File content:', content);
+      
+      // Process the file based on configType
+      switch (configType) {
+        case 'assets':
+          processAssetImport(content);
+          break;
+        case 'data_collection':
+          processDataCollectionImport(content);
+          break;
+        // Add more cases for other config types
+        default:
+          processGenericImport(content, configType);
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const processAssetImport = (content) => {
+    // Parse CSV and create assets
+    const rows = content.split('\n').slice(1); // Skip header
+    const assets = rows.map(row => {
+      const [name, type, assetId, description, purchaseDate, location, status, owner, warranty, supplierManaged] = row.split(',');
+      return {
+        name,
+        type,
+        assetId,
+        description,
+        purchaseDate,
+        location,
+        status,
+        owner,
+        warranty,
+        supplierManaged
+      };
+    });
+    
+    console.log('Processed assets:', assets);
+    // Here you would save to your state or backend
+  };
+
+
+  const handleBulkImport = (configType) => {
+    setBulkImportModal(configType);
   };
 
   const handleConfigureClick = (modalKey, event) => {
@@ -347,7 +420,7 @@ export default function Setup() {
   const renderAssetList = () => (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-semibold">Asset Management</h3>
+        <h3 className="text-lg font-semibold dark:text-white">Asset Management</h3>
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
@@ -384,7 +457,7 @@ export default function Setup() {
   const renderDataCollectionList = () => (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-semibold">Data Collection Configuration</h3>
+        <h3 className="text-lg font-semibold dark:text-white">Data Collection Configuration</h3>
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
@@ -419,7 +492,7 @@ export default function Setup() {
   const renderDataElementsList = () => (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-semibold">Data Element Configuration</h3>
+        <h3 className="text-lg font-semibold dark:text-white">Data Element Configuration</h3>
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
@@ -455,7 +528,7 @@ export default function Setup() {
   const renderDataDeletionList = () => (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-semibold">Data Deletion Methods</h3>
+        <h3 className="text-lg font-semibold dark:text-white">Data Deletion Methods</h3>
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
@@ -491,7 +564,7 @@ export default function Setup() {
   const renderDepartmentList = () => (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-semibold">Department Structure</h3>
+        <h3 className="text-lg font-semibold dark:text-white">Department Structure</h3>
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
@@ -527,7 +600,7 @@ export default function Setup() {
   const renderOrganizationList = () => (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-semibold">Organization Structure</h3>
+        <h3 className="text-lg font-semibold dark:text-white">Organization Structure</h3>
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
@@ -563,7 +636,7 @@ export default function Setup() {
   const renderDataSubjectsList = () => (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-semibold">Data Subjects Categories</h3>
+        <h3 className="text-lg font-semibold dark:text-white">Data Subjects Categories</h3>
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
@@ -599,7 +672,7 @@ export default function Setup() {
   const renderPurposeList = () => (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-semibold">Processing Purposes</h3>
+        <h3 className="text-lg font-semibold dark:text-white">Processing Purposes</h3>
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
@@ -635,7 +708,7 @@ export default function Setup() {
   const renderLegalBasisList = () => (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-semibold">Legal Basis</h3>
+        <h3 className="text-lg font-semibold dark:text-white">Legal Basis</h3>
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
@@ -669,7 +742,7 @@ export default function Setup() {
 
   const renderSecuritySafeguards = () => (
     <div className="p-6">
-      <h3 className="text-lg font-semibold mb-6">Security Safeguards Modules</h3>
+      <h3 className="text-lg font-semibold mb-6 dark:text-white">Security Safeguards Modules</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {securityModules.map((module) => (
           <motion.div
@@ -681,7 +754,7 @@ export default function Setup() {
           >
             <div className="flex items-center gap-3">
               <module.icon size={24} className="text-[#5DEE92]" />
-              <span className="font-medium">{module.name}</span>
+              <span className="font-medium dark:text-white">{module.name}</span>
             </div>
           </motion.div>
         ))}
@@ -693,7 +766,7 @@ export default function Setup() {
   const renderSecurityModuleList = (title, sampleData, addKey, editKey) => (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-semibold">{title}</h3>
+        <h3 className="text-lg font-semibold dark:text-white">{title}</h3>
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
@@ -729,7 +802,7 @@ export default function Setup() {
 
   const renderAssetForm = () => (
     <div className="p-6 space-y-6">
-      <h3 className="text-lg font-semibold">{selectedItem ? 'Edit Asset' : 'Add New Asset'}</h3>
+      <h3 className="text-lg font-semibold dark:text-white">{selectedItem ? 'Edit Asset' : 'Add New Asset'}</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormInput label="Asset Name" required defaultValue={selectedItem?.name || ''} />
         <FormSelect label="Asset Type" options={assetTypes} required defaultValue={selectedItem?.type?.toLowerCase() || ''} />
@@ -748,7 +821,7 @@ export default function Setup() {
 
   const renderDataCollectionForm = () => (
     <div className="p-6 space-y-6">
-      <h3 className="text-lg font-semibold">{selectedItem ? 'Edit Data Collection' : 'Add New Data Collection'}</h3>
+      <h3 className="text-lg font-semibold dark:text-white">{selectedItem ? 'Edit Data Collection' : 'Add New Data Collection'}</h3>
       <div className="grid grid-cols-1 gap-4">
         <FormInput label="Data Source Type" required defaultValue={selectedItem?.sourceType || ''} />
         <FormInput label="Description" required />
@@ -759,7 +832,7 @@ export default function Setup() {
 
   const renderDataElementForm = () => (
     <div className="p-6 space-y-6">
-      <h3 className="text-lg font-semibold">{selectedItem ? 'Edit Data Element' : 'Add New Data Element'}</h3>
+      <h3 className="text-lg font-semibold dark:text-white">{selectedItem ? 'Edit Data Element' : 'Add New Data Element'}</h3>
       <div className="grid grid-cols-1 gap-4">
         <FormInput label="Name of the Data Element" required defaultValue={selectedItem?.name || ''} />
         <FormInput label="Description" required />
@@ -772,7 +845,7 @@ export default function Setup() {
 
   const renderDataDeletionForm = () => (
     <div className="p-6 space-y-6">
-      <h3 className="text-lg font-semibold">{selectedItem ? 'Edit Data Deletion Method' : 'Add New Data Deletion Method'}</h3>
+      <h3 className="text-lg font-semibold dark:text-white">{selectedItem ? 'Edit Data Deletion Method' : 'Add New Data Deletion Method'}</h3>
       <div className="grid grid-cols-1 gap-4">
         <FormInput label="Name of Data Deletion Method" required defaultValue={selectedItem?.name || ''} />
         <FormInput label="Description" required />
@@ -786,7 +859,7 @@ export default function Setup() {
 
   const renderDepartmentForm = () => (
     <div className="p-6 space-y-6">
-      <h3 className="text-lg font-semibold">{selectedItem ? 'Edit Department' : 'Add New Department'}</h3>
+      <h3 className="text-lg font-semibold dark:text-white">{selectedItem ? 'Edit Department' : 'Add New Department'}</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormInput label="Department Name" required defaultValue={selectedItem?.name || ''} />
         <FormInput label="Description of the Role" required />
@@ -801,7 +874,7 @@ export default function Setup() {
 
   const renderOrganizationForm = () => (
     <div className="p-6 space-y-6">
-      <h3 className="text-lg font-semibold">{selectedItem ? 'Edit Organization' : 'Add New Organization'}</h3>
+      <h3 className="text-lg font-semibold dark:text-white">{selectedItem ? 'Edit Organization' : 'Add New Organization'}</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormInput label="Organization Name" required defaultValue={selectedItem?.name || ''} />
         <FormInput label="Organization ID" required defaultValue={selectedItem?.orgId || ''} />
@@ -819,7 +892,7 @@ export default function Setup() {
 
   const renderDataSubjectForm = () => (
     <div className="p-6 space-y-6">
-      <h3 className="text-lg font-semibold">{selectedItem ? 'Edit Data Subject Category' : 'Add New Data Subject Category'}</h3>
+      <h3 className="text-lg font-semibold dark:text-white">{selectedItem ? 'Edit Data Subject Category' : 'Add New Data Subject Category'}</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormInput label="Category Name" required defaultValue={selectedItem?.categoryName || ''} />
         <FormInput label="Description" required />
@@ -831,7 +904,7 @@ export default function Setup() {
 
   const renderPurposeForm = () => (
     <div className="p-6 space-y-6">
-      <h3 className="text-lg font-semibold">{selectedItem ? 'Edit Purpose' : 'Add New Purpose'}</h3>
+      <h3 className="text-lg font-semibold dark:text-white">{selectedItem ? 'Edit Purpose' : 'Add New Purpose'}</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormInput label="Purpose Name" required defaultValue={selectedItem?.name || ''} />
         <FormInput label="Description" required />
@@ -844,7 +917,7 @@ export default function Setup() {
 
   const renderLegalBasisForm = () => (
     <div className="p-6 space-y-6">
-      <h3 className="text-lg font-semibold">{selectedItem ? 'Edit Legal Basis' : 'Add New Legal Basis'}</h3>
+      <h3 className="text-lg font-semibold dark:text-white">{selectedItem ? 'Edit Legal Basis' : 'Add New Legal Basis'}</h3>
       <div className="grid grid-cols-1 gap-4">
         <FormInput label="Legal Basis Name" required defaultValue={selectedItem?.name || ''} />
         <FormInput label="Description" required defaultValue={selectedItem?.description || ''} />
@@ -959,10 +1032,10 @@ export default function Setup() {
     <div className="min-h-screen p-6">
       {/* Action Buttons */}
       <div className="flex w-full gap-4 mb-8">
-        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }} className="flex items-center justify-center flex-1 gap-2 bg-[#5DEE92] px-6 py-3 rounded-lg text-black font-medium shadow-md hover:opacity-90 transition">
+        <motion.button onClick={() => handleAddNew('new_asset')} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }} className="flex items-center justify-center flex-1 gap-2 bg-[#5DEE92] px-6 py-3 rounded-lg text-black font-medium shadow-md hover:opacity-90 transition">
           <CirclePlus size={18} /> Add New Asset
         </motion.button>
-        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }} className="flex items-center justify-center flex-1 gap-2 bg-[#5DEE92] px-6 py-3 rounded-lg text-black font-medium shadow-md hover:opacity-90 transition">
+        <motion.button onClick={() => handleBulkImport('assets')} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }} className="flex items-center justify-center flex-1 gap-2 bg-[#5DEE92] px-6 py-3 rounded-lg text-black font-medium shadow-md hover:opacity-90 transition">
           <Download size={18} /> Bulk Import
         </motion.button>
         <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }} className="flex items-center justify-center flex-1 gap-2 bg-[#5DEE92] px-6 py-3 rounded-lg text-black font-medium shadow-md hover:opacity-90 transition">
@@ -1014,7 +1087,7 @@ export default function Setup() {
       {Object.entries(nestedModalConfigs).map(([key, config]) => (
         <Modal key={key} isOpen={nestedModal === key} onClose={handleCancel} title={config.title} size={config.size}>
           {config.content}
-          <div className="flex justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700 dark:text-white">
             <button onClick={handleCancel} className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors">Cancel</button>
             <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={handleSave} className="bg-[#5DEE92] text-black px-6 py-2 rounded-lg font-medium hover:bg-green-500 transition-colors">
               {selectedItem ? 'Update' : 'Save'}
@@ -1022,6 +1095,24 @@ export default function Setup() {
           </div>
         </Modal>
       ))}
+
+      <BulkImportModal
+        isOpen={bulkImportModal === 'assets'}
+        onClose={() => setBulkImportModal(null)}
+        title="Bulk Import Assets"
+        onFileUpload={(file) => handleFileUpload(file, 'assets')}
+        acceptedFormats={['.csv', '.xlsx', '.json']}
+        templateDownload={generateAssetTemplate}
+      />
+
+      <BulkImportModal
+        isOpen={bulkImportModal === 'data_collection'}
+        onClose={() => setBulkImportModal(null)}
+        title="Bulk Import Data Collections"
+        onFileUpload={(file) => handleFileUpload(file, 'data_collection')}
+        acceptedFormats={['.csv', '.xlsx', '.json']}
+        templateDownload={generateDataCollectionTemplate}
+      />
     </div>
   );
 }
