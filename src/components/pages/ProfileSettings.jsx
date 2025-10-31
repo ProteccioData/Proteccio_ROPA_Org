@@ -182,9 +182,7 @@ export default function ProfileSettings({ currentUser = null, isAdmin = false })
               <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{t["accessibility"]}</h3>
               <div className="mt-3 space-y-2">
                 <Select label={t["font_size"]} value={fontSize} onChange={setFontSize} options={[{ value: "sm", label: t["small"] }, { value: "md", label: t["medium"] }, { value: "lg", label: t["large"] }]} />
-                <Toggle label={t["high_contrast"]} checked={highContrast} setChecked={setHighContrast} />
                 <Toggle label={t["keyboard_nav"]} checked={keyboardNav} setChecked={setKeyboardNav} />
-                <Toggle label={t["screen_reader"]} checked={screenReaderMode} setChecked={setScreenReaderMode} />
               </div>
             </div>
           </section>
@@ -531,7 +529,6 @@ const translations = {
     download_user_data: "Download user data",
     lock_account: "Lock account",
     unlock: "Unlock",
-    request_access: "Request access",
   },
   fr: {
     profile_settings: "Paramètres du profil",
@@ -594,8 +591,7 @@ const translations = {
     warn_users: "Avertir les utilisateurs",
     download_user_data: "Télécharger les données utilisateur",
     lock_account: "Verrouiller le compte",
-    unlock: "Déverrouiller",
-    request_access: "Demander l'accès",
+    unlock: "Déverrouiller"
   },
   de: {
     profile_settings: "Profil-Einstellungen",
@@ -658,8 +654,7 @@ const translations = {
     warn_users: "Benutzer warnen",
     download_user_data: "Benutzerdaten herunterladen",
     lock_account: "Konto sperren",
-    unlock: "Entsperren",
-    request_access: "Zugriff anfragen",
+    unlock: "Entsperren"
   },
   es: {
     profile_settings: "Ajustes de perfil",
@@ -722,7 +717,6 @@ const translations = {
     warn_users: "Advertir a los usuarios",
     download_user_data: "Descargar datos de usuario",
     lock_account: "Bloquear cuenta",
-    unlock: "Desbloquear",
-    request_access: "Solicitar acceso",
+    unlock: "Desbloquear"
   }
 };

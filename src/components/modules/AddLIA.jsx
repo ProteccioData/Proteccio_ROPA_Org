@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { X, Upload, FileText, Save, Clock, Link, SkipForward } from "lucide-react";
 import { useToast } from "../ui/ToastProvider";
+import ActionItemModal from "./AddActionItem";
 
-const LIAssessmentModal = ({ isOpen, onClose, onLIACreated }) => {
+const LIAssessmentModal = ({ isOpen, onClose, onLIACreated}) => {
   const [currentStage, setCurrentStage] = useState(1);
   const [hoveredStep, setHoveredStep] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -10,6 +11,13 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated }) => {
   const [lastSaved, setLastSaved] = useState(null);
   const [errors, setErrors] = useState({});
   const { addToast } = useToast();
+
+  // Action Item Modal State
+  const [isActionModalOpen, setIsActionModalOpen] = useState(false);
+  const [currentFieldForAction, setCurrentFieldForAction] = useState(null);
+  const [actionItems, setActionItems] = useState([]);
+
+  const currentUser = { id: "user_1", name: "Alice Admin", department: "Legal", role: "Org Admin" };
 
   // Form data state
   const [formData, setFormData] = useState({
@@ -115,6 +123,35 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated }) => {
   const impactLevels = ["Low", "Medium", "High"];
   const yesNoOptions = ["Yes", "No"];
   const decisionOptions = ["Justified", "Not Justified", "Needs Review"];
+
+  // Action Item Functions
+  const openActionItemModal = (section, field) => {
+    setCurrentFieldForAction({ section, field });
+    setIsActionModalOpen(true);
+  };
+
+  const handleActionItemSave = (actionItemData) => {
+    // Link the action item to the current LIA and field
+    const newActionItem = {
+      ...actionItemData,
+      linkedAssessmentId: formData.basicInfo.liaId,
+      linkedField: `${currentFieldForAction.section}.${currentFieldForAction.field}`,
+      stage: currentStage,
+      stageTitle: stages.find(stage => stage.id === currentStage)?.title
+    };
+
+    setActionItems(prev => [...prev, newActionItem]);
+    addToast("success", "Action item added successfully");
+    
+    // Close the modal
+    setIsActionModalOpen(false);
+    setCurrentFieldForAction(null);
+  };
+
+  const closeActionItemModal = () => {
+    setIsActionModalOpen(false);
+    setCurrentFieldForAction(null);
+  };
 
   const validateStage = (stage) => {
     const newErrors = {};
@@ -429,12 +466,17 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated }) => {
   const handleSaveAndClose = async () => {
     try {
       setLoading(true);
-      console.log("Saving LIA assessment:", formData);
+      // Include action items in the saved data
+      const liaDataWithActions = {
+        ...formData,
+        actionItems: actionItems
+      };
+      console.log("Saving LIA assessment:", liaDataWithActions);
       addToast("success", "LIA assessment saved successfully!");
       resetForm();
       onClose();
       if (onLIACreated) {
-        onLIACreated(formData);
+        onLIACreated(liaDataWithActions);
       }
     } catch (error) {
       console.error("Failed to save LIA:", error);
@@ -447,12 +489,18 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated }) => {
   const handleLinkAndComplete = async () => {
     try {
       setLoading(true);
-      console.log("Completing LIA assessment:", formData);
+      // Include action items in the completed data
+      const liaDataWithActions = {
+        ...formData,
+        actionItems: actionItems,
+        status: "completed"
+      };
+      console.log("Completing LIA assessment:", liaDataWithActions);
       addToast("success", "LIA assessment completed and linked!");
       resetForm();
       onClose();
       if (onLIACreated) {
-        onLIACreated({ ...formData, status: "completed" });
+        onLIACreated(liaDataWithActions);
       }
     } catch (error) {
       console.error("Failed to complete LIA:", error);
@@ -504,39 +552,84 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated }) => {
     });
     setCurrentStage(1);
     setErrors({});
+    setActionItems([]);
   };
 
-  // Render each stage
+  // Render each stage with Action Item buttons
   const renderStage1 = () => (
     <div className="space-y-6 max-h-96 overflow-y-auto pr-2">
       <div className="bg-gray-50 dark:bg-gray-900 border border-[#828282] p-6 rounded-lg">
         <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-4">Purpose & Necessity</h3>
         <div className="space-y-6">
-          {renderTextarea("purposeNecessity", "legitimateInterest", {
-            value: formData.purposeNecessity.legitimateInterest,
-            onChange: (e) => handleInputChange("purposeNecessity", "legitimateInterest", e.target.value),
-            placeholder: "Describe the specific legitimate interest your organization is pursuing...",
-            label: "What is the specific legitimate interest your organization is pursuing with this processing?",
-            rows: 4,
-          })}
+          <div>
+            {renderTextarea("purposeNecessity", "legitimateInterest", {
+              value: formData.purposeNecessity.legitimateInterest,
+              onChange: (e) => handleInputChange("purposeNecessity", "legitimateInterest", e.target.value),
+              placeholder: "Describe the specific legitimate interest your organization is pursuing...",
+              label: "What is the specific legitimate interest your organization is pursuing with this processing?",
+              rows: 4,
+            })}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => openActionItemModal("purposeNecessity", "legitimateInterest")}
+                className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
+              >
+                + Add Action Item
+              </button>
+            </div>
+          </div>
           
-          {renderTextarea("purposeNecessity", "processingNecessity", {
-            value: formData.purposeNecessity.processingNecessity,
-            onChange: (e) => handleInputChange("purposeNecessity", "processingNecessity", e.target.value),
-            placeholder: "Explain why this processing is necessary to achieve the purpose...",
-            label: "Why is this processing necessary to achieve that purpose?",
-            rows: 4,
-          })}
+          <div>
+            {renderTextarea("purposeNecessity", "processingNecessity", {
+              value: formData.purposeNecessity.processingNecessity,
+              onChange: (e) => handleInputChange("purposeNecessity", "processingNecessity", e.target.value),
+              placeholder: "Explain why this processing is necessary to achieve the purpose...",
+              label: "Why is this processing necessary to achieve that purpose?",
+              rows: 4,
+            })}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => openActionItemModal("purposeNecessity", "processingNecessity")}
+                className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
+              >
+                + Add Action Item
+              </button>
+            </div>
+          </div>
           
-          {renderTextarea("purposeNecessity", "lessIntrusiveAlternatives", {
-            value: formData.purposeNecessity.lessIntrusiveAlternatives,
-            onChange: (e) => handleInputChange("purposeNecessity", "lessIntrusiveAlternatives", e.target.value),
-            placeholder: "Describe any less intrusive alternatives considered...",
-            label: "Have you considered any less intrusive ways to achieve the same purpose without processing personal data?",
-            rows: 4,
-          })}
+          <div>
+            {renderTextarea("purposeNecessity", "lessIntrusiveAlternatives", {
+              value: formData.purposeNecessity.lessIntrusiveAlternatives,
+              onChange: (e) => handleInputChange("purposeNecessity", "lessIntrusiveAlternatives", e.target.value),
+              placeholder: "Describe any less intrusive alternatives considered...",
+              label: "Have you considered any less intrusive ways to achieve the same purpose without processing personal data?",
+              rows: 4,
+            })}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => openActionItemModal("purposeNecessity", "lessIntrusiveAlternatives")}
+                className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
+              >
+                + Add Action Item
+              </button>
+            </div>
+          </div>
           
-          {renderFileUpload("purposeNecessity", "supportingDocuments", "Please upload any supporting documents (business case, analysis of alternatives)")}
+          <div>
+            {renderFileUpload("purposeNecessity", "supportingDocuments", "Please upload any supporting documents (business case, analysis of alternatives)")}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => openActionItemModal("purposeNecessity", "supportingDocuments")}
+                className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
+              >
+                + Add Action Item
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -547,29 +640,62 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated }) => {
       <div className="bg-gray-50 dark:bg-gray-900 border border-[#828282] p-6 rounded-lg">
         <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-4">Data Details</h3>
         <div className="space-y-6">
-          {renderTextarea("dataDetails", "dataCategories", {
-            value: formData.dataDetails.dataCategories,
-            onChange: (e) => handleInputChange("dataDetails", "dataCategories", e.target.value),
-            placeholder: "e.g., names, contact info, IP addresses, financial data...",
-            label: "What categories of personal data will be processed?",
-            rows: 3,
-          })}
+          <div>
+            {renderTextarea("dataDetails", "dataCategories", {
+              value: formData.dataDetails.dataCategories,
+              onChange: (e) => handleInputChange("dataDetails", "dataCategories", e.target.value),
+              placeholder: "e.g., names, contact info, IP addresses, financial data...",
+              label: "What categories of personal data will be processed?",
+              rows: 3,
+            })}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => openActionItemModal("dataDetails", "dataCategories")}
+                className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
+              >
+                + Add Action Item
+              </button>
+            </div>
+          </div>
           
-          {renderSelect("dataDetails", "sensitiveDataInvolved", {
-            value: formData.dataDetails.sensitiveDataInvolved,
-            onChange: (e) => handleInputChange("dataDetails", "sensitiveDataInvolved", e.target.value),
-            label: "Will any special category (sensitive) data be involved?",
-            children: (
-              <>
-                <option value="">Select</option>
-                {yesNoOptions.map(option => (
-                  <option key={option} value={option}>{option}</option>
-                ))}
-              </>
-            ),
-          })}
+          <div>
+            {renderSelect("dataDetails", "sensitiveDataInvolved", {
+              value: formData.dataDetails.sensitiveDataInvolved,
+              onChange: (e) => handleInputChange("dataDetails", "sensitiveDataInvolved", e.target.value),
+              label: "Will any special category (sensitive) data be involved?",
+              children: (
+                <>
+                  <option value="">Select</option>
+                  {yesNoOptions.map(option => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </>
+              ),
+            })}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => openActionItemModal("dataDetails", "sensitiveDataInvolved")}
+                className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
+              >
+                + Add Action Item
+              </button>
+            </div>
+          </div>
           
-          {renderFileUpload("dataDetails", "dataFlowDocuments", "Please upload any data flow diagrams or data mapping documents")}
+          <div>
+            {renderFileUpload("dataDetails", "dataFlowDocuments", "Please upload any data flow diagrams or data mapping documents")}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => openActionItemModal("dataDetails", "dataFlowDocuments")}
+                className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
+              >
+                + Add Action Item
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -581,52 +707,107 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated }) => {
         <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-4">Impact & Risk Assessment</h3>
         <div className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
-            {renderSelect("impactRisk", "potentialImpact", {
-              value: formData.impactRisk.potentialImpact,
-              onChange: (e) => handleInputChange("impactRisk", "potentialImpact", e.target.value),
-              label: "What is the potential impact on individuals?",
-              children: (
-                <>
-                  <option value="">Select Impact Level</option>
-                  {impactLevels.map(level => (
-                    <option key={level} value={level}>{level}</option>
-                  ))}
-                </>
-              ),
-            })}
+            <div>
+              {renderSelect("impactRisk", "potentialImpact", {
+                value: formData.impactRisk.potentialImpact,
+                onChange: (e) => handleInputChange("impactRisk", "potentialImpact", e.target.value),
+                label: "What is the potential impact on individuals?",
+                children: (
+                  <>
+                    <option value="">Select Impact Level</option>
+                    {impactLevels.map(level => (
+                      <option key={level} value={level}>{level}</option>
+                    ))}
+                  </>
+                ),
+              })}
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => openActionItemModal("impactRisk", "potentialImpact")}
+                  className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
+                >
+                  + Add Action Item
+                </button>
+              </div>
+            </div>
             
-            {renderSelect("impactRisk", "impactLikelihood", {
-              value: formData.impactRisk.impactLikelihood,
-              onChange: (e) => handleInputChange("impactRisk", "impactLikelihood", e.target.value),
-              label: "How likely is it that this impact will occur?",
-              children: (
-                <>
-                  <option value="">Select Likelihood</option>
-                  {impactLevels.map(level => (
-                    <option key={level} value={level}>{level}</option>
-                  ))}
-                </>
-              ),
-            })}
+            <div>
+              {renderSelect("impactRisk", "impactLikelihood", {
+                value: formData.impactRisk.impactLikelihood,
+                onChange: (e) => handleInputChange("impactRisk", "impactLikelihood", e.target.value),
+                label: "How likely is it that this impact will occur?",
+                children: (
+                  <>
+                    <option value="">Select Likelihood</option>
+                    {impactLevels.map(level => (
+                      <option key={level} value={level}>{level}</option>
+                    ))}
+                  </>
+                ),
+              })}
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => openActionItemModal("impactRisk", "impactLikelihood")}
+                  className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
+                >
+                  + Add Action Item
+                </button>
+              </div>
+            </div>
           </div>
           
-          {renderTextarea("impactRisk", "impactExplanation", {
-            value: formData.impactRisk.impactExplanation,
-            onChange: (e) => handleInputChange("impactRisk", "impactExplanation", e.target.value),
-            placeholder: "Explain the reasons behind your impact and likelihood ratings...",
-            label: "Please explain the reasons behind your impact and likelihood ratings",
-            rows: 3,
-          })}
+          <div>
+            {renderTextarea("impactRisk", "impactExplanation", {
+              value: formData.impactRisk.impactExplanation,
+              onChange: (e) => handleInputChange("impactRisk", "impactExplanation", e.target.value),
+              placeholder: "Explain the reasons behind your impact and likelihood ratings...",
+              label: "Please explain the reasons behind your impact and likelihood ratings",
+              rows: 3,
+            })}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => openActionItemModal("impactRisk", "impactExplanation")}
+                className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
+              >
+                + Add Action Item
+              </button>
+            </div>
+          </div>
           
-          {renderTextarea("impactRisk", "mitigatingMeasures", {
-            value: formData.impactRisk.mitigatingMeasures,
-            onChange: (e) => handleInputChange("impactRisk", "mitigatingMeasures", e.target.value),
-            placeholder: "Describe the mitigating measures or safeguards in place...",
-            label: "What mitigating measures or safeguards are in place to reduce risks?",
-            rows: 3,
-          })}
+          <div>
+            {renderTextarea("impactRisk", "mitigatingMeasures", {
+              value: formData.impactRisk.mitigatingMeasures,
+              onChange: (e) => handleInputChange("impactRisk", "mitigatingMeasures", e.target.value),
+              placeholder: "Describe the mitigating measures or safeguards in place...",
+              label: "What mitigating measures or safeguards are in place to reduce risks?",
+              rows: 3,
+            })}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => openActionItemModal("impactRisk", "mitigatingMeasures")}
+                className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
+              >
+                + Add Action Item
+              </button>
+            </div>
+          </div>
           
-          {renderFileUpload("impactRisk", "riskAssessmentDocuments", "Please upload any risk assessment or mitigation plans")}
+          <div>
+            {renderFileUpload("impactRisk", "riskAssessmentDocuments", "Please upload any risk assessment or mitigation plans")}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => openActionItemModal("impactRisk", "riskAssessmentDocuments")}
+                className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
+              >
+                + Add Action Item
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -637,37 +818,81 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated }) => {
       <div className="bg-gray-50 dark:bg-gray-900 border border-[#828282] p-6 rounded-lg">
         <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-4">Balancing Test & Decision</h3>
         <div className="space-y-6">
-          {renderTextarea("balancingTest", "balancingExplanation", {
-            value: formData.balancingTest.balancingExplanation,
-            onChange: (e) => handleInputChange("balancingTest", "balancingExplanation", e.target.value),
-            placeholder: "Explain how you balance the organization's interest against individuals' rights...",
-            label: "How do you balance the organization's legitimate interest against individuals' rights and freedoms?",
-            rows: 4,
-          })}
+          <div>
+            {renderTextarea("balancingTest", "balancingExplanation", {
+              value: formData.balancingTest.balancingExplanation,
+              onChange: (e) => handleInputChange("balancingTest", "balancingExplanation", e.target.value),
+              placeholder: "Explain how you balance the organization's interest against individuals' rights...",
+              label: "How do you balance the organization's legitimate interest against individuals' rights and freedoms?",
+              rows: 4,
+            })}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => openActionItemModal("balancingTest", "balancingExplanation")}
+                className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
+              >
+                + Add Action Item
+              </button>
+            </div>
+          </div>
           
-          {renderTextarea("balancingTest", "proportionalityFairness", {
-            value: formData.balancingTest.proportionalityFairness,
-            onChange: (e) => handleInputChange("balancingTest", "proportionalityFairness", e.target.value),
-            placeholder: "Explain why the processing is proportionate and fair...",
-            label: "Is the processing proportionate and fair considering the identified risks?",
-            rows: 4,
-          })}
+          <div>
+            {renderTextarea("balancingTest", "proportionalityFairness", {
+              value: formData.balancingTest.proportionalityFairness,
+              onChange: (e) => handleInputChange("balancingTest", "proportionalityFairness", e.target.value),
+              placeholder: "Explain why the processing is proportionate and fair...",
+              label: "Is the processing proportionate and fair considering the identified risks?",
+              rows: 4,
+            })}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => openActionItemModal("balancingTest", "proportionalityFairness")}
+                className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
+              >
+                + Add Action Item
+              </button>
+            </div>
+          </div>
           
-          {renderSelect("balancingTest", "finalDecision", {
-            value: formData.balancingTest.finalDecision,
-            onChange: (e) => handleInputChange("balancingTest", "finalDecision", e.target.value),
-            label: "What is the final decision on the legitimate interest basis?",
-            children: (
-              <>
-                <option value="">Select Decision</option>
-                {decisionOptions.map(option => (
-                  <option key={option} value={option}>{option}</option>
-                ))}
-              </>
-            ),
-          })}
+          <div>
+            {renderSelect("balancingTest", "finalDecision", {
+              value: formData.balancingTest.finalDecision,
+              onChange: (e) => handleInputChange("balancingTest", "finalDecision", e.target.value),
+              label: "What is the final decision on the legitimate interest basis?",
+              children: (
+                <>
+                  <option value="">Select Decision</option>
+                  {decisionOptions.map(option => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </>
+              ),
+            })}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => openActionItemModal("balancingTest", "finalDecision")}
+                className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
+              >
+                + Add Action Item
+              </button>
+            </div>
+          </div>
           
-          {renderFileUpload("balancingTest", "decisionDocuments", "Please upload decision documents, approvals, or DPO reviews")}
+          <div>
+            {renderFileUpload("balancingTest", "decisionDocuments", "Please upload decision documents, approvals, or DPO reviews")}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => openActionItemModal("balancingTest", "decisionDocuments")}
+                className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
+              >
+                + Add Action Item
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -678,48 +903,114 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated }) => {
       <div className="bg-gray-50 dark:bg-gray-900 border border-[#828282] p-6 rounded-lg">
         <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-4">Stakeholder Consultation & Review</h3>
         <div className="space-y-6">
-          {renderTextarea("stakeholderConsultation", "stakeholdersConsulted", {
-            value: formData.stakeholderConsultation.stakeholdersConsulted,
-            onChange: (e) => handleInputChange("stakeholderConsultation", "stakeholdersConsulted", e.target.value),
-            placeholder: "List the stakeholders consulted (e.g., DPO, legal team, business units)...",
-            label: "Which stakeholders were consulted regarding this processing?",
-            rows: 3,
-          })}
-          
-          {renderTextarea("stakeholderConsultation", "feedbackConcerns", {
-            value: formData.stakeholderConsultation.feedbackConcerns,
-            onChange: (e) => handleInputChange("stakeholderConsultation", "feedbackConcerns", e.target.value),
-            placeholder: "Describe any feedback or concerns raised by stakeholders...",
-            label: "What feedback or concerns were raised?",
-            rows: 3,
-          })}
-          
-          <div className="grid grid-cols-2 gap-4">
-            {renderInput("stakeholderConsultation", "assessmentDate", {
-              type: "date",
-              value: formData.stakeholderConsultation.assessmentDate,
-              onChange: (e) => handleInputChange("stakeholderConsultation", "assessmentDate", e.target.value),
-              label: "When was this assessment conducted?",
+          <div>
+            {renderTextarea("stakeholderConsultation", "stakeholdersConsulted", {
+              value: formData.stakeholderConsultation.stakeholdersConsulted,
+              onChange: (e) => handleInputChange("stakeholderConsultation", "stakeholdersConsulted", e.target.value),
+              placeholder: "List the stakeholders consulted (e.g., DPO, legal team, business units)...",
+              label: "Which stakeholders were consulted regarding this processing?",
+              rows: 3,
             })}
-            
-            {renderInput("stakeholderConsultation", "nextReviewDate", {
-              type: "date",
-              value: formData.stakeholderConsultation.nextReviewDate,
-              onChange: (e) => handleInputChange("stakeholderConsultation", "nextReviewDate", e.target.value),
-              label: "When will it be reviewed next?",
-              required: false,
-            })}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => openActionItemModal("stakeholderConsultation", "stakeholdersConsulted")}
+                className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
+              >
+                + Add Action Item
+              </button>
+            </div>
           </div>
           
-          {renderInput("stakeholderConsultation", "responsiblePerson", {
-            type: "text",
-            value: formData.stakeholderConsultation.responsiblePerson,
-            onChange: (e) => handleInputChange("stakeholderConsultation", "responsiblePerson", e.target.value),
-            placeholder: "Enter the name of the responsible person...",
-            label: "Who is responsible for ongoing monitoring?",
-          })}
+          <div>
+            {renderTextarea("stakeholderConsultation", "feedbackConcerns", {
+              value: formData.stakeholderConsultation.feedbackConcerns,
+              onChange: (e) => handleInputChange("stakeholderConsultation", "feedbackConcerns", e.target.value),
+              placeholder: "Describe any feedback or concerns raised by stakeholders...",
+              label: "What feedback or concerns were raised?",
+              rows: 3,
+            })}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => openActionItemModal("stakeholderConsultation", "feedbackConcerns")}
+                className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
+              >
+                + Add Action Item
+              </button>
+            </div>
+          </div>
           
-          {renderFileUpload("stakeholderConsultation", "consultationDocuments", "Please upload consultation records and review confirmation documents")}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              {renderInput("stakeholderConsultation", "assessmentDate", {
+                type: "date",
+                value: formData.stakeholderConsultation.assessmentDate,
+                onChange: (e) => handleInputChange("stakeholderConsultation", "assessmentDate", e.target.value),
+                label: "When was this assessment conducted?",
+              })}
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => openActionItemModal("stakeholderConsultation", "assessmentDate")}
+                  className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
+                >
+                  + Add Action Item
+                </button>
+              </div>
+            </div>
+            
+            <div>
+              {renderInput("stakeholderConsultation", "nextReviewDate", {
+                type: "date",
+                value: formData.stakeholderConsultation.nextReviewDate,
+                onChange: (e) => handleInputChange("stakeholderConsultation", "nextReviewDate", e.target.value),
+                label: "When will it be reviewed next?",
+                required: false,
+              })}
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => openActionItemModal("stakeholderConsultation", "nextReviewDate")}
+                  className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
+                >
+                  + Add Action Item
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            {renderInput("stakeholderConsultation", "responsiblePerson", {
+              type: "text",
+              value: formData.stakeholderConsultation.responsiblePerson,
+              onChange: (e) => handleInputChange("stakeholderConsultation", "responsiblePerson", e.target.value),
+              placeholder: "Enter the name of the responsible person...",
+              label: "Who is responsible for ongoing monitoring?",
+            })}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => openActionItemModal("stakeholderConsultation", "responsiblePerson")}
+                className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
+              >
+                + Add Action Item
+              </button>
+            </div>
+          </div>
+          
+          <div>
+            {renderFileUpload("stakeholderConsultation", "consultationDocuments", "Please upload consultation records and review confirmation documents")}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => openActionItemModal("stakeholderConsultation", "consultationDocuments")}
+                className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
+              >
+                + Add Action Item
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -781,105 +1072,117 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/30 backdrop-blur-[0.5px] flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 dark:border-gray-600 rounded-lg w-full max-w-4xl max-h-[90vh] flex flex-col">
-        {/* Modal Header */}
-        <div className="bg-white dark:bg-gray-800 dark:border-gray-600 px-6 py-4 rounded-t-2xl border-b border-[#828282] flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center space-x-4">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-              Legitimate Interest Assessment - {formData.basicInfo.liaId}
-            </h2>
-            {saving && (
-              <div className="flex items-center space-x-2 text-sm text-gray-500">
-                <Save className="w-4 h-4 animate-pulse" />
-                <span>Saving...</span>
-              </div>
-            )}
-            {lastSaved && (
-              <div className="flex items-center space-x-2 text-sm text-gray-500">
-                <Clock className="w-4 h-4" />
-                <span>Last saved: {lastSaved.toLocaleTimeString()}</span>
-              </div>
-            )}
+    <>
+      <div className="fixed inset-0 bg-black/30 backdrop-blur-[0.5px] flex items-center justify-center z-50 p-4">
+        <div className="bg-white dark:bg-gray-800 dark:border-gray-600 rounded-lg w-full max-w-4xl max-h-[90vh] flex flex-col">
+          {/* Modal Header */}
+          <div className="bg-white dark:bg-gray-800 dark:border-gray-600 px-6 py-4 rounded-t-2xl border-b border-[#828282] flex items-center justify-between flex-shrink-0">
+            <div className="flex items-center space-x-4">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                Legitimate Interest Assessment - {formData.basicInfo.liaId}
+              </h2>
+              {saving && (
+                <div className="flex items-center space-x-2 text-sm text-gray-500">
+                  <Save className="w-4 h-4 animate-pulse" />
+                  <span>Saving...</span>
+                </div>
+              )}
+              {lastSaved && (
+                <div className="flex items-center space-x-2 text-sm text-gray-500">
+                  <Clock className="w-4 h-4" />
+                  <span>Last saved: {lastSaved.toLocaleTimeString()}</span>
+                </div>
+              )}
+            </div>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+            >
+              <X className="w-6 h-6" />
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
 
-        {/* Progress Bar */}
-        <div className="px-6 py-4 bg-white dark:bg-gray-800 dark:border-gray-600 flex-shrink-0">
-          <ProgressBar />
-        </div>
+          {/* Progress Bar */}
+          <div className="px-6 py-4 bg-white dark:bg-gray-800 dark:border-gray-600 flex-shrink-0">
+            <ProgressBar />
+          </div>
 
-        {/* Modal Content (scrollable area) */}
-        <div className="px-6 py-4 flex-1 overflow-y-auto">
-          {getCurrentStageContent()}
-        </div>
+          {/* Modal Content (scrollable area) */}
+          <div className="px-6 py-4 flex-1 overflow-y-auto">
+            {getCurrentStageContent()}
+          </div>
 
-        {/* Modal Footer (always visible) */}
-        <div className="px-6 py-4 rounded-2xl flex justify-between flex-shrink-0">
-          <div className="flex space-x-3">
-            {currentStage > 1 && (
-              <button
-                onClick={handlePreviousStage}
-                className="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer"
-              >
-                Previous
-              </button>
-            )}
+          {/* Modal Footer (always visible) */}
+          <div className="px-6 py-4 rounded-2xl flex justify-between flex-shrink-0">
+            <div className="flex space-x-3">
+              {currentStage > 1 && (
+                <button
+                  onClick={handlePreviousStage}
+                  className="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer"
+                >
+                  Previous
+                </button>
+              )}
+              
+              {/* Final stage actions */}
+              {currentStage === 5 && (
+                <>
+                  <button
+                    onClick={handleSaveAndClose}
+                    disabled={loading}
+                    className="flex items-center space-x-2 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors cursor-pointer"
+                  >
+                    <SkipForward className="w-4 h-4" />
+                    <span>Skip</span>
+                  </button>
+                  <button
+                    onClick={handleLinkAndComplete}
+                    disabled={loading}
+                    className="flex items-center space-x-2 bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors cursor-pointer"
+                  >
+                    <Link className="w-4 h-4" />
+                    <span>Link & Complete</span>
+                  </button>
+                </>
+              )}
+            </div>
             
-            {/* Final stage actions */}
-            {currentStage === 5 && (
-              <>
+            <div>
+              {currentStage < 5 ? (
+                <button
+                  onClick={handleNextStage}
+                  className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors cursor-pointer"
+                >
+                  Save & Next
+                </button>
+              ) : (
                 <button
                   onClick={handleSaveAndClose}
                   disabled={loading}
-                  className="flex items-center space-x-2 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors cursor-pointer"
+                  className={`px-6 py-2 rounded-lg transition-colors ${
+                    loading
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-green-600 hover:bg-green-700 cursor-pointer"
+                  } text-white`}
                 >
-                  <SkipForward className="w-4 h-4" />
-                  <span>Skip</span>
+                  {loading ? "Submitting..." : "Submit & Close"}
                 </button>
-                <button
-                  onClick={handleLinkAndComplete}
-                  disabled={loading}
-                  className="flex items-center space-x-2 bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors cursor-pointer"
-                >
-                  <Link className="w-4 h-4" />
-                  <span>Link & Complete</span>
-                </button>
-              </>
-            )}
-          </div>
-          
-          <div>
-            {currentStage < 5 ? (
-              <button
-                onClick={handleNextStage}
-                className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors cursor-pointer"
-              >
-                Save & Next
-              </button>
-            ) : (
-              <button
-                onClick={handleSaveAndClose}
-                disabled={loading}
-                className={`px-6 py-2 rounded-lg transition-colors ${
-                  loading
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-green-600 hover:bg-green-700 cursor-pointer"
-                } text-white`}
-              >
-                {loading ? "Submitting..." : "Submit & Close"}
-              </button>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+
+      {/* Action Item Modal */}
+      <ActionItemModal
+        isOpen={isActionModalOpen}
+        onClose={closeActionItemModal}
+        onSave={handleActionItemSave}
+        currentUser={currentUser}
+        departments={["Legal", "Frontend", "Payments", "Procurement", "Customer Ops"]}
+        users={[{ id: "user_1", name: "Alice Admin" }, { id: "user_2", name: "Bob Reviewer" }]}
+      />
+    </>
   );
 };
 
