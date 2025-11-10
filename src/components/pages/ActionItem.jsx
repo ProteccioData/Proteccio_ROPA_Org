@@ -886,45 +886,6 @@ export default function ActionDashboard({
             </div>
           </div>
         </div>
-
-        {/* Quick Actions Panel */}
-        <div className="mt-6 flex flex-col md:flex-row gap-3 dark:text-white">
-          <div className="flex-1 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-4 shadow">
-            <h4 className="font-semibold text-gray-900 dark:text-white">
-              Quick Actions
-            </h4>
-            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <button
-                onClick={handleCreate}
-                className="flex items-center gap-2 px-3 py-2 rounded-md bg-[#5DEE92] text-black"
-              >
-                <Plus className="h-4 w-4" /> Create New Action Item
-              </button>
-              <button
-                onClick={handleExport}
-                className="flex items-center gap-2 px-3 py-2 rounded-md border"
-              >
-                <Download className="h-4 w-4" /> Export Report
-              </button>
-              <label className="flex items-center gap-2 px-3 py-2 rounded-md border cursor-pointer">
-                <FilePlus className="h-4 w-4" /> Upload Audit Evidence
-                <input
-                  type="file"
-                  onChange={handleUploadEvidence}
-                  className="hidden"
-                />
-              </label>
-              <button
-                onClick={() =>
-                  alert("View linked RoPA/Assessment (placeholder)")
-                }
-                className="flex items-center gap-2 px-3 py-2 rounded-md border"
-              >
-                <LinkIcon className="h-4 w-4" /> View Linked RoPA / Assessment
-              </button>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

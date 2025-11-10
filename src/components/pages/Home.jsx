@@ -237,7 +237,7 @@ export default function Home() {
           cur = target;
           clearInterval(t);
         }
-        setAnimateNumbers((prev) => ({ ...prev, [key]: cur }));
+        setAnimateNumbers((prev) => ({ ...prev, [key]: 24 }));
       }, 16);
       return t;
     };
@@ -341,7 +341,7 @@ export default function Home() {
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300">
-                    Compliance Info
+                    RoPA Compliance
                   </h3>
                   <div className="mt-3">
                     <div className="text-3xl font-extrabold text-[#1F6B3B]">

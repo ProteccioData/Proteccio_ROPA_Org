@@ -60,8 +60,8 @@ const chartData = {
     {
       label: "TIA",
       data: [204, 24, 74, 94, 24, 204, 204, 24, 74, 94, 24, 204],
-      borderColor: "#1E40AF",
-      backgroundColor: "#1E40AF",
+      borderColor: "#FF00FF",
+      backgroundColor: "#FF00FF",
       borderWidth: 2,
       borderDash: [2, 6],
       tension: 0.4,

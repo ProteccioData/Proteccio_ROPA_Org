@@ -39,7 +39,7 @@ const StatCard = ({ icon: Icon, title, description, count, buttonText, onButtonC
         <span className="text-4xl pl-4 font-bold text-gray-900 dark:text-gray-100">
           {count}
         </span>
-        <p className="pl-4">Assessments</p>
+        <p className="pl-4 dark:text-gray-100">Assessments</p>
       </div>
 
       <button onClick={onButtonClick} className="rounded-md bg-[#5DEE92] px-3 py-1.5 text-sm font-medium text-gray-900 hover:opacity-90 transition hover:cursor-pointer">
