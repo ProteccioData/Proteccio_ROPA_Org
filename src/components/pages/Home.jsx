@@ -24,6 +24,7 @@ import {
   Download,
   FileText,
 } from "lucide-react";
+import RiskGauge from "../ui/RiskGauge";
 
 ChartJS.register(
   CategoryScale,
@@ -237,7 +238,7 @@ export default function Home() {
           cur = target;
           clearInterval(t);
         }
-        setAnimateNumbers((prev) => ({ ...prev, [key]: 24 }));
+        setAnimateNumbers((prev) => ({ ...prev, [key]: 19 }));
       }, 16);
       return t;
     };
@@ -486,119 +487,136 @@ export default function Home() {
             </motion.div>
 
             <div style={{ height: "420px" }} className="flex flex-col gap-4">
-              {/* Risk Overview (top half) */}
+              {/* Risk Overview (Speedometer style) */}
               <motion.div
                 initial="hidden"
                 animate="show"
                 variants={cardAnim}
                 custom={4}
-                className="rounded-2xl p-4 shadow-sm transition-all hover:shadow-lg duration-300 border border-[#828282] dark:bg-gray-800 bg-white flex flex-col items-center justify-center"
+                className="rounded-2xl p-5 shadow-sm hover:shadow-lg transition-all duration-300 border border-[#828282] dark:border-[#333] bg-white dark:bg-gray-800 flex flex-col items-center justify-center"
               >
                 <div className="w-full">
-                  <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-3">
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
                     Risk Overview
                   </h3>
 
                   <div className="flex justify-between items-center gap-6 pb-4">
                     {/* SVG radial gauge */}
+                    {/* SVG radial gauge (0–25 range, fixed fill behavior) */}
                     <div className="relative flex items-center justify-center w-28 h-28">
                       <svg viewBox="0 0 36 36" className="w-28 h-28">
                         <defs>
+                          {/* Gradient for smooth category transition */}
                           <linearGradient id="gaugeGrad" x1="0%" x2="100%">
-                            <stop offset="0%" stopColor="#10B981" />
-                            <stop offset="50%" stopColor="#FACC15" />
-                            <stop offset="100%" stopColor="#EF4444" />
+                            <stop offset="0%" stopColor="#10B981" /> {/* Low */}
+                            <stop offset="25%" stopColor="#FACC15" />{" "}
+                            {/* Medium */}
+                            <stop offset="50%" stopColor="#FB923C" />{" "}
+                            {/* High */}
+                            <stop offset="75%" stopColor="#F97316" />{" "}
+                            {/* Very High */}
+                            <stop offset="100%" stopColor="#EF4444" />{" "}
+                            {/* Critical */}
                           </linearGradient>
                         </defs>
 
-                        {/* track */}
+                        {/* Background track */}
                         <path
                           d="M18 2.0845
-                          a 15.9155 15.9155 0 0 1 0 31.831
-                          a 15.9155 15.9155 0 0 1 0 -31.831"
+         a 15.9155 15.9155 0 0 1 0 31.831
+         a 15.9155 15.9155 0 0 1 0 -31.831"
                           fill="none"
                           stroke="#eef2f6"
                           strokeWidth="2.6"
                           strokeLinecap="round"
                         />
-                        {/* progress */}
+
+                        {/* Foreground arc */}
+                        {/* Foreground arc (fills fully at 25) */}
                         <path
                           d="M18 2.0845
-                          a 15.9155 15.9155 0 0 1 0 31.831
-                          a 15.9155 15.9155 0 0 1 0 -31.831"
+     a 15.9155 15.9155 0 0 1 0 31.831
+     a 15.9155 15.9155 0 0 1 0 -31.831"
                           fill="none"
                           stroke="url(#gaugeGrad)"
                           strokeWidth="2.6"
                           strokeLinecap="round"
-                          strokeDasharray={radialStroke(animateNumbers.risk)}
-                          style={{ transition: "stroke-dasharray 0.9s ease" }}
+                          strokeDasharray="100"
+                          strokeDashoffset={
+                            100 - (animateNumbers.risk / 25) * 100
+                          }
+                          style={{
+                            transition:
+                              "stroke-dashoffset 0.9s ease, stroke 0.6s ease",
+                          }}
                         />
                       </svg>
 
-                      <div className="absolute text-2xl font-semibold text-gray-900 dark:text-white">
-                        {animateNumbers.risk}
+                      {/* Center label */}
+                      <div className="absolute flex flex-col items-center justify-center">
+                        <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                          {animateNumbers.risk}
+                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                            /25
+                          </span>
+                        </span>
+                        <span className="text-[10px] uppercase text-gray-500 dark:text-gray-400 tracking-wide">
+                          Risk Score
+                        </span>
                       </div>
                     </div>
 
-                    <div className="flex flex-col gap-6">
-                        <div className="flex justify-between items-center gap-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-6 bg-green-50 text-green-700 rounded flex items-center justify-center font-semibold">
-                              11
-                            </div>
-                            <div>
-                              <div className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                                Low Risk
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-6 bg-yellow-50 text-yellow-700 rounded flex items-center justify-center font-semibold">
-                              5
-                            </div>
-                            <div>
-                              <div className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                                Medium Risk
-                              </div>
-                            </div>
-                          </div>
+                    {/* Right side: Risk Categories */}
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      {/* Low Risk */}
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-6 bg-green-50 text-green-700 rounded flex items-center justify-center font-semibold">
+                          11
                         </div>
+                        <span className="font-medium text-gray-700 dark:text-gray-200">
+                          Low Risk
+                        </span>
+                      </div>
 
-                        <div className="flex justify-between items-center gap-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-6 bg-red-50 text-red-700 rounded flex items-center justify-center font-semibold">
-                              5
-                            </div>
-                            <div>
-                              <div className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                                High Risk
-                              </div>
-                            </div>
-                          </div>
+                      {/* Medium Risk */}
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-6 bg-yellow-50 text-yellow-700 rounded flex items-center justify-center font-semibold">
+                          5
+                        </div>
+                        <span className="font-medium text-gray-700 dark:text-gray-200">
+                          Medium Risk
+                        </span>
+                      </div>
 
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-6 bg-red-50 text-red-700 rounded flex items-center justify-center font-semibold">
-                              5
-                            </div>
-                            <div>
-                              <div className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                                Very High
-                              </div>
-                            </div>
-                          </div>
+                      {/* High Risk */}
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-6 bg-orange-50 text-orange-700 rounded flex items-center justify-center font-semibold">
+                          5
                         </div>
-                        
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-6 bg-red-50 text-red-700 rounded flex items-center justify-center font-semibold">
-                            5
-                          </div>
-                          <div>
-                            <div className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                              Critical
-                            </div>
-                          </div>
+                        <span className="font-medium text-gray-700 dark:text-gray-200">
+                          High Risk
+                        </span>
+                      </div>
+
+                      {/* Very High */}
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-6 bg-red-50 text-red-700 rounded flex items-center justify-center font-semibold">
+                          5
                         </div>
+                        <span className="font-medium text-gray-700 dark:text-gray-200">
+                          Very High
+                        </span>
+                      </div>
+
+                      {/* Critical */}
+                      <div className="flex items-center gap-3 col-span-2">
+                        <div className="w-8 h-6 bg-red-100 text-red-800 rounded flex items-center justify-center font-semibold">
+                          5
+                        </div>
+                        <span className="font-medium text-gray-700 dark:text-gray-200">
+                          Critical
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
