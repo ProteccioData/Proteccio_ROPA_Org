@@ -19,17 +19,22 @@
     "dotted-map": "^2.2.3",
     "framer-motion": "^12.23.24",
     "html-to-image": "^1.11.13",
+    "konva": "^10.0.8",
     "lucide-react": "^0.544.0",
     "motion": "^12.23.24",
     "react": "^19.1.1",
     "react-chartjs-2": "^5.3.0",
     "react-dom": "^19.1.1",
     "react-flow": "^1.0.3",
+    "react-konva": "^19.2.0",
+    "react-konva-utils": "^2.0.0",
     "react-router-dom": "^7.9.3",
     "reactflow": "^11.11.4",
     "recharts": "^2.15.4",
     "tailwind-merge": "^3.3.1",
-    "tailwindcss": "^4.1.13"
+    "tailwindcss": "^4.1.13",
+    "use-image": "^1.1.4",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",

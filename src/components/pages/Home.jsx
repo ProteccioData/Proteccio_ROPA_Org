@@ -499,7 +499,7 @@ export default function Home() {
                     Risk Overview
                   </h3>
 
-                  <div className="flex justify-between items-center gap-6">
+                  <div className="flex justify-between items-center gap-6 pb-4">
                     {/* SVG radial gauge */}
                     <div className="relative flex items-center justify-center w-28 h-28">
                       <svg viewBox="0 0 36 36" className="w-28 h-28">
@@ -536,61 +536,71 @@ export default function Home() {
                       </svg>
 
                       <div className="absolute text-2xl font-semibold text-gray-900 dark:text-white">
-                        {animateNumbers.risk}%
+                        {animateNumbers.risk}
                       </div>
                     </div>
 
-                    <div className="">
-                      <div className="space-y-3 flex justify-center flex-col ">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-6 bg-green-50 text-green-700 rounded flex items-center justify-center font-semibold">
-                            11
-                          </div>
-                          <div>
-                            <div className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                              Low Risk
+                    <div className="flex flex-col gap-6">
+                        <div className="flex justify-between items-center gap-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-6 bg-green-50 text-green-700 rounded flex items-center justify-center font-semibold">
+                              11
                             </div>
-                            <div className="text-xs text-gray-500">
-                              Low risk dataset count
+                            <div>
+                              <div className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                                Low Risk
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-6 bg-yellow-50 text-yellow-700 rounded flex items-center justify-center font-semibold">
+                              5
+                            </div>
+                            <div>
+                              <div className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                                Medium Risk
+                              </div>
                             </div>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-6 bg-yellow-50 text-yellow-700 rounded flex items-center justify-center font-semibold">
-                            5
-                          </div>
-                          <div>
-                            <div className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                              Medium Risk
+                        <div className="flex justify-between items-center gap-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-6 bg-red-50 text-red-700 rounded flex items-center justify-center font-semibold">
+                              5
                             </div>
-                            <div className="text-xs text-gray-500">
-                              Watchlist
+                            <div>
+                              <div className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                                High Risk
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-6 bg-red-50 text-red-700 rounded flex items-center justify-center font-semibold">
+                              5
+                            </div>
+                            <div>
+                              <div className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                                Very High
+                              </div>
                             </div>
                           </div>
                         </div>
-
+                        
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-6 bg-red-50 text-red-700 rounded flex items-center justify-center font-semibold">
                             5
                           </div>
                           <div>
                             <div className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                              High Risk
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              Immediate attention
+                              Critical
                             </div>
                           </div>
                         </div>
-                      </div>
                     </div>
                   </div>
-
-                  <p className="text-xs text-gray-500 mt-3">
-                    Overall risk gauge — higher percent indicates more risk
-                    exposure
-                  </p>
                 </div>
               </motion.div>
 

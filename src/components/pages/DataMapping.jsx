@@ -12,7 +12,7 @@ import {
   Edit3,
 } from "lucide-react";
 import Button from "../ui/Button";
-import DiagramBuilder from "../modules/DiagramBuilder";
+import ExtensiveDiagramStudio from "../modules/DiagramBuilder";
 
 // Enhanced data structure for flows
 const initialDataMappings = [
@@ -276,7 +276,7 @@ export default function DataMappingTable() {
 
       {/* Diagram Builder Modal */}
       {showDiagramBuilder && (
-        <DiagramBuilder
+        <ExtensiveDiagramStudio
           onSave={handleSaveFlow}
           onClose={() => {
             setShowDiagramBuilder(false);
