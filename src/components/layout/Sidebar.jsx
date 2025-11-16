@@ -18,7 +18,7 @@ import { NavLink } from "react-router-dom";
 import useTheme from "../hooks/useTheme";
 
 const menuItems = [
-  { name: "Home", icon: LayoutGrid, path: "/" },
+  { name: "Home", icon: LayoutGrid, path: "/home" },
   {
     name: "RoPA",
     icon: FileText,

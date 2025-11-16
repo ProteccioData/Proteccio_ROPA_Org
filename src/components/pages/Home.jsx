@@ -25,6 +25,12 @@ import {
   FileText,
 } from "lucide-react";
 import RiskGauge from "../ui/RiskGauge";
+import {
+  getDashboardActivity,
+  getDashboardSummary,
+  getRopaStats,
+} from "../../services/DashboardService";
+import { useAuth } from "../../context/AuthContext";
 
 ChartJS.register(
   CategoryScale,
@@ -41,6 +47,11 @@ const SmallCardHeight = "h-[160px]"; // smaller cards used inside middle column
 export default function Home() {
   const [mounted, setMounted] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
+  const [summary, setSummary] = useState(null);
+  const [activityList, setActivityList] = useState([]);
+  const { user } = useAuth();
+
+  const [ropaPieData, setRopaPieData] = useState([]);
 
   const [animateNumbers, setAnimateNumbers] = useState({
     ropa: 0,
@@ -166,6 +177,22 @@ export default function Home() {
     },
   ];
 
+  const transformActivities = (list) =>
+    list.map((item) => {
+      const dateObj = new Date(item.createdAt);
+
+      return {
+        activity: item.message,
+        date: dateObj.toLocaleDateString(),
+        time: dateObj.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        type: item.type.toUpperCase(),
+        performedBy: item.email,
+      };
+    });
+
   const upcomingAudits = [
     {
       id: 1,
@@ -226,43 +253,98 @@ export default function Home() {
     ],
   };
 
+  const startNumberAnimation = (data) => {
+    const animate = (key, target) => {
+      let current = 0;
+      const step = Math.max(1, Math.floor(target / 40));
+
+      const interval = setInterval(() => {
+        current += step;
+        if (current >= target) {
+          current = target;
+          clearInterval(interval);
+        }
+        setAnimateNumbers((prev) => ({ ...prev, [key]: current }));
+      }, 16);
+    };
+
+    animate("ropa", data.stats.totalRopas);
+    animate("assessments", data.stats.myReports);
+    animate(
+      "transfers",
+      Object.values(data.ropasByCategory).reduce((a, b) => a + b, 0)
+    );
+    animate("compliance", data.stats.completionAverage);
+    animate("risk", data.stats.myRopas || 0); // Placeholder (risk not in backend)
+  };
+
+  // useEffect(() => {
+  //   setMounted(true);
+
+  //   const animateNumber = (target, key, duration = 1500) => {
+  //     const step = Math.max(1, Math.floor(target / (duration / 16)));
+  //     let cur = 0;
+  //     const t = setInterval(() => {
+  //       cur += step;
+  //       if (cur >= target) {
+  //         cur = target;
+  //         clearInterval(t);
+  //       }
+  //       setAnimateNumbers((prev) => ({ ...prev, [key]: 19 }));
+  //     }, 16);
+  //     return t;
+  //   };
+
+  //   const timers = [];
+  //   timers.push(
+  //     setTimeout(() => timers.push(animateNumber(246, "ropa", 1200)), 200)
+  //   );
+  //   timers.push(
+  //     setTimeout(() => timers.push(animateNumber(18, "assessments", 900)), 350)
+  //   );
+  //   timers.push(
+  //     setTimeout(() => timers.push(animateNumber(52, "transfers", 1000)), 450)
+  //   );
+  //   timers.push(
+  //     setTimeout(() => timers.push(animateNumber(55, "compliance", 1000)), 550)
+  //   );
+  //   timers.push(
+  //     setTimeout(() => timers.push(animateNumber(78, "risk", 1200)), 650)
+  //   );
+
+  //   return () => {
+  //     timers.forEach((t) => clearTimeout(t));
+  //   };
+  // }, []);
+
   useEffect(() => {
     setMounted(true);
 
-    const animateNumber = (target, key, duration = 1500) => {
-      const step = Math.max(1, Math.floor(target / (duration / 16)));
-      let cur = 0;
-      const t = setInterval(() => {
-        cur += step;
-        if (cur >= target) {
-          cur = target;
-          clearInterval(t);
-        }
-        setAnimateNumbers((prev) => ({ ...prev, [key]: 19 }));
-      }, 16);
-      return t;
+    const fetchData = async () => {
+      try {
+        const summaryRes = await getDashboardSummary();
+        const activityRes = await getDashboardActivity();
+        const ropaStatsRes = await getRopaStats();
+
+        setSummary(summaryRes.data);
+        setActivityList(transformActivities(activityRes.data.activities));
+        const formattedPieData = ropaStatsRes.data.byCategory.map(
+          (item, index) => ({
+            Stage: item.category, // recharts label
+            RoPA: item.count, // value
+            fill: `var(--color-chart-${index + 1})`,
+          })
+        );
+
+        setRopaPieData(formattedPieData);
+        // Animate numbers using real values
+        startNumberAnimation(summaryRes.data);
+      } catch (err) {
+        console.error("Dashboard load error", err);
+      }
     };
 
-    const timers = [];
-    timers.push(
-      setTimeout(() => timers.push(animateNumber(246, "ropa", 1200)), 200)
-    );
-    timers.push(
-      setTimeout(() => timers.push(animateNumber(18, "assessments", 900)), 350)
-    );
-    timers.push(
-      setTimeout(() => timers.push(animateNumber(52, "transfers", 1000)), 450)
-    );
-    timers.push(
-      setTimeout(() => timers.push(animateNumber(55, "compliance", 1000)), 550)
-    );
-    timers.push(
-      setTimeout(() => timers.push(animateNumber(78, "risk", 1200)), 650)
-    );
-
-    return () => {
-      timers.forEach((t) => clearTimeout(t));
-    };
+    fetchData();
   }, []);
 
   const cardAnim = {
@@ -278,12 +360,26 @@ export default function Home() {
     }),
   };
 
+  const getRopaThisMonthText = (stats) => {
+    if (!stats) return "";
+
+    const diff = stats.ropasThisMonth - stats.ropasLastMonth;
+
+    if (diff > 0) return `+${diff} this month`;
+    if (diff < 0) return `${diff} this month`; // diff is negative automatically
+    return "No change this month";
+  };
+
   // Stroke dash handling for radial gauge
   // Using a 100-length circumference shorthand so strokeDasharray can be percentage based
   const radialStroke = (percent) =>
     `${Math.max(0, Math.min(100, percent))} ${
       100 - Math.max(0, Math.min(100, percent))
     }`;
+
+  if (!summary) {
+    return <div className="p-6 text-center">Loading Dashboard...</div>;
+  }
 
   return (
     <>
@@ -306,13 +402,15 @@ export default function Home() {
                   </p>
                   <div className="flex items-baseline gap-2 mt-2">
                     <h2 className="text-4xl font-extrabold text-[#5DE992] dark:text-[#5DE992]">
-                      {animateNumbers.ropa}
+                      {summary.stats.totalRopas || animateNumbers.ropa}
                     </h2>
                   </div>
-                  <p className="text-sm text-gray-500 mt-1">+ 12 This month</p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {getRopaThisMonthText(summary?.stats)}
+                  </p>
                 </div>
                 <div className="w-48 h-48">
-                  <RoundedPieChart />
+                  <RoundedPieChart data={ropaPieData} />
                 </div>
               </div>
               <div className="flex-1 mt-2 text-xs text-gray-600 dark:text-gray-300">
@@ -346,7 +444,8 @@ export default function Home() {
                   </h3>
                   <div className="mt-3">
                     <div className="text-3xl font-extrabold text-[#1F6B3B]">
-                      {animateNumbers.compliance}%
+                      {/* {animateNumbers.compliance}% */}
+                      {summary?.stats?.completionAverage ?? 0}%
                     </div>
                     <div className="text-sm text-gray-500 mt-1">
                       Overall compliance across tracked RoPA entries
@@ -404,7 +503,7 @@ export default function Home() {
                       </span>
                     </div>
                     <div className="text-lg md:text-xl font-bold text-blue-600 dark:text-blue-400">
-                      {reportStats.totalReports || 0}
+                      {summary.stats.myReports || 0}
                     </div>
                   </div>
                   <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-2 md:p-3">
@@ -415,7 +514,7 @@ export default function Home() {
                       </span>
                     </div>
                     <div className="text-lg md:text-xl font-bold text-green-600 dark:text-green-400">
-                      {reportStats.thisMonthCount | 0}
+                      {summary.stats.reportsThisMonth | 0}
                     </div>
                   </div>
                 </div>
@@ -464,7 +563,8 @@ export default function Home() {
                   </p>
                   <div className="flex items-baseline gap-2 mt-1">
                     <h2 className="text-4xl font-extrabold text-[#5DE992]">
-                      {animateNumbers.assessments}
+                      {summary.stats.totalAssessments ||
+                        animateNumbers.assessments}
                     </h2>
                     <p className="text-sm text-gray-500">+ 12 This month</p>
                   </div>
@@ -787,7 +887,7 @@ export default function Home() {
 
           {/* Table Rows */}
           <div className="space-y-3">
-            {activities.map((activity, index) => (
+            {activityList.map((activity, index) => (
               <div
                 key={activity.id}
                 className="grid grid-cols-5 gap-4 py-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"

@@ -7,13 +7,6 @@ import {
 
 export const description = "A pie chart with a label list";
 
-const chartData = [
-  { Stage: "infovoyage", RoPA: 275, fill: "var(--color-chart-1)" },
-  { Stage: "checksync", RoPA: 200, fill: "var(--color-chart-2)" },
-  { Stage: "beam", RoPA: 187, fill: "var(--color-chart-3)" },
-  { Stage: "offdoff", RoPA: 173, fill: "var(--color-chart-4)" },
-];
-
 const chartConfig = {
   RoPA: {
     label: "RoPA",
@@ -36,11 +29,13 @@ const chartConfig = {
   },
 };
 
-export function RoundedPieChart() {
+export function RoundedPieChart({ data }) {
+  const chartData = data || [];
+
   return (
     <ChartContainer
-      config={chartConfig}
-      className="[&_.recharts-text]:fill-background aspect-square "
+    config={chartConfig}
+    className="[&_.recharts-text]:fill-background aspect-square "
     >
       <PieChart>
         <ChartTooltip
