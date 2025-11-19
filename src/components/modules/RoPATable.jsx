@@ -12,43 +12,114 @@ import {
 import Button from "../ui/Button";
 import AddROPAModal from "./AddRoPA";
 import { useNavigate } from "react-router-dom";
-
-const ropasData = [
-  {
-    id: "RPA-001-001",
-    title: "Employee Onboarding Process",
-    stage: "Infovoyage",
-    processOwner: "John Doe",
-    department: "HR Department",
-    createdAt: "2025-01-15 14:32:15",
-  },
-  {
-    id: "RPA-001-002",
-    title: "Data Processing Flow",
-    stage: "Infovoyage",
-    processOwner: "Jane Smith",
-    department: "Finance",
-    createdAt: "2025-01-20 10:22:45",
-  },
-  {
-    id: "RPA-001-003",
-    title: "Vendor Management",
-    stage: "Infovoyage",
-    processOwner: "Alice Johnson",
-    department: "Operations",
-    createdAt: "2025-01-25 18:42:11",
-  },
-];
+import { getAllRopas } from "../../services/RopaService";
+import ViewROPAModal from "./ViewRopaModel";
+import EditRoPAModal from "./RopaEditModal";
+import RopaFilterModal from "./RopaFilterModel";
+import { motion } from "framer-motion";
+import { useToast } from "../ui/ToastProvider";
+import { useAuth } from "../../context/AuthContext";
 
 export default function RoPARecords() {
-  const [ropas] = useState(ropasData);
+  const [ropas, setRopas] = useState([]);
   const [openMenu, setOpenMenu] = useState(null);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
+  const [viewOpen, setViewOpen] = useState(false);
+  const [selectedRopa, setSelectedRopa] = useState(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editRopa, setEditRopa] = useState(null);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [filters, setFilters] = useState({
+    category: "",
+    status: "",
+    flow_stage: "",
+    department: "",
+  });
+  const { user } = useAuth();
+  const currentUser = user
+
+  const {addToast} = useToast();
 
   const toggleMenu = (id) => {
     setOpenMenu(openMenu === id ? null : id);
   };
+
+  const removeFilter = async (key) => {
+    const updated = { ...filters, [key]: "" };
+    setFilters(updated);
+
+    try {
+      const res = await getAllRopas({ page: 1, limit: 10, ...updated });
+      setRopas(res.data.ropas || []);
+    } catch (err) {
+      console.error("Failed to filter after chip removal", err);
+    }
+  };
+
+  const canUserEditRopa = (ropa, user) => {
+    const stage = ropa.category?.toLowerCase();
+    const status = ropa.status?.toLowerCase();
+    const role = user.role?.toLowerCase();
+
+    // ORG ADMIN: Full Access
+    if (role === "org_admin") return true;
+
+    // OFFDOFF → No one can edit (except org_admin)
+    if (stage === "offdoff") return false;
+
+    // INFO VOYAGE RULES
+    if (stage === "infovoyage") {
+      if (role === "process_owner") {
+        return status === "draft" || status === "returned";
+      }
+
+      if (role === "process_expert") {
+        return (
+          ropa.assigned_to === user.id &&
+          (status === "assigned" || status === "returned")
+        );
+      }
+
+      return false;
+    }
+
+    // CHECKSYNC RULES
+    if (stage === "checksync") {
+      return role === "privacy_sme";
+    }
+
+    // BEAM RULES
+    if (stage === "beam") {
+      return role === "privacy_sme";
+    }
+
+    return false;
+  };
+
+  const handleEditClick = (ropa) => {
+    if (!canUserEditRopa(ropa, currentUser)) {
+      addToast("error" ,"You don’t have permission to edit this RoPA.");
+      return;
+    }
+
+    // Allowed → open edit modal
+    setEditRopa(ropa);
+    setEditOpen(true);
+  };
+
+  useEffect(() => {
+    const fetchRopas = async () => {
+      try {
+        const res = await getAllRopas({ page: 1, limit: 10 });
+        setRopas(res.data.ropas || []);
+      } catch (err) {
+        console.error("Failed to load ROPAs", err);
+      }
+    };
+
+    fetchRopas();
+  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -63,12 +134,20 @@ export default function RoPARecords() {
     };
   }, []);
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const handleOpen = () => {
-    navigate("/new-ropa")
-  } 
-  // const handleOpen = () => setIsModalOpen(true);
-  const handleClose = () => setIsModalOpen(false); 
+    navigate("/new-ropa");
+  };
+
+  const applyFilters = async (newFilters) => {
+    setFilters(newFilters);
+    try {
+      const res = await getAllRopas({ page: 1, limit: 10, ...newFilters });
+      setRopas(res.data.ropas || []);
+    } catch (err) {
+      console.error("Failed to filter", err);
+    }
+    setFilterOpen(false);
+  };
 
   return (
     <div className="bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 border border-[#828282] rounded-lg shadow-sm overflow-hidden">
@@ -81,17 +160,62 @@ export default function RoPARecords() {
           </p>
         </div>
         <div className="flex justify-center gap-4">
-            <button className="flex items-center gap-2 bg-[#5DEE92] text-black px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition hover:cursor-pointer ">
-              <Filter size={16} />
-              Filter
-            </button>
-            <Button
-              onClick={handleOpen}
-              text="New RoPA"
-            />
-            {/* {isModalOpen && <AddROPAModal isOpen={handleOpen} onClose={handleClose} />} */}
-          </div>
+          <button
+            onClick={() => setFilterOpen(true)}
+            className="flex items-center gap-2 bg-[#5DEE92] text-black px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition hover:cursor-pointer "
+          >
+            <Filter size={16} />
+            Filter
+          </button>
+          <Button onClick={handleOpen} text="New RoPA" />
+          {/* {isModalOpen && <AddROPAModal isOpen={handleOpen} onClose={handleClose} />} */}
+        </div>
       </div>
+
+      {/* ACTIVE FILTERS */}
+      {Object.values(filters).some((v) => v) && (
+        <div className="px-6 mt-3 flex flex-wrap gap-2">
+          {Object.entries(filters)
+            .filter(([k, v]) => v)
+            .map(([key, value]) => (
+              <motion.div
+                key={key}
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                className="flex items-center gap-2 px-3 py-1 bg-[#5DEE92]/20 border border-[#5DEE92] text-black rounded-full text-xs font-medium"
+              >
+                <span className="capitalize">
+                  {key.replace(/_/g, " ")}: {value}
+                </span>
+                <button
+                  onClick={() => removeFilter(key)}
+                  className="text-black/70 hover:text-black"
+                >
+                  ✕
+                </button>
+              </motion.div>
+            ))}
+        </div>
+      )}
+
+      <motion.div
+        initial={{ opacity: 0, y: -5 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="px-6 mt-2 text-sm text-gray-600 dark:text-gray-400"
+      >
+        Showing{" "}
+        <motion.span
+          key={ropas.length}
+          initial={{ scale: 0.6, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 200 }}
+          className="font-semibold text-black dark:text-white"
+        >
+          {ropas.length}
+        </motion.span>{" "}
+        records
+      </motion.div>
 
       {/* Table Layout */}
       <div className="p-4">
@@ -116,27 +240,38 @@ export default function RoPARecords() {
                 className="grid grid-cols-6 gap-4 items-center bg-[#F4F4F4] dark:bg-gray-900 rounded-lg shadow-sm px-4 py-3 hover:shadow-md transition relative"
               >
                 <div className="text-sm text-gray-800 dark:text-gray-100">
-                  {ropa.id}
+                  {ropa.ropa_id}
                 </div>
                 <div className="text-sm text-gray-800 dark:text-gray-100">
-                  {ropa.title}
+                  {ropa.name}
                 </div>
                 <div>
                   <span className="inline-flex px-3 py-1 rounded-full text-xs font-medium bg-[#5de992] text-black">
-                    {ropa.stage}
+                    {ropa.category}
                   </span>
                 </div>
                 <div className="text-sm text-gray-800 dark:text-gray-100">
-                  {ropa.processOwner}
+                  {ropa.creator?.full_name || "—"}
                 </div>
                 <div className="text-sm text-gray-800 dark:text-gray-100">
-                  {ropa.department}
+                  {ropa.accountable_department || "—"}
                 </div>
                 <div className="flex items-center justify-end space-x-2 relative">
-                  <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer">
+                  <button
+                    onClick={() => {
+                      setSelectedRopa(ropa);
+                      setViewOpen(true);
+                    }}
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer"
+                  >
                     <Eye size={16} />
                   </button>
-                  <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer">
+                  <button
+                    onClick={() => {
+                      handleEditClick(ropa);
+                    }}
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer"
+                  >
                     <SquarePen size={16} />
                   </button>
                   <div className="relative" ref={dropdownRef}>
@@ -168,6 +303,30 @@ export default function RoPARecords() {
           })}
         </div>
       </div>
+      <ViewROPAModal
+        isOpen={viewOpen}
+        onClose={() => setViewOpen(false)}
+        ropa={selectedRopa}
+      />
+
+      <EditRoPAModal
+        isOpen={editOpen}
+        onClose={() => setEditOpen(false)}
+        ropa={editRopa}
+        onUpdated={(updated) => {
+          // update list without refetch
+          setRopas((prev) =>
+            prev.map((r) => (r.id === updated.id ? updated : r))
+          );
+        }}
+      />
+
+      <RopaFilterModal
+        isOpen={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        onApply={applyFilters}
+        initial={filters}
+      />
     </div>
   );
 }

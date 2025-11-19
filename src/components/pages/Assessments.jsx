@@ -1,3 +1,5 @@
+// pages/Assessments.jsx
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   ClipboardList,
@@ -11,12 +13,20 @@ import {
 } from "lucide-react";
 import { Tabs } from "../ui/tabs";
 import LIAssessmentModal from "../modules/AddLIA";
-import { useState } from "react";
-import DPIAModal from "../modules/AdDPIA";
+import DPIAModal from "../modules/AddDPIA";
 import TIAModal from "../modules/AddTIA";
+import { getAssessmentStats } from "../../services/AssessmentService";
+import CreateAssessmentModal from "../modules/CreateAssessmentModel";
 
 // Reusable Stat Card
-const StatCard = ({ icon: Icon, title, description, count, buttonText, onButtonClick }) => (
+const StatCard = ({
+  icon: Icon,
+  title,
+  description,
+  count,
+  buttonText,
+  onButtonClick,
+}) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
@@ -42,7 +52,10 @@ const StatCard = ({ icon: Icon, title, description, count, buttonText, onButtonC
         <p className="pl-4 dark:text-gray-100">Assessments</p>
       </div>
 
-      <button onClick={onButtonClick} className="rounded-md bg-[#5DEE92] px-3 py-1.5 text-sm font-medium text-gray-900 hover:opacity-90 transition hover:cursor-pointer">
+      <button
+        onClick={onButtonClick}
+        className="rounded-md bg-[#5DEE92] px-3 py-1.5 text-sm font-medium text-gray-900 hover:opacity-90 transition hover:cursor-pointer"
+      >
         {buttonText}
       </button>
     </div>
@@ -55,66 +68,34 @@ const tabData = [
   { title: "Transfer Impact Assessment", value: "tia" },
 ];
 
-// Reusable Badge
-const Badge = ({ text, color }) => (
-  <span
-    className={`px-3 py-1 text-xs font-medium rounded-md ${
-      color === "green"
-        ? "bg-green-100 text-green-700"
-        : "bg-yellow-100 text-yellow-700"
-    }`}
-  >
-    {text}
-  </span>
-);
-
-// Table Row
-const TableRow = ({ id, stage, impact, likelihood, createdBy, date }) => (
-  <motion.tr
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    transition={{ duration: 0.3 }}
-    className="border-b border-gray-200 dark:border-gray-700"
-  >
-    <td className="px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200">
-      {id}
-    </td>
-    <td className="px-4 py-3">
-      <div className="flex items-center gap-2">
-        <div className="h-2 w-full max-w-[80px] rounded bg-gray-200 dark:bg-gray-700">
-          <div className="h-2 w-full rounded bg-[#5DEE92]" />
-        </div>
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
-          {stage}
-        </span>
-      </div>
-    </td>
-    <td className="px-4 py-3">
-      <Badge text={impact} color="yellow" />
-    </td>
-    <td className="px-4 py-3">
-      <Badge text={likelihood} color="green" />
-    </td>
-    <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">
-      {createdBy}
-    </td>
-    <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">
-      {date}
-    </td>
-    <td className="px-4 py-3 flex items-center gap-3 text-gray-500">
-      <Eye className="h-4 w-4 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300" />
-      <Edit2 className="h-4 w-4 cursor-pointer hover:text-blue-500" />
-      <Trash2 className="h-4 w-4 cursor-pointer hover:text-red-500" />
-      <Copy className="h-4 w-4 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300" />
-    </td>
-  </motion.tr>
-);
-
 export default function Assessments() {
-  const [openModal, setOpenModal] = useState(null); // can be "lia" | "dpia" | "tia" 
+  const [openModal, setOpenModal] = useState(null); // "lia" | "dpia" | "tia"
+  const [stats, setStats] = useState({ byType: { LIA: 0, DPIA: 0, TIA: 0 } });
+  const [loadingStats, setLoadingStats] = useState(false);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [createType, setCreateType] = useState(null);
+  const [createdAssessment, setCreatedAssessment] = useState(null);
+  const [reloadKey, setReloadKey] = useState(0);
+
 
   const handleClose = () => setOpenModal(null);
-  const handleOpen = () => openModal;
+
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        setLoadingStats(true);
+        const res = await getAssessmentStats();
+        // defensive: ensure byType exists
+        setStats(res.data);
+      } catch (err) {
+        console.error("Failed to load assessment stats", err);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+
+    loadStats();
+  }, []);
 
   return (
     <div className="min-h-screen w-full">
@@ -124,35 +105,79 @@ export default function Assessments() {
           icon={ShieldCheck}
           title="Data Protection Impact Assessment"
           description="Assess privacy risks and mitigation measures"
-          count="1"
+          count={loadingStats ? "..." : stats.byType.DPIA}
           buttonText="Start new DPIA"
-          onButtonClick={() => setOpenModal("dpia")}
+          onButtonClick={() => {
+            setCreateType("DPIA");
+            setCreateModalOpen(true);
+          }}
         />
         <StatCard
           icon={ClipboardList}
           title="Legitimate Interest Assessment"
           description="Evaluate legitimate interests for data processing"
-          count="2"
+          count={loadingStats ? "..." : stats.byType.LIA}
           buttonText="Start new LIA"
-          onButtonClick={() => setOpenModal("lia")}
+          onButtonClick={() => {
+            setCreateType("LIA");
+            setCreateModalOpen(true);
+          }}
         />
         <StatCard
           icon={ArrowLeftRight}
           title="Transfer Impact Assessment"
           description="Evaluate risks of cross-border data transfers"
-          count="0"
+          count={loadingStats ? "..." : stats.byType.TIA}
           buttonText="Start new TIA"
-          onButtonClick={() => setOpenModal("tia")}
+          onButtonClick={() => {
+            setCreateType("TIA");
+            setCreateModalOpen(true);
+          }}
         />
       </div>
+
       {/* Tabs */}
       <div className="pt-8">
-        <Tabs tabs={tabData} />
+        <Tabs tabs={tabData} reloadKey={reloadKey} />
       </div>
 
-      {openModal === "dpia" && <DPIAModal isOpen={openModal} onClose={handleClose} />}
-      {openModal === "lia" && <LIAssessmentModal isOpen={openModal} onClose={handleClose} />}
-      {openModal === "tia" && <TIAModal isOpen={openModal} onClose={handleClose} />}
+      <CreateAssessmentModal
+        open={createModalOpen}
+        type={createType}
+        onClose={() => setCreateModalOpen(false)}
+        onCreated={(assessment) => {
+          setCreateModalOpen(false);
+          setCreatedAssessment(assessment); // store backend response
+        }}
+      />
+
+      {/* Open the real wizard only after backend created assessment */}
+      {createdAssessment?.type === "DPIA" && (
+        <DPIAModal
+          isOpen={true}
+          onClose={() => setCreatedAssessment(null)}
+          assessmentId={createdAssessment.id}
+          onCreated={() => setReloadKey(Date.now())}
+        />
+      )}
+
+      {createdAssessment?.type === "LIA" && (
+        <LIAssessmentModal
+          isOpen={true}
+          onClose={() => setCreatedAssessment(null)}
+          assessmentId={createdAssessment.id}
+          onCreated={() => setReloadKey(Date.now())}
+        />
+      )}
+
+      {createdAssessment?.type === "TIA" && (
+        <TIAModal
+          isOpen={true}
+          onClose={() => setCreatedAssessment(null)}
+          assessmentId={createdAssessment.id}
+          onCreated={() => setReloadKey(Date.now())}
+        />
+      )}
     </div>
   );
 }

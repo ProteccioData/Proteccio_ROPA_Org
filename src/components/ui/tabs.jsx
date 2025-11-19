@@ -1,7 +1,24 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Eye, Edit2, Trash2, Copy, Filter, SquarePen, Archive } from "lucide-react";
+import {
+  Eye,
+  Edit2,
+  Trash2,
+  Copy,
+  Filter,
+  SquarePen,
+  Archive,
+} from "lucide-react";
+import { useEffect } from "react";
+import {
+  getAssessments,
+  deleteAssessment,
+} from "../../services/AssessmentService";
+import ViewAssessmentModal from "../modules/ViewAssessmentModal";
+import { useAssessmentView } from "../hooks/useAssessmentView";
+import ConfirmationModal from "./ConfirmationModal";
+import { useToast } from "./ToastProvider";
 
 const Badge = ({ text, color }) => (
   <span
@@ -13,9 +30,18 @@ const Badge = ({ text, color }) => (
   >
     {text}
   </span>
-)
+);
 
-const TableRow = ({ id, stage, impact, likelihood, createdBy, date }) => (
+const TableRow = ({
+  id,
+  stage,
+  impact,
+  likelihood,
+  createdBy,
+  date,
+  onView,
+  onDelete,
+}) => (
   <motion.tr
     initial={{ opacity: 0, y: 10 }}
     animate={{ opacity: 1, y: 0 }}
@@ -48,24 +74,45 @@ const TableRow = ({ id, stage, impact, likelihood, createdBy, date }) => (
       {date}
     </td>
     <td className="px-4 py-3 flex items-center gap-3 text-gray-500">
-      <Eye className="h-4 w-4 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300" />
+      <Eye
+        onClick={() => onView(id)}
+        className="h-4 w-4 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300"
+      />
       <SquarePen className="h-4 w-4 cursor-pointer hover:text-blue-500" />
-      <Trash2 className="h-4 w-4 cursor-pointer hover:text-red-500" />
+      <Trash2
+        onClick={() => onDelete(id)}
+        className="h-4 w-4 cursor-pointer hover:text-red-500"
+      />
       <Archive className="h-4 w-4 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300" />
     </td>
   </motion.tr>
-)
+);
 
-const AssessmentTable = () => (
+const mapImpact = (value) => {
+  if (value >= 4) return "High";
+  if (value === 3) return "Medium";
+  return "Low";
+};
+
+const formatDate = (date) => {
+  return new Date(date).toLocaleDateString("en-IN", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+  });
+};
+
+const AssessmentTable = ({ title, data, onViewAssessment, onDelete }) => (
   <div className="rounded-xl border border-[#828282] dark:border-gray-700 bg-white dark:bg-gray-900 mt-4 shadow-sm">
     <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
       <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-        Legitimate Interest Assessment Records
+        {title}
       </h2>
       <button className="flex items-center gap-2 rounded-md bg-[#5DEE92] px-3 py-1.5 text-sm font-medium text-gray-900 hover:opacity-90 transition hover:cursor-pointer">
         <Filter className="h-4 w-4" /> Filter
       </button>
     </div>
+
     <div className="overflow-x-auto">
       <table className="w-full text-left text-sm">
         <thead className="bg-gray-100 dark:bg-gray-800">
@@ -88,23 +135,39 @@ const AssessmentTable = () => (
             ))}
           </tr>
         </thead>
+
         <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-          {[1, 2, 3, 4].map((i) => (
+          {data.length === 0 && (
+            <tr>
+              <td
+                className="px-4 py-6 text-center text-gray-500 dark:text-gray-400"
+                colSpan={7}
+              >
+                No assessment records found.
+              </td>
+            </tr>
+          )}
+
+          {data.map((item) => (
             <TableRow
-              key={i}
-              id="LIA-001"
-              stage="5/5"
-              impact="Medium"
-              likelihood="Low"
-              createdBy="John Doe"
-              date="2025-01-15"
+              key={item.id}
+              id={item.assessment_id}
+              stage={`${item.current_stage}/${item.total_stages}`}
+              impact={mapImpact(item.impact)}
+              likelihood={mapImpact(item.likelihood)}
+              createdBy={item.creator?.full_name || "Unknown"}
+              date={
+                item.next_review_date ? formatDate(item.next_review_date) : "-"
+              }
+              onView={(id) => onViewAssessment(item.id)}
+              onDelete={(id) => onDelete(item.id)}
             />
           ))}
         </tbody>
       </table>
     </div>
   </div>
-)
+);
 
 export const Tabs = ({
   tabs: propTabs,
@@ -112,10 +175,69 @@ export const Tabs = ({
   activeTabClassName,
   tabClassName,
   contentClassName,
+  reloadKey
 }) => {
   const [active, setActive] = useState(propTabs[0]);
   const [tabs, setTabs] = useState(propTabs);
   const [hovering, setHovering] = useState(false);
+  const [records, setRecords] = useState([]);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [processing, setProcessing] = useState(false);
+  const [selectedId, setSelectedId] = useState(null);
+
+  const { addToast } = useToast();
+
+  // View modal hook
+  const { assessment, loadAssessment } = useAssessmentView();
+  const [viewOpen, setViewOpen] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await getAssessments();
+        setRecords(res.data.assessments);
+      } catch (e) {
+        console.error("Failed loading assessments", e);
+      }
+    };
+    load();
+  }, [reloadKey]);
+
+  const handleDeleteClick = (id) => {
+    setSelectedId(id);
+    setConfirmDeleteOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    setProcessing(true);
+    try {
+      await deleteAssessment(selectedId);
+
+      addToast(
+        "success" ,"Assessment Deleted successfully.",
+      );
+
+      // Update UI
+      setRecords((prev) =>
+        prev.filter((item) => item.assessment_id !== selectedId)
+      );
+    } catch (error) {
+      addToast({
+        title: "Error",
+        description: "Failed to delete assessment.",
+        variant: "destructive",
+      });
+    }
+
+    setProcessing(false);
+    setConfirmDeleteOpen(false);
+  };
+
+  // FIX 1 — this must be inside the Tabs component
+  const onViewAssessment = (id) => {
+    loadAssessment(id);
+    setViewOpen(true);
+  };
 
   const moveSelectedTabToTop = (idx) => {
     const newTabs = [...propTabs];
@@ -123,10 +245,30 @@ export const Tabs = ({
     newTabs.unshift(selectedTab[0]);
     setTabs(newTabs);
     setActive(newTabs[0]);
-  }
+  };
 
   return (
     <>
+      {/* FIX 2 — Render modal inside return */}
+      <ViewAssessmentModal
+        open={viewOpen}
+        onClose={() => setViewOpen(false)}
+        assessment={assessment}
+      />
+
+      {/* DELETE CONFIRMATION */}
+      <ConfirmationModal
+        isOpen={confirmDeleteOpen}
+        onClose={() => setConfirmDeleteOpen(false)}
+        onConfirm={confirmDelete}
+        title="Delete Assessment"
+        message="Are you sure you want to delete this assessment? This action cannot be undone."
+        type="danger"
+        confirmText="Delete"
+        cancelText="Cancel"
+        isLoading={processing}
+      />
+
       <div
         className={cn(
           "flex flex-row items-center justify-start [perspective:1000px] relative overflow-auto sm:overflow-visible no-visible-scrollbar max-w-full w-full",
@@ -139,7 +281,10 @@ export const Tabs = ({
             onClick={() => moveSelectedTabToTop(idx)}
             onMouseEnter={() => setHovering(true)}
             onMouseLeave={() => setHovering(false)}
-            className={cn("relative px-4 py-2 rounded-ful hover:cursor-pointer", tabClassName)}
+            className={cn(
+              "relative px-4 py-2 rounded-ful hover:cursor-pointer",
+              tabClassName
+            )}
             style={{ transformStyle: "preserve-3d" }}
           >
             {active.value === tab.value && (
@@ -163,15 +308,33 @@ export const Tabs = ({
         tabs={tabs}
         active={active}
         hovering={hovering}
+        records={records}
+        onViewAssessment={onViewAssessment} // Pass it down
         key={active.value}
         className={cn("mt-10", contentClassName)}
+        onDelete={handleDeleteClick}
       />
     </>
   );
-}
+};
 
-export const FadeInDiv = ({ className, tabs, hovering, active }) => {
+export const FadeInDiv = ({
+  className,
+  tabs,
+  hovering,
+  active,
+  records,
+  onViewAssessment,
+  onDelete, 
+}) => {
   const isActive = (tab) => tab.value === tabs[0].value;
+
+  const filterByType = (type) => {
+    if (type === "lia") return records.filter((r) => r.type === "LIA");
+    if (type === "dpia") return records.filter((r) => r.type === "DPIA");
+    if (type === "tia") return records.filter((r) => r.type === "TIA");
+    return [];
+  };
 
   return (
     <div className="relative w-full h-full min-h-[400px]">
@@ -181,7 +344,7 @@ export const FadeInDiv = ({ className, tabs, hovering, active }) => {
           layoutId={tab.value}
           style={{
             scale: hovering ? 1 - idx * 0.05 : 1, // shrink only on hover
-            top: hovering ? idx * -25 : 0,        // separate only on hover
+            top: hovering ? idx * -25 : 0, // separate only on hover
             zIndex: tabs.length - idx,
             opacity: hovering
               ? idx === 0
@@ -202,15 +365,15 @@ export const FadeInDiv = ({ className, tabs, hovering, active }) => {
           )}
         >
           <div className="shadow-lg rounded-xl overflow-hidden">
-            <AssessmentTable />
+            <AssessmentTable
+              title={tab.title}
+              data={filterByType(tab.value)}
+              onViewAssessment={onViewAssessment}
+              onDelete={onDelete}
+            />
           </div>
         </motion.div>
       ))}
     </div>
   );
-}
-
-
-
-
-
+};
