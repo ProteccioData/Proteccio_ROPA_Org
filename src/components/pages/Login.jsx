@@ -56,7 +56,7 @@ export default function Login() {
             Sign In
           </h1>
           <p className="text-gray-500 text-sm mt-1 mb-6">
-            Access your workspace securely.
+            Access your workspace securely...
           </p>
 
           <form className="space-y-5" onSubmit={handleLogin}>
