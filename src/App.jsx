@@ -55,7 +55,7 @@ export default function App() {
             <Route path="/login" element={<Login />} />
 
             <Route
-              path="/home"
+              path="/"
               element={
                 <ProtectedRoute>
                   <Home />

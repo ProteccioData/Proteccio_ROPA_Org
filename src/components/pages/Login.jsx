@@ -35,7 +35,7 @@ export default function Login() {
       }
 
       loginUser(res.user, res.token);
-      window.location.href = "/home"; // portal dashboard
+      window.location.href = "/"; // portal dashboard
     } catch (err) {
       addToast("error", err?.response?.data?.error || "Login failed");
     } finally {
