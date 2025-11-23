@@ -93,9 +93,9 @@ export const TransferDetailsModal = () => {
           <div className="text-2xl font-bold text-green-600 dark:text-green-400">{dataFlows.filter(f => f.status === 'Active').length}</div>
           <div className="text-xs text-green-700 dark:text-green-300 font-medium">Active</div>
         </div>
-        <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 border border-purple-200 dark:border-purple-800">
-          <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">{dataFlows.reduce((sum, f) => sum + parseFloat(f.dataVolume), 0)} TB</div>
-          <div className="text-xs text-purple-700 dark:text-purple-300 font-medium">Total Volume</div>
+        <div className="bg-orange-50 dark:bg-orange-700/20 rounded-lg p-3 border border-orange-200 dark:border-orange-800">
+          <div className="text-2xl font-bold text-orange-400 dark:text-orange-400">{"1"} </div>
+          <div className="text-xs text-orange-500 dark:text-orange-300 font-medium">Inactive</div>
         </div>
       </div>
 

@@ -397,7 +397,7 @@ export default function Home() {
             >
               <div className="flex justify-between items-center">
                 <div>
-                  <p className="text-md font-medium text-gray-700 dark:text-gray-300">
+                  <p className="text-md font-medium text-gray-700 dark:text-gray-200">
                     Total RoPA Records
                   </p>
                   <div className="flex items-baseline gap-2 mt-2">
@@ -405,7 +405,7 @@ export default function Home() {
                       {summary.stats.totalRopas || animateNumbers.ropa}
                     </h2>
                   </div>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-sm text-gray-500 dark:text-gray-300 mt-1">
                     {getRopaThisMonthText(summary?.stats)}
                   </p>
                 </div>
@@ -439,7 +439,7 @@ export default function Home() {
             >
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300">
+                  <h3 className="text-lg font-medium text-gray-700 dark:text-gray-200">
                     RoPA Compliance
                   </h3>
                   <div className="mt-3">
@@ -447,7 +447,7 @@ export default function Home() {
                       {/* {animateNumbers.compliance}% */}
                       {summary?.stats?.completionAverage ?? 0}%
                     </div>
-                    <div className="text-sm text-gray-500 mt-1">
+                    <div className="text-sm text-gray-500 dark:text-gray-300 mt-1">
                       Overall compliance across tracked RoPA entries
                     </div>
                   </div>
@@ -558,7 +558,7 @@ export default function Home() {
             >
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-md font-medium text-gray-700 dark:text-gray-300">
+                  <p className="text-md font-medium text-gray-700 dark:text-gray-200">
                     Assessments
                   </p>
                   <div className="flex items-baseline gap-2 mt-1">
@@ -566,14 +566,14 @@ export default function Home() {
                       {summary.stats.totalAssessments ||
                         animateNumbers.assessments}
                     </h2>
-                    <p className="text-sm text-gray-500">+ 12 This month</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-300">+ 12 This month</p>
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <select className="text-xs px-2 py-1 rounded border bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
+                  <select className="text-xs px-2 py-1 rounded border bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 dark:text-gray-300">
                     <option>Monthly</option>
                   </select>
-                  <select className="text-xs px-2 py-1 rounded border bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600">
+                  <select className="text-xs px-2 py-1 rounded border bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 dark:text-gray-300">
                     <option>2025</option>
                   </select>
                 </div>
@@ -731,7 +731,7 @@ export default function Home() {
                 className="rounded-2xl p-4 shadow-sm transition-all hover:shadow-lg duration-300 border border-[#828282] dark:bg-gray-800 bg-white"
                 // style={{ flex: 1, minHeight: 0 }}
               >
-                <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-3">
+                <h3 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-3">
                   Upcoming Audits
                 </h3>
                 <div className="space-y-3">
@@ -809,7 +809,7 @@ export default function Home() {
                   </h3>
                   <button
                     onClick={() => setShowTransferModal(true)}
-                    className="px-3 py-1.5 bg-[#5DE992] text-white rounded text-sm hover:opacity-95"
+                    className="px-3 py-1.5 bg-[#5DE992] text-black rounded text-sm hover:opacity-95"
                   >
                     View Details
                   </button>
