@@ -13,19 +13,36 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // ✅ Added
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [acceptPrivacy, setAcceptPrivacy] = useState(false);
+
   const { addToast } = useToast();
 
-  const isFormValid = email && password;
+  // ✅ Updated
+  const isFormValid = email && password && acceptTerms && acceptPrivacy;
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
 
+    // Optional: show warning if terms not checked (not required but user-friendly)
+    if (!acceptTerms) {
+      addToast("error", "You must accept the Terms & Conditions.");
+      setLoading(false);
+      return;
+    }
+    if (!acceptPrivacy) {
+      addToast("error", "You must accept the Privacy Notice.");
+      setLoading(false);
+      return;
+    }
+
     try {
       const res = await login(email, password);
 
       if (res.user.role === "super_admin") {
-        addToast("error" , "Super Admin is not allowed to access this portal.");
+        addToast("error", "Super Admin is not allowed to access this portal.");
         return;
       }
 
@@ -35,7 +52,7 @@ export default function Login() {
       }
 
       loginUser(res.user, res.token);
-      window.location.href = "/"; // portal dashboard
+      window.location.href = "/";
     } catch (err) {
       addToast("error", err?.response?.data?.error || "Login failed");
     } finally {
@@ -101,6 +118,35 @@ export default function Login() {
               </div>
             </div>
 
+            {/* ✅ TERMS & CONDITIONS */}
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                <input
+                  type="checkbox"
+                  checked={acceptTerms}
+                  onChange={(e) => setAcceptTerms(e.target.checked)}
+                  className="cursor-pointer"
+                />
+                I agree to the{" "}
+                <a href="/terms" className="text-green-600 underline">
+                  Terms & Conditions
+                </a>
+              </label>
+
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                <input
+                  type="checkbox"
+                  checked={acceptPrivacy}
+                  onChange={(e) => setAcceptPrivacy(e.target.checked)}
+                  className="cursor-pointer"
+                />
+                I agree to the{" "}
+                <a href="/privacy-notice" className="text-green-600 underline">
+                  Privacy Notice
+                </a>
+              </label>
+            </div>
+
             {/* BUTTON */}
             <motion.button
               whileTap={{ scale: 0.97 }}
@@ -120,11 +166,7 @@ export default function Login() {
 
       {/* RIGHT SIDE */}
       <div className="hidden md:flex flex-1 flex-col items-center justify-center bg-gradient-to-br from-[#E9FFF2] to-[#C4F9DC] dark:from-gray-800 dark:to-gray-900">
-        <img
-          src="/assets/logo.svg"
-          alt="logo"
-          className="w-72 h-auto drop-shadow-lg"
-        />
+        <img src="/assets/logo.svg" alt="logo" className="w-72 h-auto drop-shadow-lg" />
         <p className="text-gray-600 mt-8 p-10 text-center">
           Your compliance hub — secure, powerful and beautifully simple.
         </p>
