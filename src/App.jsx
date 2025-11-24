@@ -26,7 +26,10 @@ export default function App() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
 
-  const hideLayout = location.pathname === "/login" || "/terms" || "privacy-notice";
+  const hideLayout =
+    location.pathname === "/login" ||
+    location.pathname === "/terms" ||
+    location.pathname === "/privacy-notice";
 
   return (
     <div className="flex flex-col min-h-screen bg-white dark:bg-gray-900 text-black transition-colors duration-300">
@@ -55,18 +58,8 @@ export default function App() {
         >
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route
-              path="/terms"
-              element={
-                <TandCPage />
-              }
-            />
-            <Route
-              path="/privacy-notice"
-              element={
-                <PrivacyNotice />
-              }
-            />
+            <Route path="/terms" element={<TandCPage />} />
+            <Route path="/privacy-notice" element={<PrivacyNotice />} />
 
             <Route
               path="/"
@@ -181,8 +174,6 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
-
-            
           </Routes>
         </main>
       </div>
