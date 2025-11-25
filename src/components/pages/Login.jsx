@@ -4,6 +4,8 @@ import { login } from "../../services/AuthService";
 import { useAuth } from "../../context/AuthContext";
 import { motion } from "framer-motion";
 import { useToast } from "../ui/ToastProvider";
+import axiosInstance from "../../utils/axiosInstance";
+import ForgotPassword from "./ForgotPassword";
 
 export default function Login() {
   const { loginUser } = useAuth();
@@ -12,6 +14,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showForgotModal, setShowForgotModal] = useState(false);
 
   // ✅ Added
   const [acceptTerms, setAcceptTerms] = useState(false);
@@ -19,14 +22,12 @@ export default function Login() {
 
   const { addToast } = useToast();
 
-  // ✅ Updated
   const isFormValid = email && password && acceptTerms && acceptPrivacy;
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    // Optional: show warning if terms not checked (not required but user-friendly)
     if (!acceptTerms) {
       addToast("error", "You must accept the Terms & Conditions.");
       setLoading(false);
@@ -52,6 +53,10 @@ export default function Login() {
       }
 
       loginUser(res.user, res.token);
+
+      const verifyRes = await axiosInstance.get("/auth/verify");
+
+      loginUser(verifyRes.data.user, res.token, verifyRes.data.permissions);
       window.location.href = "/";
     } catch (err) {
       addToast("error", err?.response?.data?.error || "Login failed");
@@ -117,6 +122,16 @@ export default function Login() {
                 </button>
               </div>
             </div>
+            {/* FORGOT PASSWORD LINK */}
+            <div className="flex justify-end mt-1">
+              <button
+                type="button"
+                onClick={() => setShowForgotModal(true)}
+                className="text-sm text-green-600 hover:underline cursor-pointer"
+              >
+                Forgot Password?
+              </button>
+            </div>
 
             {/* ✅ TERMS & CONDITIONS */}
             <div className="space-y-2">
@@ -166,11 +181,19 @@ export default function Login() {
 
       {/* RIGHT SIDE */}
       <div className="hidden md:flex flex-1 flex-col items-center justify-center bg-gradient-to-br from-[#E9FFF2] to-[#C4F9DC] dark:from-gray-800 dark:to-gray-900">
-        <img src="/assets/logo.svg" alt="logo" className="w-72 h-auto drop-shadow-lg" />
+        <img
+          src="/assets/logo.svg"
+          alt="logo"
+          className="w-72 h-auto drop-shadow-lg"
+        />
         <p className="text-gray-600 mt-8 p-10 text-center">
           Your compliance hub — secure, powerful and beautifully simple.
         </p>
       </div>
+
+      {showForgotModal && (
+        <ForgotPassword onClose={() => setShowForgotModal(false)} />
+      )}
     </div>
   );
 }

@@ -22,6 +22,8 @@ import ProtectedRoute from "./components/modules/ProtectedRoute";
 import PrivacyNotice from "./components/pages/PrivacyNotice";
 import TandCPage from "./components/pages/T&C";
 import ExtensiveDiagramStudio from "./components/modules/DiagramBuilder";
+import ForgotPassword from "./components/pages/ForgotPassword";
+import ResetPassword from "./components/pages/ResetPassword";
 
 export default function App() {
   const [collapsed, setCollapsed] = useState(false);
@@ -30,7 +32,8 @@ export default function App() {
   const hideLayout =
     location.pathname === "/login" ||
     location.pathname === "/terms" ||
-    location.pathname === "/privacy-notice";
+    location.pathname === "/privacy-notice" ||
+    location.pathname === "/reset-password";
 
   return (
     <div className="flex flex-col min-h-screen bg-white dark:bg-gray-900 text-black transition-colors duration-300">
@@ -61,6 +64,7 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/terms" element={<TandCPage />} />
             <Route path="/privacy-notice" element={<PrivacyNotice />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             <Route
               path="/"
