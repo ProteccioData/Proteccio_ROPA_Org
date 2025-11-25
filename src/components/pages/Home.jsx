@@ -385,7 +385,7 @@ export default function Home() {
     <>
       <div className="space-y-8">
         {/* TOP ROW: 3 cards across */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 auto-rows-[1fr]  gap-4">
           {/* RoPA Donut */}
           <div className="flex flex-col gap-4">
             <motion.div
@@ -393,7 +393,7 @@ export default function Home() {
               animate="show"
               variants={cardAnim}
               custom={0}
-              className={`rounded-2xl p-5 shadow-sm transition-all hover:shadow-lg duration-300 border border-[#828282] dark:bg-gray-800 bg-white h-[240px] flex flex-col justify-center`}
+              className={`rounded-2xl p-5 shadow-sm transition-all hover:shadow-lg duration-300 border border-[#828282] dark:bg-gray-800 bg-white h-[240px] flex flex-col justify-center h-full`}
             >
               <div className="flex justify-between items-center">
                 <div>
@@ -434,7 +434,7 @@ export default function Home() {
               animate="show"
               variants={cardAnim}
               custom={3}
-              className="rounded-2xl p-4 shadow-sm transition-all hover:shadow-lg duration-300 border border-[#828282] dark:bg-gray-800 bg-white flex flex-col justify-between"
+              className="rounded-2xl p-4 shadow-sm transition-all hover:shadow-lg duration-300 border border-[#828282] dark:bg-gray-800 bg-white flex flex-col justify-between h-full"
               // style={{ height: "420px" }} // equal column height
             >
               <div className="flex justify-between items-start">
@@ -554,7 +554,7 @@ export default function Home() {
               animate="show"
               variants={cardAnim}
               custom={1}
-              className={`rounded-2xl p-5 shadow-sm transition-all hover:shadow-lg duration-300 border border-[#828282] dark:bg-gray-800 bg-white ${TopCardHeight} flex flex-col`}
+              className={`rounded-2xl p-5 shadow-sm transition-all hover:shadow-lg duration-300 border border-[#828282] dark:bg-gray-800 bg-white flex flex-col h-full`}
             >
               <div className="flex justify-between items-start">
                 <div>
@@ -580,20 +580,20 @@ export default function Home() {
               </div>
 
               <div className=" flex-1">
-                <div className="w-full h-[220px]">
+                <div className="w-full">
                   <DottedMultiLineChart />
                 </div>
               </div>
             </motion.div>
 
-            <div style={{ height: "420px" }} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4">
               {/* Risk Overview (Speedometer style) */}
               <motion.div
                 initial="hidden"
                 animate="show"
                 variants={cardAnim}
                 custom={4}
-                className="rounded-2xl p-5 shadow-sm hover:shadow-lg transition-all duration-300 border border-[#828282] dark:border-[#333] bg-white dark:bg-gray-800 flex flex-col items-center justify-center"
+                className="rounded-2xl p-5 shadow-sm hover:shadow-lg transition-all duration-300 border border-[#828282] dark:border-[#333] bg-white dark:bg-gray-800 flex flex-col items-center justify-center h-full"
               >
                 <div className="w-full">
                   <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
@@ -728,7 +728,7 @@ export default function Home() {
                 animate="show"
                 variants={cardAnim}
                 custom={5}
-                className="rounded-2xl p-4 shadow-sm transition-all hover:shadow-lg duration-300 border border-[#828282] dark:bg-gray-800 bg-white"
+                className="rounded-2xl p-4 shadow-sm transition-all hover:shadow-lg duration-300 border border-[#828282] dark:bg-gray-800 bg-white h-full"
                 // style={{ flex: 1, minHeight: 0 }}
               >
                 <h3 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-3">
@@ -768,16 +768,16 @@ export default function Home() {
           </div>
 
           {/* Data Mapping */}
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4 ">
             <motion.div
               initial="hidden"
               animate="show"
               variants={cardAnim}
               custom={2}
-              className={`rounded-2xl p-5 shadow-sm transition-all hover:shadow-lg duration-300 border border-[#828282] dark:bg-gray-800 bg-white ${TopCardHeight} flex flex-col items-center justify-between`}
+              className={`rounded-2xl p-5 shadow-sm transition-all hover:shadow-lg duration-300 border border-[#828282] dark:bg-gray-800 bg-white flex flex-col items-center h-full justify-between`}
             >
               <div className="w-full flex flex-col">
-                <div className="flex w-full justify-between items-start">
+                <div className="flex w-full justify-between items-start mb-4">
                   <p className="text-md font-medium text-gray-700 dark:text-gray-300">
                     Data Mapping
                   </p>
@@ -788,7 +788,7 @@ export default function Home() {
                     <p className="text-sm text-gray-500 mt-1">+ 8 This Week</p>
                   </div>
                 </div>
-                <div className="w-full max-h-40">
+                <div className="w-full h-full min-h-48">
                   <GlowingStrokeRadarChart />
                 </div>
               </div>
@@ -799,7 +799,7 @@ export default function Home() {
               animate="show"
               variants={cardAnim}
               custom={6}
-              className="rounded-2xl p-4 shadow-sm transition-all hover:shadow-lg duration-300 border border-[#828282] dark:bg-gray-800 bg-white flex flex-col justify-between"
+              className="rounded-2xl p-4 shadow-sm transition-all hover:shadow-lg duration-300 border border-[#828282] dark:bg-gray-800 bg-white flex flex-col justify-between h-full"
               // style={{ height: "420px" }}
             >
               <div>
