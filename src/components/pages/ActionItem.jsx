@@ -164,12 +164,13 @@ function RechartsHeatmap({ items, onCellClick }) {
       }))
     );
     items.forEach((it) => {
-      const r = Math.max(1, Math.min(5, it.likelihood)) - 1;
-      const c = Math.max(1, Math.min(5, it.impact)) - 1;
-      grid[r][c].count += 1;
-      grid[r][c].sumLikelihood += it.likelihood;
-      grid[r][c].sumImpact += it.impact;
-      grid[r][c].items.push(it);
+      const col = Math.max(1, Math.min(5, it.likelihood)) - 1;
+      const row = 5 - Math.max(1, Math.min(5, it.impact)); // invert Y so 5 is top
+
+      grid[row][col].count += 1;
+      grid[row][col].sumLikelihood += it.likelihood;
+      grid[row][col].sumImpact += it.impact;
+      grid[row][col].items.push(it);
     });
     return grid;
   }, [items]);
@@ -200,35 +201,45 @@ function RechartsHeatmap({ items, onCellClick }) {
     const pad = 8;
 
     const onHover = (evt, rIdx, cIdx, cell) => {
+      // compute true axis values
+      const trueLikelihood = cIdx + 1; // left -> right
+      const trueImpact = 5 - rIdx; // bottom -> top
+
       const rect = evt.currentTarget.getBoundingClientRect();
       setTooltip({
         x: rect.left + rect.width / 2,
         y: rect.top - 8,
-        r: rIdx + 1,
-        c: cIdx + 1,
-        ...cell,
+        likelihood: trueLikelihood,
+        impact: trueImpact,
+        count: cell.count,
+        sumLikelihood: cell.sumLikelihood,
+        sumImpact: cell.sumImpact,
+        items: cell.items,
       });
     };
 
     const onLeave = () => setTooltip(null);
 
     const handleKeyDown = (e, rIdx, cIdx, cell) => {
-      if (e.key === "Enter")
+      if (e.key === "Enter") {
+        const trueLikelihood = cIdx + 1;
+        const trueImpact = 5 - rIdx;
         onCellClick({
-          likelihood: rIdx + 1,
-          impact: cIdx + 1,
+          likelihood: trueLikelihood,
+          impact: trueImpact,
           items: cell.items,
         });
+      }
     };
 
     return (
       <g>
-        {/* Axis labels (top) */}
+        {/* Likelihood axis (X-axis bottom) */}
         {[1, 2, 3, 4, 5].map((i) => (
           <text
             key={`x-${i}`}
             x={margin.left + (i - 0.5) * cellW}
-            y={margin.top - 12}
+            y={chartHeight - 4}
             textAnchor="middle"
             fill="#6B7280"
             style={{ fontSize: 12 }}
@@ -237,12 +248,12 @@ function RechartsHeatmap({ items, onCellClick }) {
           </text>
         ))}
 
-        {/* Row labels (left) */}
+        {/* Impact axis (Y-axis left), bottom → top */}
         {[1, 2, 3, 4, 5].map((i) => (
           <text
             key={`y-${i}`}
             x={margin.left - 12}
-            y={margin.top + (i - 0.5) * cellH + 4}
+            y={margin.top + (5 - i + 0.5) * cellH}
             textAnchor="end"
             fill="#6B7280"
             style={{ fontSize: 12 }}
@@ -259,7 +270,13 @@ function RechartsHeatmap({ items, onCellClick }) {
             const w = cellW - pad;
             const h = cellH - pad;
             const norm = maxCount <= 1 ? 1 : Math.min(1, cell.count / maxCount);
-            const color = chooseHeatColor(cIdx + 1, rIdx + 1);
+
+            // true axis mapping
+            const trueLikelihood = cIdx + 1; // left → right
+            const trueImpact = 5 - rIdx; // bottom → top
+
+            // color based on true coords
+            const color = chooseHeatColor(trueLikelihood, trueImpact);
             const scale = 0.9 + 0.1 * norm;
 
             return (
@@ -281,20 +298,18 @@ function RechartsHeatmap({ items, onCellClick }) {
                     cursor: "pointer",
                     transition: "transform 0.12s ease",
                   }}
-                  onMouseEnter={(e) => onHover(e, rIdx, cIdx, { ...cell })}
+                  onMouseEnter={(e) => onHover(e, rIdx, cIdx, cell)}
                   onMouseLeave={onLeave}
                   onClick={() =>
                     onCellClick({
-                      likelihood: rIdx + 1,
-                      impact: cIdx + 1,
+                      likelihood: trueLikelihood,
+                      impact: trueImpact,
                       items: cell.items,
                     })
                   }
                   tabIndex={0}
                   role="button"
-                  aria-label={`Likelihood ${rIdx + 1} Impact ${cIdx + 1}, ${
-                    cell.count
-                  } items`}
+                  aria-label={`Likelihood ${trueLikelihood} Impact ${trueImpact}, ${cell.count} items`}
                   onKeyDown={(e) => handleKeyDown(e, rIdx, cIdx, cell)}
                 />
                 <text
@@ -324,7 +339,7 @@ function RechartsHeatmap({ items, onCellClick }) {
         Risk Heatmap
       </h4>
       <p className="text-xs text-gray-500 dark:text-gray-400">
-        Click a cell to filter the task table. Likelihood (rows) × Impact (cols)
+        Click a cell to filter the task table. Likelihood (X) × Impact (Y)
       </p>
 
       <div className="mt-4" style={{ height: 320 }}>
@@ -334,8 +349,8 @@ function RechartsHeatmap({ items, onCellClick }) {
             margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
           >
             <CartesianGrid horizontal={false} vertical={false} />
-            <XAxis dataKey="impact" type="number" domain={[1, 5]} hide />
-            <YAxis dataKey="likelihood" type="number" domain={[1, 5]} hide />
+            <XAxis dataKey="likelihood" type="number" domain={[1, 5]} hide />
+            <YAxis dataKey="impact" type="number" domain={[1, 5]} hide />
             <Customized component={<CustomizedGrid />} />
           </ComposedChart>
         </ResponsiveContainer>
@@ -353,7 +368,7 @@ function RechartsHeatmap({ items, onCellClick }) {
             }}
           >
             <div className="text-xs text-gray-500 dark:text-gray-300">
-              L {tooltip.r} • I {tooltip.c}
+              L {tooltip.likelihood} • I {tooltip.impact}
             </div>
             <div className="font-semibold text-sm text-gray-900 dark:text-white mt-1">
               {tooltip.count} item{tooltip.count !== 1 ? "s" : ""}
@@ -487,7 +502,12 @@ export default function ActionDashboard({
     setOpen(false);
   }
 
-  const currentUser = { id: "user_1", name: "Alice Admin", department: "Legal", role: "Org Admin" };
+  const currentUser = {
+    id: "user_1",
+    name: "Alice Admin",
+    department: "Legal",
+    role: "Org Admin",
+  };
 
   const [cellFilter, setCellFilter] = useState(null);
 
@@ -627,8 +647,17 @@ export default function ActionDashboard({
                 onClose={() => setOpen(false)}
                 onCreate={handleCreate}
                 currentUser={currentUser}
-                departments={["Legal","Frontend","Payments","Procurement","Customer Ops"]}
-                users={[{ id: "user_1", name: "Alice Admin" }, { id: "user_2", name: "Bob Reviewer" }]}
+                departments={[
+                  "Legal",
+                  "Frontend",
+                  "Payments",
+                  "Procurement",
+                  "Customer Ops",
+                ]}
+                users={[
+                  { id: "user_1", name: "Alice Admin" },
+                  { id: "user_2", name: "Bob Reviewer" },
+                ]}
               />
               <div className="relative">
                 <button

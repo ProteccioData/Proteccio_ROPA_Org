@@ -142,7 +142,8 @@ const TIAModal = ({ isOpen, onClose, onTIACreated }) => {
     "Derogation (Article 49 GDPR)",
     "Others"
   ];
-  const riskLevels = ["Low", "Medium", "High"];
+  const liklihoodLevels = ["Rare", "Unlikely", "Possible" , "Likely" , "Almost Certain"];
+  const impactLevels = ["Insignificant", "Minor", "Moderate" , "Major" , "Severe"];
   const protectionOptions = ["Yes", "No", "Unclear (further safeguards required)"];
   const conclusionOptions = [
     "Yes",
@@ -434,7 +435,7 @@ const TIAModal = ({ isOpen, onClose, onTIACreated }) => {
                 onChange={(e) => handleCheckboxChange(section, field, option, e.target.checked)}
                 className="rounded border-gray-300"
               />
-              <span className="text-sm">{option}</span>
+              <span className="text-sm dark:text-gray-300">{option}</span>
             </label>
           ))}
         </div>
@@ -466,7 +467,7 @@ const TIAModal = ({ isOpen, onClose, onTIACreated }) => {
                 onChange={(e) => handleInputChange(section, field, option)}
                 className="rounded border-gray-300"
               />
-              <span className="text-sm">{option}</span>
+              <span className="text-sm dark:text-gray-300">{option}</span>
             </label>
           ))}
         </div>
@@ -969,7 +970,7 @@ const TIAModal = ({ isOpen, onClose, onTIACreated }) => {
           <div>
             {renderRadioGroup("riskAssessment", "accessLikelihood", 
               "How likely is it that public authorities would access the transferred data?", 
-              riskLevels, true
+              liklihoodLevels, true
             )}
             <div className="flex justify-end">
               <button
@@ -1004,7 +1005,7 @@ const TIAModal = ({ isOpen, onClose, onTIACreated }) => {
           <div>
             {renderRadioGroup("riskAssessment", "potentialImpact", 
               "What would be the potential impact on the data subject if unauthorized access occurred?", 
-              riskLevels, true
+              impactLevels, true
             )}
             <div className="flex justify-end">
               <button

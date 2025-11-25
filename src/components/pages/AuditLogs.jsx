@@ -103,13 +103,13 @@ export default function AuditLogs() {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-2">
+              <label className="block text-xs font-medium text-gray-400 mb-2">
                 User
               </label>
               <input
                 type="text"
                 placeholder="Search Logs"
-                className="w-full bg-[#F4F4F4] dark:bg-gray-900 rounded-md px-3 py-2 text-sm"
+                className="w-full bg-[#F4F4F4] dark:text-gray-400 dark:bg-gray-900 rounded-md px-3 py-2 text-sm"
                 onChange={(e) =>
                   setFilters((f) => ({ ...f, search: e.target.value }))
                 }

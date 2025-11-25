@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useToast } from "../ui/ToastProvider";
 import ActionItemModal from "./AddActionItem";
+import UserMultiSelect from "../ui/UserMultiSelect";
 
 const DPIAModal = ({ isOpen, onClose, onDPIACreated }) => {
   const [currentStage, setCurrentStage] = useState(1);
@@ -23,7 +24,12 @@ const DPIAModal = ({ isOpen, onClose, onDPIACreated }) => {
   const [isActionModalOpen, setIsActionModalOpen] = useState(false);
   const [currentFieldForAction, setCurrentFieldForAction] = useState(null);
   const [actionItems, setActionItems] = useState([]);
-  const currentUser = { id: "user_1", name: "Alice Admin", department: "Legal", role: "Org Admin" };
+  const currentUser = {
+    id: "user_1",
+    name: "Alice Admin",
+    department: "Legal",
+    role: "Org Admin",
+  };
 
   // Form data state
   const [formData, setFormData] = useState({
@@ -69,7 +75,7 @@ const DPIAModal = ({ isOpen, onClose, onDPIACreated }) => {
     riskMitigation: {
       existingControls: "",
       additionalMeasures: "",
-      responsiblePersons: "",
+      responsiblePersons: [],
       residualRisk: "",
       mitigationDocuments: [],
     },
@@ -137,7 +143,20 @@ const DPIAModal = ({ isOpen, onClose, onDPIACreated }) => {
   ];
 
   const yesNoOptions = ["Yes", "No"];
-  const riskLevels = ["Low", "Medium", "High"];
+  const liklihoodLevels = [
+    "Rare",
+    "Unlikely",
+    "Possible",
+    "Likely",
+    "Almost Certain",
+  ];
+  const impactLevels = [
+    "Insignificant",
+    "Minor",
+    "Moderate",
+    "Major",
+    "Severe",
+  ];
   const legalBases = [
     "Consent (Article 6(1)(a))",
     "Contract (Article 6(1)(b))",
@@ -1165,7 +1184,7 @@ const DPIAModal = ({ isOpen, onClose, onDPIACreated }) => {
                 children: (
                   <>
                     <option value="">Select Likelihood</option>
-                    {riskLevels.map((level) => (
+                    {liklihoodLevels.map((level) => (
                       <option key={level} value={level}>
                         {level}
                       </option>
@@ -1199,7 +1218,7 @@ const DPIAModal = ({ isOpen, onClose, onDPIACreated }) => {
                 children: (
                   <>
                     <option value="">Select Impact</option>
-                    {riskLevels.map((level) => (
+                    {impactLevels.map((level) => (
                       <option key={level} value={level}>
                         {level}
                       </option>
@@ -1332,19 +1351,30 @@ const DPIAModal = ({ isOpen, onClose, onDPIACreated }) => {
           </div>
 
           <div>
-            {renderTextarea("riskMitigation", "responsiblePersons", {
-              value: formData.riskMitigation.responsiblePersons,
-              onChange: (e) =>
+            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+              Who is responsible for implementing each mitigation? *
+            </label>
+            <UserMultiSelect
+              users={[
+                { id: "user_1", name: "Alice Admin" },
+                { id: "user_2", name: "Bob Reviewer" },
+                { id: "user_3", name: "Charlie Manager" },
+              ]}
+              value={formData.riskMitigation.responsiblePersons || []}
+              onChange={(selectedUsers) =>
                 handleInputChange(
                   "riskMitigation",
                   "responsiblePersons",
-                  e.target.value
-                ),
-              placeholder:
-                "List responsible persons/teams for each mitigation...",
-              label: "Who is responsible for implementing each mitigation?",
-              rows: 3,
-            })}
+                  selectedUsers
+                )
+              }
+            />
+
+            {getFieldError("riskMitigation", "responsiblePersons") && (
+              <p className="text-red-500 text-xs mt-1">
+                {getFieldError("riskMitigation", "responsiblePersons")}
+              </p>
+            )}
             <div className="flex justify-end">
               <button
                 type="button"

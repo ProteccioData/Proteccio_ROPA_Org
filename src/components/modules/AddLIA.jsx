@@ -1,9 +1,18 @@
 import { useState, useEffect } from "react";
-import { X, Upload, FileText, Save, Clock, Link, SkipForward } from "lucide-react";
+import {
+  X,
+  Upload,
+  FileText,
+  Save,
+  Clock,
+  Link,
+  SkipForward,
+} from "lucide-react";
 import { useToast } from "../ui/ToastProvider";
 import ActionItemModal from "./AddActionItem";
+import UserMultiSelect from "../ui/UserMultiSelect";
 
-const LIAssessmentModal = ({ isOpen, onClose, onLIACreated}) => {
+const LIAssessmentModal = ({ isOpen, onClose, onLIACreated }) => {
   const [currentStage, setCurrentStage] = useState(1);
   const [hoveredStep, setHoveredStep] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -17,7 +26,12 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated}) => {
   const [currentFieldForAction, setCurrentFieldForAction] = useState(null);
   const [actionItems, setActionItems] = useState([]);
 
-  const currentUser = { id: "user_1", name: "Alice Admin", department: "Legal", role: "Org Admin" };
+  const currentUser = {
+    id: "user_1",
+    name: "Alice Admin",
+    department: "Legal",
+    role: "Org Admin",
+  };
 
   // Form data state
   const [formData, setFormData] = useState({
@@ -27,7 +41,7 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated}) => {
       assessmentName: "",
       createdAt: new Date().toISOString(),
     },
-    
+
     // Stage 1: Purpose & Necessity
     purposeNecessity: {
       legitimateInterest: "",
@@ -35,14 +49,14 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated}) => {
       lessIntrusiveAlternatives: "",
       supportingDocuments: [],
     },
-    
+
     // Stage 2: Data Details
     dataDetails: {
       dataCategories: "",
       sensitiveDataInvolved: "",
       dataFlowDocuments: [],
     },
-    
+
     // Stage 3: Impact & Risk Assessment
     impactRisk: {
       potentialImpact: "",
@@ -51,7 +65,7 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated}) => {
       mitigatingMeasures: "",
       riskAssessmentDocuments: [],
     },
-    
+
     // Stage 4: Balancing Test & Decision
     balancingTest: {
       balancingExplanation: "",
@@ -59,7 +73,7 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated}) => {
       finalDecision: "",
       decisionDocuments: [],
     },
-    
+
     // Stage 5: Stakeholder Consultation & Review
     stakeholderConsultation: {
       stakeholdersConsulted: "",
@@ -68,7 +82,7 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated}) => {
       nextReviewDate: "",
       responsiblePerson: "",
       consultationDocuments: [],
-    }
+    },
   });
 
   // Auto-save functionality
@@ -85,22 +99,23 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated}) => {
   }, [isOpen, formData]);
 
   const hasFormData = () => {
-    return Object.values(formData).some(section => 
-      Object.values(section).some(value => 
-        value !== "" && 
-        value !== null && 
-        (!Array.isArray(value) || value.length > 0)
+    return Object.values(formData).some((section) =>
+      Object.values(section).some(
+        (value) =>
+          value !== "" &&
+          value !== null &&
+          (!Array.isArray(value) || value.length > 0)
       )
     );
   };
 
   const handleAutoSave = async () => {
     if (saving) return;
-    
+
     try {
       setSaving(true);
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       setLastSaved(new Date());
       console.log("Auto-saved LIA:", formData);
       addToast("success", "Progress auto-saved");
@@ -120,7 +135,20 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated}) => {
     { id: 5, title: "Stakeholder Consultation", shortTitle: "Stakeholder" },
   ];
 
-  const impactLevels = ["Low", "Medium", "High"];
+  const impactLevels = [
+    "Insignificant",
+    "Minor",
+    "Moderate",
+    "Major",
+    "Severe",
+  ];
+  const liklihoodLevels = [
+    "Rare",
+    "Unlikely",
+    "Possible",
+    "Likely",
+    "Almost Certain",
+  ];
   const yesNoOptions = ["Yes", "No"];
   const decisionOptions = ["Justified", "Not Justified", "Needs Review"];
 
@@ -137,12 +165,12 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated}) => {
       linkedAssessmentId: formData.basicInfo.liaId,
       linkedField: `${currentFieldForAction.section}.${currentFieldForAction.field}`,
       stage: currentStage,
-      stageTitle: stages.find(stage => stage.id === currentStage)?.title
+      stageTitle: stages.find((stage) => stage.id === currentStage)?.title,
     };
 
-    setActionItems(prev => [...prev, newActionItem]);
+    setActionItems((prev) => [...prev, newActionItem]);
     addToast("success", "Action item added successfully");
-    
+
     // Close the modal
     setIsActionModalOpen(false);
     setCurrentFieldForAction(null);
@@ -155,29 +183,33 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated}) => {
 
   const validateStage = (stage) => {
     const newErrors = {};
-    
+
     switch (stage) {
       case 1:
         if (!formData.purposeNecessity.legitimateInterest) {
-          newErrors["purposeNecessity.legitimateInterest"] = "This field is required";
+          newErrors["purposeNecessity.legitimateInterest"] =
+            "This field is required";
         }
         if (!formData.purposeNecessity.processingNecessity) {
-          newErrors["purposeNecessity.processingNecessity"] = "This field is required";
+          newErrors["purposeNecessity.processingNecessity"] =
+            "This field is required";
         }
         if (!formData.purposeNecessity.lessIntrusiveAlternatives) {
-          newErrors["purposeNecessity.lessIntrusiveAlternatives"] = "This field is required";
+          newErrors["purposeNecessity.lessIntrusiveAlternatives"] =
+            "This field is required";
         }
         break;
-        
+
       case 2:
         if (!formData.dataDetails.dataCategories) {
           newErrors["dataDetails.dataCategories"] = "This field is required";
         }
         if (!formData.dataDetails.sensitiveDataInvolved) {
-          newErrors["dataDetails.sensitiveDataInvolved"] = "This field is required";
+          newErrors["dataDetails.sensitiveDataInvolved"] =
+            "This field is required";
         }
         break;
-        
+
       case 3:
         if (!formData.impactRisk.potentialImpact) {
           newErrors["impactRisk.potentialImpact"] = "This field is required";
@@ -192,37 +224,43 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated}) => {
           newErrors["impactRisk.mitigatingMeasures"] = "This field is required";
         }
         break;
-        
+
       case 4:
         if (!formData.balancingTest.balancingExplanation) {
-          newErrors["balancingTest.balancingExplanation"] = "This field is required";
+          newErrors["balancingTest.balancingExplanation"] =
+            "This field is required";
         }
         if (!formData.balancingTest.proportionalityFairness) {
-          newErrors["balancingTest.proportionalityFairness"] = "This field is required";
+          newErrors["balancingTest.proportionalityFairness"] =
+            "This field is required";
         }
         if (!formData.balancingTest.finalDecision) {
           newErrors["balancingTest.finalDecision"] = "This field is required";
         }
         break;
-        
+
       case 5:
         if (!formData.stakeholderConsultation.stakeholdersConsulted) {
-          newErrors["stakeholderConsultation.stakeholdersConsulted"] = "This field is required";
+          newErrors["stakeholderConsultation.stakeholdersConsulted"] =
+            "This field is required";
         }
         if (!formData.stakeholderConsultation.feedbackConcerns) {
-          newErrors["stakeholderConsultation.feedbackConcerns"] = "This field is required";
+          newErrors["stakeholderConsultation.feedbackConcerns"] =
+            "This field is required";
         }
         if (!formData.stakeholderConsultation.assessmentDate) {
-          newErrors["stakeholderConsultation.assessmentDate"] = "This field is required";
+          newErrors["stakeholderConsultation.assessmentDate"] =
+            "This field is required";
         }
         if (!formData.stakeholderConsultation.responsiblePerson) {
-          newErrors["stakeholderConsultation.responsiblePerson"] = "This field is required";
+          newErrors["stakeholderConsultation.responsiblePerson"] =
+            "This field is required";
         }
         break;
     }
-    
+
     setErrors(newErrors);
-    
+
     if (Object.keys(newErrors).length === 0) {
       addToast("success", "Stage validation passed!");
       return true;
@@ -255,22 +293,24 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated}) => {
     if (!files || files.length === 0) return;
 
     const newFiles = Array.from(files);
-    
+
     // Validate file types
     const allowedTypes = [
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'image/jpeg',
-      'image/jpg',
-      'image/svg+xml',
-      'message/rfc822' // email
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "image/jpeg",
+      "image/jpg",
+      "image/svg+xml",
+      "message/rfc822", // email
     ];
 
-    const validFiles = newFiles.filter(file => allowedTypes.includes(file.type));
-    
+    const validFiles = newFiles.filter((file) =>
+      allowedTypes.includes(file.type)
+    );
+
     if (validFiles.length !== newFiles.length) {
       addToast("error", "Some files were skipped due to invalid format");
     }
@@ -288,7 +328,9 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated}) => {
 
   const removeFile = (section, field, fileIndex) => {
     setFormData((prev) => {
-      const updatedFiles = prev[section][field].filter((_, index) => index !== fileIndex);
+      const updatedFiles = prev[section][field].filter(
+        (_, index) => index !== fileIndex
+      );
       return {
         ...prev,
         [section]: {
@@ -420,7 +462,10 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated}) => {
         {files.length > 0 && (
           <div className="space-y-2">
             {files.map((file, index) => (
-              <div key={index} className="flex items-center justify-between p-3 border border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800 rounded-lg">
+              <div
+                key={index}
+                className="flex items-center justify-between p-3 border border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800 rounded-lg"
+              >
                 <div className="flex items-center space-x-3">
                   <FileText className="w-5 h-5 text-green-600" />
                   <div>
@@ -469,7 +514,7 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated}) => {
       // Include action items in the saved data
       const liaDataWithActions = {
         ...formData,
-        actionItems: actionItems
+        actionItems: actionItems,
       };
       console.log("Saving LIA assessment:", liaDataWithActions);
       addToast("success", "LIA assessment saved successfully!");
@@ -493,7 +538,7 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated}) => {
       const liaDataWithActions = {
         ...formData,
         actionItems: actionItems,
-        status: "completed"
+        status: "completed",
       };
       console.log("Completing LIA assessment:", liaDataWithActions);
       addToast("success", "LIA assessment completed and linked!");
@@ -548,7 +593,7 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated}) => {
         nextReviewDate: "",
         responsiblePerson: "",
         consultationDocuments: [],
-      }
+      },
     });
     setCurrentStage(1);
     setErrors({});
@@ -559,71 +604,109 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated}) => {
   const renderStage1 = () => (
     <div className="space-y-6 max-h-96 overflow-y-auto pr-2">
       <div className="bg-gray-50 dark:bg-gray-900 border border-[#828282] p-6 rounded-lg">
-        <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-4">Purpose & Necessity</h3>
+        <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-4">
+          Purpose & Necessity
+        </h3>
         <div className="space-y-6">
           <div>
             {renderTextarea("purposeNecessity", "legitimateInterest", {
               value: formData.purposeNecessity.legitimateInterest,
-              onChange: (e) => handleInputChange("purposeNecessity", "legitimateInterest", e.target.value),
-              placeholder: "Describe the specific legitimate interest your organization is pursuing...",
-              label: "What is the specific legitimate interest your organization is pursuing with this processing?",
+              onChange: (e) =>
+                handleInputChange(
+                  "purposeNecessity",
+                  "legitimateInterest",
+                  e.target.value
+                ),
+              placeholder:
+                "Describe the specific legitimate interest your organization is pursuing...",
+              label:
+                "What is the specific legitimate interest your organization is pursuing with this processing?",
               rows: 4,
             })}
             <div className="flex justify-end">
               <button
                 type="button"
-                onClick={() => openActionItemModal("purposeNecessity", "legitimateInterest")}
+                onClick={() =>
+                  openActionItemModal("purposeNecessity", "legitimateInterest")
+                }
                 className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
               >
                 + Add Action Item
               </button>
             </div>
           </div>
-          
+
           <div>
             {renderTextarea("purposeNecessity", "processingNecessity", {
               value: formData.purposeNecessity.processingNecessity,
-              onChange: (e) => handleInputChange("purposeNecessity", "processingNecessity", e.target.value),
-              placeholder: "Explain why this processing is necessary to achieve the purpose...",
-              label: "Why is this processing necessary to achieve that purpose?",
+              onChange: (e) =>
+                handleInputChange(
+                  "purposeNecessity",
+                  "processingNecessity",
+                  e.target.value
+                ),
+              placeholder:
+                "Explain why this processing is necessary to achieve the purpose...",
+              label:
+                "Why is this processing necessary to achieve that purpose?",
               rows: 4,
             })}
             <div className="flex justify-end">
               <button
                 type="button"
-                onClick={() => openActionItemModal("purposeNecessity", "processingNecessity")}
+                onClick={() =>
+                  openActionItemModal("purposeNecessity", "processingNecessity")
+                }
                 className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
               >
                 + Add Action Item
               </button>
             </div>
           </div>
-          
+
           <div>
             {renderTextarea("purposeNecessity", "lessIntrusiveAlternatives", {
               value: formData.purposeNecessity.lessIntrusiveAlternatives,
-              onChange: (e) => handleInputChange("purposeNecessity", "lessIntrusiveAlternatives", e.target.value),
-              placeholder: "Describe any less intrusive alternatives considered...",
-              label: "Have you considered any less intrusive ways to achieve the same purpose without processing personal data?",
+              onChange: (e) =>
+                handleInputChange(
+                  "purposeNecessity",
+                  "lessIntrusiveAlternatives",
+                  e.target.value
+                ),
+              placeholder:
+                "Describe any less intrusive alternatives considered...",
+              label:
+                "Have you considered any less intrusive ways to achieve the same purpose without processing personal data?",
               rows: 4,
             })}
             <div className="flex justify-end">
               <button
                 type="button"
-                onClick={() => openActionItemModal("purposeNecessity", "lessIntrusiveAlternatives")}
+                onClick={() =>
+                  openActionItemModal(
+                    "purposeNecessity",
+                    "lessIntrusiveAlternatives"
+                  )
+                }
                 className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
               >
                 + Add Action Item
               </button>
             </div>
           </div>
-          
+
           <div>
-            {renderFileUpload("purposeNecessity", "supportingDocuments", "Please upload any supporting documents (business case, analysis of alternatives)")}
+            {renderFileUpload(
+              "purposeNecessity",
+              "supportingDocuments",
+              "Please upload any supporting documents (business case, analysis of alternatives)"
+            )}
             <div className="flex justify-end">
               <button
                 type="button"
-                onClick={() => openActionItemModal("purposeNecessity", "supportingDocuments")}
+                onClick={() =>
+                  openActionItemModal("purposeNecessity", "supportingDocuments")
+                }
                 className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
               >
                 + Add Action Item
@@ -638,37 +721,54 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated}) => {
   const renderStage2 = () => (
     <div className="space-y-6 max-h-96 overflow-y-auto pr-2">
       <div className="bg-gray-50 dark:bg-gray-900 border border-[#828282] p-6 rounded-lg">
-        <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-4">Data Details</h3>
+        <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-4">
+          Data Details
+        </h3>
         <div className="space-y-6">
           <div>
             {renderTextarea("dataDetails", "dataCategories", {
               value: formData.dataDetails.dataCategories,
-              onChange: (e) => handleInputChange("dataDetails", "dataCategories", e.target.value),
-              placeholder: "e.g., names, contact info, IP addresses, financial data...",
+              onChange: (e) =>
+                handleInputChange(
+                  "dataDetails",
+                  "dataCategories",
+                  e.target.value
+                ),
+              placeholder:
+                "e.g., names, contact info, IP addresses, financial data...",
               label: "What categories of personal data will be processed?",
               rows: 3,
             })}
             <div className="flex justify-end">
               <button
                 type="button"
-                onClick={() => openActionItemModal("dataDetails", "dataCategories")}
+                onClick={() =>
+                  openActionItemModal("dataDetails", "dataCategories")
+                }
                 className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
               >
                 + Add Action Item
               </button>
             </div>
           </div>
-          
+
           <div>
             {renderSelect("dataDetails", "sensitiveDataInvolved", {
               value: formData.dataDetails.sensitiveDataInvolved,
-              onChange: (e) => handleInputChange("dataDetails", "sensitiveDataInvolved", e.target.value),
+              onChange: (e) =>
+                handleInputChange(
+                  "dataDetails",
+                  "sensitiveDataInvolved",
+                  e.target.value
+                ),
               label: "Will any special category (sensitive) data be involved?",
               children: (
                 <>
                   <option value="">Select</option>
-                  {yesNoOptions.map(option => (
-                    <option key={option} value={option}>{option}</option>
+                  {yesNoOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
                   ))}
                 </>
               ),
@@ -676,20 +776,28 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated}) => {
             <div className="flex justify-end">
               <button
                 type="button"
-                onClick={() => openActionItemModal("dataDetails", "sensitiveDataInvolved")}
+                onClick={() =>
+                  openActionItemModal("dataDetails", "sensitiveDataInvolved")
+                }
                 className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
               >
                 + Add Action Item
               </button>
             </div>
           </div>
-          
+
           <div>
-            {renderFileUpload("dataDetails", "dataFlowDocuments", "Please upload any data flow diagrams or data mapping documents")}
+            {renderFileUpload(
+              "dataDetails",
+              "dataFlowDocuments",
+              "Please upload any data flow diagrams or data mapping documents"
+            )}
             <div className="flex justify-end">
               <button
                 type="button"
-                onClick={() => openActionItemModal("dataDetails", "dataFlowDocuments")}
+                onClick={() =>
+                  openActionItemModal("dataDetails", "dataFlowDocuments")
+                }
                 className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
               >
                 + Add Action Item
@@ -704,19 +812,28 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated}) => {
   const renderStage3 = () => (
     <div className="space-y-6 max-h-96 overflow-y-auto pr-2">
       <div className="bg-gray-50 dark:bg-gray-900 border border-[#828282] p-6 rounded-lg">
-        <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-4">Impact & Risk Assessment</h3>
+        <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-4">
+          Impact & Risk Assessment
+        </h3>
         <div className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <div>
               {renderSelect("impactRisk", "potentialImpact", {
                 value: formData.impactRisk.potentialImpact,
-                onChange: (e) => handleInputChange("impactRisk", "potentialImpact", e.target.value),
+                onChange: (e) =>
+                  handleInputChange(
+                    "impactRisk",
+                    "potentialImpact",
+                    e.target.value
+                  ),
                 label: "What is the potential impact on individuals?",
                 children: (
                   <>
                     <option value="">Select Impact Level</option>
-                    {impactLevels.map(level => (
-                      <option key={level} value={level}>{level}</option>
+                    {impactLevels.map((level) => (
+                      <option key={level} value={level}>
+                        {level}
+                      </option>
                     ))}
                   </>
                 ),
@@ -724,24 +841,33 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated}) => {
               <div className="flex justify-end">
                 <button
                   type="button"
-                  onClick={() => openActionItemModal("impactRisk", "potentialImpact")}
+                  onClick={() =>
+                    openActionItemModal("impactRisk", "potentialImpact")
+                  }
                   className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
                 >
                   + Add Action Item
                 </button>
               </div>
             </div>
-            
+
             <div>
               {renderSelect("impactRisk", "impactLikelihood", {
                 value: formData.impactRisk.impactLikelihood,
-                onChange: (e) => handleInputChange("impactRisk", "impactLikelihood", e.target.value),
+                onChange: (e) =>
+                  handleInputChange(
+                    "impactRisk",
+                    "impactLikelihood",
+                    e.target.value
+                  ),
                 label: "How likely is it that this impact will occur?",
                 children: (
                   <>
                     <option value="">Select Likelihood</option>
-                    {impactLevels.map(level => (
-                      <option key={level} value={level}>{level}</option>
+                    {liklihoodLevels.map((level) => (
+                      <option key={level} value={level}>
+                        {level}
+                      </option>
                     ))}
                   </>
                 ),
@@ -749,7 +875,9 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated}) => {
               <div className="flex justify-end">
                 <button
                   type="button"
-                  onClick={() => openActionItemModal("impactRisk", "impactLikelihood")}
+                  onClick={() =>
+                    openActionItemModal("impactRisk", "impactLikelihood")
+                  }
                   className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
                 >
                   + Add Action Item
@@ -757,51 +885,75 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated}) => {
               </div>
             </div>
           </div>
-          
+
           <div>
             {renderTextarea("impactRisk", "impactExplanation", {
               value: formData.impactRisk.impactExplanation,
-              onChange: (e) => handleInputChange("impactRisk", "impactExplanation", e.target.value),
-              placeholder: "Explain the reasons behind your impact and likelihood ratings...",
-              label: "Please explain the reasons behind your impact and likelihood ratings",
+              onChange: (e) =>
+                handleInputChange(
+                  "impactRisk",
+                  "impactExplanation",
+                  e.target.value
+                ),
+              placeholder:
+                "Explain the reasons behind your impact and likelihood ratings...",
+              label:
+                "Please explain the reasons behind your impact and likelihood ratings",
               rows: 3,
             })}
             <div className="flex justify-end">
               <button
                 type="button"
-                onClick={() => openActionItemModal("impactRisk", "impactExplanation")}
+                onClick={() =>
+                  openActionItemModal("impactRisk", "impactExplanation")
+                }
                 className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
               >
                 + Add Action Item
               </button>
             </div>
           </div>
-          
+
           <div>
             {renderTextarea("impactRisk", "mitigatingMeasures", {
               value: formData.impactRisk.mitigatingMeasures,
-              onChange: (e) => handleInputChange("impactRisk", "mitigatingMeasures", e.target.value),
-              placeholder: "Describe the mitigating measures or safeguards in place...",
-              label: "What mitigating measures or safeguards are in place to reduce risks?",
+              onChange: (e) =>
+                handleInputChange(
+                  "impactRisk",
+                  "mitigatingMeasures",
+                  e.target.value
+                ),
+              placeholder:
+                "Describe the mitigating measures or safeguards in place...",
+              label:
+                "What mitigating measures or safeguards are in place to reduce risks?",
               rows: 3,
             })}
             <div className="flex justify-end">
               <button
                 type="button"
-                onClick={() => openActionItemModal("impactRisk", "mitigatingMeasures")}
+                onClick={() =>
+                  openActionItemModal("impactRisk", "mitigatingMeasures")
+                }
                 className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
               >
                 + Add Action Item
               </button>
             </div>
           </div>
-          
+
           <div>
-            {renderFileUpload("impactRisk", "riskAssessmentDocuments", "Please upload any risk assessment or mitigation plans")}
+            {renderFileUpload(
+              "impactRisk",
+              "riskAssessmentDocuments",
+              "Please upload any risk assessment or mitigation plans"
+            )}
             <div className="flex justify-end">
               <button
                 type="button"
-                onClick={() => openActionItemModal("impactRisk", "riskAssessmentDocuments")}
+                onClick={() =>
+                  openActionItemModal("impactRisk", "riskAssessmentDocuments")
+                }
                 className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
               >
                 + Add Action Item
@@ -816,56 +968,87 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated}) => {
   const renderStage4 = () => (
     <div className="space-y-6 max-h-96 overflow-y-auto pr-2">
       <div className="bg-gray-50 dark:bg-gray-900 border border-[#828282] p-6 rounded-lg">
-        <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-4">Balancing Test & Decision</h3>
+        <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-4">
+          Balancing Test & Decision
+        </h3>
         <div className="space-y-6">
           <div>
             {renderTextarea("balancingTest", "balancingExplanation", {
               value: formData.balancingTest.balancingExplanation,
-              onChange: (e) => handleInputChange("balancingTest", "balancingExplanation", e.target.value),
-              placeholder: "Explain how you balance the organization's interest against individuals' rights...",
-              label: "How do you balance the organization's legitimate interest against individuals' rights and freedoms?",
+              onChange: (e) =>
+                handleInputChange(
+                  "balancingTest",
+                  "balancingExplanation",
+                  e.target.value
+                ),
+              placeholder:
+                "Explain how you balance the organization's interest against individuals' rights...",
+              label:
+                "How do you balance the organization's legitimate interest against individuals' rights and freedoms?",
               rows: 4,
             })}
             <div className="flex justify-end">
               <button
                 type="button"
-                onClick={() => openActionItemModal("balancingTest", "balancingExplanation")}
+                onClick={() =>
+                  openActionItemModal("balancingTest", "balancingExplanation")
+                }
                 className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
               >
                 + Add Action Item
               </button>
             </div>
           </div>
-          
+
           <div>
             {renderTextarea("balancingTest", "proportionalityFairness", {
               value: formData.balancingTest.proportionalityFairness,
-              onChange: (e) => handleInputChange("balancingTest", "proportionalityFairness", e.target.value),
-              placeholder: "Explain why the processing is proportionate and fair...",
-              label: "Is the processing proportionate and fair considering the identified risks?",
+              onChange: (e) =>
+                handleInputChange(
+                  "balancingTest",
+                  "proportionalityFairness",
+                  e.target.value
+                ),
+              placeholder:
+                "Explain why the processing is proportionate and fair...",
+              label:
+                "Is the processing proportionate and fair considering the identified risks?",
               rows: 4,
             })}
             <div className="flex justify-end">
               <button
                 type="button"
-                onClick={() => openActionItemModal("balancingTest", "proportionalityFairness")}
+                onClick={() =>
+                  openActionItemModal(
+                    "balancingTest",
+                    "proportionalityFairness"
+                  )
+                }
                 className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
               >
                 + Add Action Item
               </button>
             </div>
           </div>
-          
+
           <div>
             {renderSelect("balancingTest", "finalDecision", {
               value: formData.balancingTest.finalDecision,
-              onChange: (e) => handleInputChange("balancingTest", "finalDecision", e.target.value),
-              label: "What is the final decision on the legitimate interest basis?",
+              onChange: (e) =>
+                handleInputChange(
+                  "balancingTest",
+                  "finalDecision",
+                  e.target.value
+                ),
+              label:
+                "What is the final decision on the legitimate interest basis?",
               children: (
                 <>
                   <option value="">Select Decision</option>
-                  {decisionOptions.map(option => (
-                    <option key={option} value={option}>{option}</option>
+                  {decisionOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
                   ))}
                 </>
               ),
@@ -873,20 +1056,28 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated}) => {
             <div className="flex justify-end">
               <button
                 type="button"
-                onClick={() => openActionItemModal("balancingTest", "finalDecision")}
+                onClick={() =>
+                  openActionItemModal("balancingTest", "finalDecision")
+                }
                 className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
               >
                 + Add Action Item
               </button>
             </div>
           </div>
-          
+
           <div>
-            {renderFileUpload("balancingTest", "decisionDocuments", "Please upload decision documents, approvals, or DPO reviews")}
+            {renderFileUpload(
+              "balancingTest",
+              "decisionDocuments",
+              "Please upload decision documents, approvals, or DPO reviews"
+            )}
             <div className="flex justify-end">
               <button
                 type="button"
-                onClick={() => openActionItemModal("balancingTest", "decisionDocuments")}
+                onClick={() =>
+                  openActionItemModal("balancingTest", "decisionDocuments")
+                }
                 className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
               >
                 + Add Action Item
@@ -901,77 +1092,126 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated}) => {
   const renderStage5 = () => (
     <div className="space-y-6 max-h-96 overflow-y-auto pr-2">
       <div className="bg-gray-50 dark:bg-gray-900 border border-[#828282] p-6 rounded-lg">
-        <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-4">Stakeholder Consultation & Review</h3>
+        <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-4">
+          Stakeholder Consultation & Review
+        </h3>
         <div className="space-y-6">
           <div>
-            {renderTextarea("stakeholderConsultation", "stakeholdersConsulted", {
-              value: formData.stakeholderConsultation.stakeholdersConsulted,
-              onChange: (e) => handleInputChange("stakeholderConsultation", "stakeholdersConsulted", e.target.value),
-              placeholder: "List the stakeholders consulted (e.g., DPO, legal team, business units)...",
-              label: "Which stakeholders were consulted regarding this processing?",
-              rows: 3,
-            })}
+            {renderTextarea(
+              "stakeholderConsultation",
+              "stakeholdersConsulted",
+              {
+                value: formData.stakeholderConsultation.stakeholdersConsulted,
+                onChange: (e) =>
+                  handleInputChange(
+                    "stakeholderConsultation",
+                    "stakeholdersConsulted",
+                    e.target.value
+                  ),
+                placeholder:
+                  "List the stakeholders consulted (e.g., DPO, legal team, business units)...",
+                label:
+                  "Which stakeholders were consulted regarding this processing?",
+                rows: 3,
+              }
+            )}
             <div className="flex justify-end">
               <button
                 type="button"
-                onClick={() => openActionItemModal("stakeholderConsultation", "stakeholdersConsulted")}
+                onClick={() =>
+                  openActionItemModal(
+                    "stakeholderConsultation",
+                    "stakeholdersConsulted"
+                  )
+                }
                 className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
               >
                 + Add Action Item
               </button>
             </div>
           </div>
-          
+
           <div>
             {renderTextarea("stakeholderConsultation", "feedbackConcerns", {
               value: formData.stakeholderConsultation.feedbackConcerns,
-              onChange: (e) => handleInputChange("stakeholderConsultation", "feedbackConcerns", e.target.value),
-              placeholder: "Describe any feedback or concerns raised by stakeholders...",
+              onChange: (e) =>
+                handleInputChange(
+                  "stakeholderConsultation",
+                  "feedbackConcerns",
+                  e.target.value
+                ),
+              placeholder:
+                "Describe any feedback or concerns raised by stakeholders...",
               label: "What feedback or concerns were raised?",
               rows: 3,
             })}
             <div className="flex justify-end">
               <button
                 type="button"
-                onClick={() => openActionItemModal("stakeholderConsultation", "feedbackConcerns")}
+                onClick={() =>
+                  openActionItemModal(
+                    "stakeholderConsultation",
+                    "feedbackConcerns"
+                  )
+                }
                 className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
               >
                 + Add Action Item
               </button>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               {renderInput("stakeholderConsultation", "assessmentDate", {
                 type: "date",
                 value: formData.stakeholderConsultation.assessmentDate,
-                onChange: (e) => handleInputChange("stakeholderConsultation", "assessmentDate", e.target.value),
+                onChange: (e) =>
+                  handleInputChange(
+                    "stakeholderConsultation",
+                    "assessmentDate",
+                    e.target.value
+                  ),
                 label: "When was this assessment conducted?",
               })}
               <div className="flex justify-end">
                 <button
                   type="button"
-                  onClick={() => openActionItemModal("stakeholderConsultation", "assessmentDate")}
+                  onClick={() =>
+                    openActionItemModal(
+                      "stakeholderConsultation",
+                      "assessmentDate"
+                    )
+                  }
                   className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
                 >
                   + Add Action Item
                 </button>
               </div>
             </div>
-            
+
             <div>
               {renderInput("stakeholderConsultation", "nextReviewDate", {
                 type: "date",
                 value: formData.stakeholderConsultation.nextReviewDate,
-                onChange: (e) => handleInputChange("stakeholderConsultation", "nextReviewDate", e.target.value),
+                onChange: (e) =>
+                  handleInputChange(
+                    "stakeholderConsultation",
+                    "nextReviewDate",
+                    e.target.value
+                  ),
                 label: "When will it be reviewed next?",
                 required: false,
               })}
               <div className="flex justify-end">
                 <button
                   type="button"
-                  onClick={() => openActionItemModal("stakeholderConsultation", "nextReviewDate")}
+                  onClick={() =>
+                    openActionItemModal(
+                      "stakeholderConsultation",
+                      "nextReviewDate"
+                    )
+                  }
                   className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
                 >
                   + Add Action Item
@@ -979,32 +1219,62 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated}) => {
               </div>
             </div>
           </div>
-          
+
           <div>
-            {renderInput("stakeholderConsultation", "responsiblePerson", {
-              type: "text",
-              value: formData.stakeholderConsultation.responsiblePerson,
-              onChange: (e) => handleInputChange("stakeholderConsultation", "responsiblePerson", e.target.value),
-              placeholder: "Enter the name of the responsible person...",
-              label: "Who is responsible for ongoing monitoring?",
-            })}
+            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+              Who is responsible for ongoing monitoring? *
+            </label>
+            <UserMultiSelect
+              users={[
+                { id: "user_1", name: "Alice Admin" },
+                { id: "user_2", name: "Bob Reviewer" },
+                { id: "user_3", name: "Charlie Manager" },
+              ]}
+              value={formData.stakeholderConsultation.responsiblePerson || []}
+              onChange={(selectedUsers) =>
+                handleInputChange(
+                  "stakeholderConsultation", "responsiblePerson",
+                  selectedUsers
+                )
+              }
+            />
+
+            {getFieldError("riskMitigation", "responsiblePersons") && (
+              <p className="text-red-500 text-xs mt-1">
+                {getFieldError("riskMitigation", "responsiblePersons")}
+              </p>
+            )}
             <div className="flex justify-end">
               <button
                 type="button"
-                onClick={() => openActionItemModal("stakeholderConsultation", "responsiblePerson")}
+                onClick={() =>
+                  openActionItemModal(
+                    "stakeholderConsultation",
+                    "responsiblePerson"
+                  )
+                }
                 className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
               >
                 + Add Action Item
               </button>
             </div>
           </div>
-          
+
           <div>
-            {renderFileUpload("stakeholderConsultation", "consultationDocuments", "Please upload consultation records and review confirmation documents")}
+            {renderFileUpload(
+              "stakeholderConsultation",
+              "consultationDocuments",
+              "Please upload consultation records and review confirmation documents"
+            )}
             <div className="flex justify-end">
               <button
                 type="button"
-                onClick={() => openActionItemModal("stakeholderConsultation", "consultationDocuments")}
+                onClick={() =>
+                  openActionItemModal(
+                    "stakeholderConsultation",
+                    "consultationDocuments"
+                  )
+                }
                 className="mt-2 text-sm text-green-600 hover:underline cursor-pointer"
               >
                 + Add Action Item
@@ -1123,7 +1393,7 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated}) => {
                   Previous
                 </button>
               )}
-              
+
               {/* Final stage actions */}
               {currentStage === 5 && (
                 <>
@@ -1146,7 +1416,7 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated}) => {
                 </>
               )}
             </div>
-            
+
             <div>
               {currentStage < 5 ? (
                 <button
@@ -1179,8 +1449,17 @@ const LIAssessmentModal = ({ isOpen, onClose, onLIACreated}) => {
         onClose={closeActionItemModal}
         onSave={handleActionItemSave}
         currentUser={currentUser}
-        departments={["Legal", "Frontend", "Payments", "Procurement", "Customer Ops"]}
-        users={[{ id: "user_1", name: "Alice Admin" }, { id: "user_2", name: "Bob Reviewer" }]}
+        departments={[
+          "Legal",
+          "Frontend",
+          "Payments",
+          "Procurement",
+          "Customer Ops",
+        ]}
+        users={[
+          { id: "user_1", name: "Alice Admin" },
+          { id: "user_2", name: "Bob Reviewer" },
+        ]}
       />
     </>
   );
