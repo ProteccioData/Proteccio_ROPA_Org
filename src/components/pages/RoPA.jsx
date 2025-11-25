@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Expand } from "lucide-react"; // fullscreen icon
 import { Line } from "react-chartjs-2";
@@ -13,6 +13,14 @@ import {
 } from "chart.js";
 import RoPARecords from "../modules/RoPATable";
 import { getRopaStats } from "../../services/DashboardService";
+import {
+  CartesianGrid,
+  ComposedChart,
+  Customized,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 // Register chart.js components
 ChartJS.register(
@@ -48,13 +56,72 @@ const cardVariants = {
   }),
 };
 
-const RoPA = () => {
+function categorizeRisk(score) {
+  if (score <= 5) return "Low";
+  if (score <= 10) return "Medium";
+  if (score <= 15) return "High";
+  if (score <= 20) return "Very High";
+  return "Critical";
+}
+
+function mockActionItems(count = 200) {
+  const statuses = ["Open", "In Progress", "Completed", "Overdue"];
+  const likelihoodOptions = [1, 2, 3, 4, 5];
+  const impactOptions = [1, 2, 3, 4, 5];
+  const deps = ["Procurement", "Frontend", "Payments", "Legal", "Customer Ops"];
+  return Array.from({ length: count }).map((_, i) => {
+    const likelihood =
+      likelihoodOptions[Math.floor(Math.random() * likelihoodOptions.length)];
+    const impact =
+      impactOptions[Math.floor(Math.random() * impactOptions.length)];
+    const riskScore = likelihood * impact;
+    const riskCategory = categorizeRisk(riskScore);
+    const status = statuses[Math.floor(Math.random() * statuses.length)];
+    const daysOffset = Math.floor(Math.random() * 20) - 10; // some past/future
+    const due = new Date(
+      Date.now() + daysOffset * 24 * 3600 * 1000
+    ).toISOString();
+    return {
+      id: `AIT-${1000 + i}`,
+      title: `Action item ${i + 1} — Improve data flow in ${
+        deps[i % deps.length]
+      }`,
+      assignedTo: i % 3 === 0 ? "team_alpha" : `user_${i % 6}`,
+      assignedToName: i % 3 === 0 ? "Team Alpha" : `User ${i % 6}`,
+      department: deps[i % deps.length],
+      dueDate: due,
+      status,
+      likelihood,
+      impact,
+      riskScore,
+      riskCategory,
+      linked: { ropa: Math.random() > 0.6, assessment: Math.random() > 0.6 },
+      evidenceCollected: Math.random() > 0.6,
+      createdDate: new Date(
+        Date.now() - Math.random() * 1000 * 3600 * 24 * 30
+      ).toISOString(),
+    };
+  });
+}
+
+function chooseHeatColor(impact, likelihood) {
+  const score = impact * likelihood;
+  if (score <= 5) return "#2ecc71";
+  if (score <= 10) return "#9be89b";
+  if (score <= 15) return "#f1c40f";
+  if (score <= 20) return "#f39c12";
+  return "#e74c3c";
+}
+
+const RoPA = ({ initialItems = null }) => {
   const chartRef = useRef(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [stats, setStats] = useState(null);
   const [year, setYear] = useState("2025");
   const [month, setMonth] = useState("");
   const [chartData, setChartData] = useState(null);
+  const [cellFilter, setCellFilter] = useState(null);
+  const [items, setItems] = useState(initialItems || mockActionItems(200));
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
@@ -147,92 +214,367 @@ const RoPA = () => {
 
   const cat = (c) => stats.byCategory.find((x) => x.category === c)?.count || 0;
 
+  function RechartsHeatmap({ items, onCellClick }) {
+    const aggregated = useMemo(() => {
+      const grid = Array.from({ length: 5 }, () =>
+        Array.from({ length: 5 }, () => ({
+          count: 0,
+          sumLikelihood: 0,
+          sumImpact: 0,
+          items: [],
+        }))
+      );
+      items.forEach((it) => {
+        const col = Math.max(1, Math.min(5, it.likelihood)) - 1;
+        const row = 5 - Math.max(1, Math.min(5, it.impact)); // invert Y so 5 is top
+
+        grid[row][col].count += 1;
+        grid[row][col].sumLikelihood += it.likelihood;
+        grid[row][col].sumImpact += it.impact;
+        grid[row][col].items.push(it);
+      });
+      return grid;
+    }, [items]);
+
+    const maxCount = useMemo(() => {
+      let m = 1;
+      aggregated.forEach((row) =>
+        row.forEach((cell) => (m = Math.max(m, cell.count)))
+      );
+      return m;
+    }, [aggregated]);
+
+    // tooltip state
+    const [tooltip, setTooltip] = useState(null);
+
+    // Customized renderer uses chart width/height to compute cell positions
+    const CustomizedGrid = (props) => {
+      const { width, height } = props;
+      const margin = { top: 32, right: 12, bottom: 28, left: 36 };
+      const chartWidth = Math.max(200, width);
+      const chartHeight = Math.max(180, height);
+      const gridWidth = chartWidth - margin.left - margin.right;
+      const gridHeight = chartHeight - margin.top - margin.bottom;
+      const cols = 5;
+      const rows = 5;
+      const cellW = gridWidth / cols;
+      const cellH = gridHeight / rows;
+      const pad = 8;
+
+      const onHover = (evt, rIdx, cIdx, cell) => {
+        // compute true axis values
+        const trueLikelihood = cIdx + 1; // left -> right
+        const trueImpact = 5 - rIdx; // bottom -> top
+
+        const rect = evt.currentTarget.getBoundingClientRect();
+        setTooltip({
+          x: rect.left + rect.width / 2,
+          y: rect.top - 8,
+          likelihood: trueLikelihood,
+          impact: trueImpact,
+          count: cell.count,
+          sumLikelihood: cell.sumLikelihood,
+          sumImpact: cell.sumImpact,
+          items: cell.items,
+        });
+      };
+
+      const onLeave = () => setTooltip(null);
+
+      const handleKeyDown = (e, rIdx, cIdx, cell) => {
+        if (e.key === "Enter") {
+          const trueLikelihood = cIdx + 1;
+          const trueImpact = 5 - rIdx;
+          onCellClick({
+            likelihood: trueLikelihood,
+            impact: trueImpact,
+            items: cell.items,
+          });
+        }
+      };
+
+      return (
+        <g>
+          {/* Likelihood axis (X-axis bottom) */}
+          {[1, 2, 3, 4, 5].map((i) => (
+            <text
+              key={`x-${i}`}
+              x={margin.left + (i - 0.5) * cellW}
+              y={chartHeight - 4}
+              textAnchor="middle"
+              fill="#6B7280"
+              style={{ fontSize: 12 }}
+            >
+              {i}
+            </text>
+          ))}
+
+          {/* Impact axis (Y-axis left), bottom → top */}
+          {[1, 2, 3, 4, 5].map((i) => (
+            <text
+              key={`y-${i}`}
+              x={margin.left - 12}
+              y={margin.top + (5 - i + 0.5) * cellH}
+              textAnchor="end"
+              fill="#6B7280"
+              style={{ fontSize: 12 }}
+            >
+              {i}
+            </text>
+          ))}
+
+          {/* Cells */}
+          {aggregated.map((row, rIdx) =>
+            row.map((cell, cIdx) => {
+              const x = margin.left + cIdx * cellW + pad / 2;
+              const y = margin.top + rIdx * cellH + pad / 2;
+              const w = cellW - pad;
+              const h = cellH - pad;
+              const norm =
+                maxCount <= 1 ? 1 : Math.min(1, cell.count / maxCount);
+
+              // true axis mapping
+              const trueLikelihood = cIdx + 1; // left → right
+              const trueImpact = 5 - rIdx; // bottom → top
+
+              // color based on true coords
+              const color = chooseHeatColor(trueLikelihood, trueImpact);
+              const scale = 0.9 + 0.1 * norm;
+
+              return (
+                <g
+                  key={`cell-${rIdx}-${cIdx}`}
+                  transform={`translate(${x + (w * (1 - scale)) / 2}, ${
+                    y + (h * (1 - scale)) / 2
+                  }) scale(${scale})`}
+                >
+                  <rect
+                    x={0}
+                    y={0}
+                    rx={10}
+                    width={w}
+                    height={h}
+                    fill={cell.count === 0 ? "#F3F4F6" : color}
+                    stroke={cell.count === 0 ? "transparent" : "#ffffff22"}
+                    style={{
+                      cursor: "pointer",
+                      transition: "transform 0.12s ease",
+                    }}
+                    onMouseEnter={(e) => onHover(e, rIdx, cIdx, cell)}
+                    onMouseLeave={onLeave}
+                    onClick={() =>
+                      onCellClick({
+                        likelihood: trueLikelihood,
+                        impact: trueImpact,
+                        items: cell.items,
+                      })
+                    }
+                    tabIndex={0}
+                    role="button"
+                    aria-label={`Likelihood ${trueLikelihood} Impact ${trueImpact}, ${cell.count} items`}
+                    onKeyDown={(e) => handleKeyDown(e, rIdx, cIdx, cell)}
+                  />
+                  <text
+                    x={w / 2}
+                    y={h / 2 + 4}
+                    textAnchor="middle"
+                    fill={cell.count === 0 ? "#9CA3AF" : "#111827"}
+                    style={{ fontSize: 12, fontWeight: 700 }}
+                  >
+                    {cell.count}
+                  </text>
+                </g>
+              );
+            })
+          )}
+        </g>
+      );
+    };
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-4 shadow"
+      >
+        <h4 className="font-semibold text-gray-900 dark:text-white">
+          Risk Heatmap
+        </h4>
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          Click a cell to filter the task table. Likelihood (X) × Impact (Y)
+        </p>
+
+        <div className="mt-4" style={{ height: 320 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart
+              data={[]}
+              margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
+            >
+              <CartesianGrid horizontal={false} vertical={false} />
+              <XAxis dataKey="likelihood" type="number" domain={[1, 5]} hide />
+              <YAxis dataKey="impact" type="number" domain={[1, 5]} hide />
+              <Customized component={<CustomizedGrid />} />
+            </ComposedChart>
+          </ResponsiveContainer>
+
+          {/* Tooltip DOM */}
+          {tooltip && (
+            <div
+              className="pointer-events-none fixed z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md p-2 text-xs shadow"
+              style={{
+                left: tooltip.x + 12,
+                top: tooltip.y - 6,
+                transform: "translate(-50%, -100%)",
+                minWidth: 160,
+                maxWidth: 320,
+              }}
+            >
+              <div className="text-xs text-gray-500 dark:text-gray-300">
+                L {tooltip.likelihood} • I {tooltip.impact}
+              </div>
+              <div className="font-semibold text-sm text-gray-900 dark:text-white mt-1">
+                {tooltip.count} item{tooltip.count !== 1 ? "s" : ""}
+              </div>
+              {tooltip.count > 0 && (
+                <div className="text-xs text-gray-500 mt-1">
+                  Avg L: {(tooltip.sumLikelihood / tooltip.count).toFixed(2)} •
+                  Avg I: {(tooltip.sumImpact / tooltip.count).toFixed(2)}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </motion.div>
+    );
+  }
+
   return (
     <div>
       <div className="min-h-screen  dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-500">
         {/* Top Stats */}
         <div className="grid grid-cols-4 gap-4 mb-6">
-          {/* Left Chart Card */}
+          {/* LEFT: Total RoPA Chart */}
           <motion.div
             initial="hidden"
             animate="visible"
             variants={cardVariants}
-            className={`col-span-2 bg-white dark:bg-gray-800 rounded-xl p-4 shadow-lg hover:shadow-xl hover:scale-[1.01] transition-all duration-300 ${
+            className={`col-span-2 bg-white dark:bg-gray-800 rounded-xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 ${
               isFullscreen
                 ? "fixed inset-0 z-50 flex flex-col p-6 bg-white dark:bg-gray-900"
                 : ""
             }`}
           >
+            {/* --- your chart card stays exactly the same --- */}
+            {/* COPY your existing chart card content here */}
             <div className="flex justify-between items-center mb-2">
+              {" "}
               <div className="flex flex-col gap-4">
-                <h2 className="font-medium">Total RoPA</h2>
+                {" "}
+                <h2 className="font-medium">Total RoPA</h2>{" "}
                 <div className="text-4xl font-bold text-[#5de992] mb-4">
-                  {stats.total}
-                </div>
-              </div>
+                  {" "}
+                  {stats.total}{" "}
+                </div>{" "}
+              </div>{" "}
               <div className="flex flex-col gap-4">
+                {" "}
                 <span className="text-sm text-gray-500 text-right">
-                  {getRopaThisMonthText(stats)}
-                </span>
+                  {" "}
+                  {getRopaThisMonthText(stats)}{" "}
+                </span>{" "}
                 <div className="flex space-x-2 mb-2 items-center">
+                  {" "}
                   <select
                     className="px-2 py-1 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
                     value={year}
                     onChange={(e) => setYear(e.target.value)}
                   >
-                    <option>2025</option>
-                    <option>2024</option>
-                  </select>
+                    {" "}
+                    <option>2025</option> <option>2024</option>{" "}
+                  </select>{" "}
                   <select
                     className="px-2 py-1 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
                     value={month}
                     onChange={(e) => setMonth(e.target.value)}
                   >
-                    <option value="">All Months</option>
-                    <option value="01">Jan</option>
-                    <option value="02">Feb</option>
-                    <option value="03">Mar</option>
-                    <option value="04">Apr</option>
-                    <option value="05">May</option>
-                    <option value="06">Jun</option>
-                    <option value="07">Jul</option>
-                    <option value="08">Aug</option>
-                    <option value="09">Sep</option>
-                    <option value="10">Oct</option>
-                    <option value="11">Nov</option>
-                    <option value="12">Dec</option>
-                  </select>
-                  {/* Fullscreen Toggle Button */}
+                    {" "}
+                    <option value="">All Months</option>{" "}
+                    <option value="01">Jan</option>{" "}
+                    <option value="02">Feb</option>{" "}
+                    <option value="03">Mar</option>{" "}
+                    <option value="04">Apr</option>{" "}
+                    <option value="05">May</option>{" "}
+                    <option value="06">Jun</option>{" "}
+                    <option value="07">Jul</option>{" "}
+                    <option value="08">Aug</option>{" "}
+                    <option value="09">Sep</option>{" "}
+                    <option value="10">Oct</option>{" "}
+                    <option value="11">Nov</option>{" "}
+                    <option value="12">Dec</option>{" "}
+                  </select>{" "}
+                  {/* Fullscreen Toggle Button */}{" "}
                   <button
                     onClick={toggleFullscreen}
                     className="p-2 rounded-lg border dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                   >
-                    <Expand size={18} />
-                  </button>
-                </div>
-              </div>
-            </div>
-
+                    {" "}
+                    <Expand size={18} />{" "}
+                  </button>{" "}
+                </div>{" "}
+              </div>{" "}
+            </div>{" "}
             <div className="flex-1 w-full h-[160px] md:h-[300px] lg:h-[240px]">
-              <Line ref={chartRef} data={chartData} options={chartOptions} />
-            </div>
-
-            {/* Exit Fullscreen Button */}
+              {" "}
+              <Line
+                ref={chartRef}
+                data={chartData}
+                options={chartOptions}
+              />{" "}
+            </div>{" "}
+            {/* Exit Fullscreen Button */}{" "}
             {isFullscreen && (
               <button
                 onClick={toggleFullscreen}
                 className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded-lg shadow-lg hover:bg-red-600"
               >
-                Exit Fullscreen
+                {" "}
+                Exit Fullscreen{" "}
               </button>
             )}
           </motion.div>
 
-          {/* Right Side Cards */}
-          <div className="col-span-2 grid grid-cols-2 gap-4">
+          {/* RIGHT: Heatmap replacing old 4 cards */}
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={cardVariants}
+            className="col-span-2 dark:bg-gray-800 transition-all duration-300"
+          >
+            <div className="flex justify-end">
+              {cellFilter ? (
+                <div className="flex items-center gap-2">
+                  <div className="text-xs text-gray-500 dark:text-gray-300">
+                    Drill: L {cellFilter.likelihood} • I {cellFilter.impact} •{" "}
+                    {cellFilter.items.length} items
+                  </div>
+                  <button
+                    onClick={clearDrill}
+                    className="px-2 py-1 rounded-md border border-[#828282] dark:text-white cursor-pointer text-xs"
+                  >
+                    Clear
+                  </button>
+                </div>
+              ) : null}
+            </div>
+
+            <RechartsHeatmap items={items} />
+          </motion.div>
+
+          {/* ROW 2 — Four Cards in a Single Row */}
+          <div className="col-span-4 grid grid-cols-4 gap-4">
             {[
               {
-                title: "Infovoyage",
+                title: "InfoVoyage",
                 value: cat("InfoVoyage"),
                 color: "bg-[#5de992] text-black",
               },
