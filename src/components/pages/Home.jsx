@@ -393,7 +393,7 @@ export default function Home() {
               animate="show"
               variants={cardAnim}
               custom={0}
-              className={`rounded-2xl p-5 shadow-sm transition-all hover:shadow-lg duration-300 border border-[#828282] dark:bg-gray-800 bg-white h-[240px] flex flex-col justify-center h-full`}
+              className={`rounded-2xl p-5 shadow-sm transition-all hover:shadow-lg duration-300 border border-[#828282] dark:bg-gray-800 bg-white flex flex-col justify-center h-full`}
             >
               <div className="flex justify-between items-center">
                 <div>
