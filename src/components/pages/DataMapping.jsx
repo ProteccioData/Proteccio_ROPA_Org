@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Button from "../ui/Button";
 import ExtensiveDiagramStudio from "../modules/DiagramBuilder";
+import { Navigate, useNavigate } from "react-router-dom";
 
 // Enhanced data structure for flows
 const initialDataMappings = [
@@ -47,6 +48,7 @@ export default function DataMappingTable() {
   const [editingFlow, setEditingFlow] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all'); // all, active, archived
   const dropdownRef = useRef(null);
+  const navigate = useNavigate();
 
   const toggleMenu = (id) => {
     setOpenMenu(openMenu === id ? null : id);
@@ -60,7 +62,7 @@ export default function DataMappingTable() {
 
   const handleCreateNewFlow = () => {
     setEditingFlow(null);
-    setShowDiagramBuilder(true);
+    navigate("/diagram-builder")
   };
 
   const handleEditFlow = (flow) => {

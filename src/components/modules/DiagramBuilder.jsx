@@ -63,6 +63,8 @@ import {
   LockKeyhole,
 } from "lucide-react";
 import { Html } from "react-konva-utils";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 
 /* ---------- Constants ---------- */
 const STORAGE_KEY = "extensive_diagram_studio_v1";
@@ -152,6 +154,8 @@ export default function ExtensiveDiagramStudio() {
   const transformerRef = useRef(null);
   const layerRef = useRef(null);
   const fileInputRef = useRef(null);
+
+  const navigate = useNavigate();
 
   // Viewport state
   const [dimensions, setDimensions] = useState({
@@ -1288,7 +1292,16 @@ export default function ExtensiveDiagramStudio() {
       {/* Top Toolbar */}
       <div className="bg-white border-b border-gray-300 shadow-sm flex items-center justify-between px-4 py-2 z-10">
         <div className="flex items-center gap-2">
-          <h1 className="text-xl font-bold text-gray-800 mr-4">
+          <button
+            onClick={() => navigate("/data-mapping")}
+            className="p-2 rounded hover:bg-gray-100 flex items-center gap-1 text-gray-700"
+            title="Back to Data Mapping"
+          >
+            <ArrowLeft size={18} />
+            <span className="text-sm">Back</span>
+          </button>
+
+          <h1 className="text-xl font-bold text-gray-800 ml-2 mr-4">
             Diagram Studio
           </h1>
 

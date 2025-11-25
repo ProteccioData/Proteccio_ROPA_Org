@@ -21,6 +21,7 @@ import Login from "./components/pages/Login";
 import ProtectedRoute from "./components/modules/ProtectedRoute";
 import PrivacyNotice from "./components/pages/PrivacyNotice";
 import TandCPage from "./components/pages/T&C";
+import ExtensiveDiagramStudio from "./components/modules/DiagramBuilder";
 
 export default function App() {
   const [collapsed, setCollapsed] = useState(false);
@@ -91,6 +92,14 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <DataMapping />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/diagram-builder"
+              element={
+                <ProtectedRoute>
+                  <ExtensiveDiagramStudio />
                 </ProtectedRoute>
               }
             />
