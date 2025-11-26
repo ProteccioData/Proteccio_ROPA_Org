@@ -12,7 +12,7 @@ import {
   Legend,
 } from "chart.js";
 import RoPARecords from "../modules/RoPATable";
-import { getRopaStats } from "../../services/DashboardService";
+import { getRopaStats } from "../../services/RopaService";
 import {
   CartesianGrid,
   ComposedChart,
@@ -21,6 +21,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { getRopaGraphData } from "../../services/RopaService";
 
 // Register chart.js components
 ChartJS.register(
@@ -122,6 +123,7 @@ const RoPA = ({ initialItems = null }) => {
   const [chartData, setChartData] = useState(null);
   const [cellFilter, setCellFilter] = useState(null);
   const [items, setItems] = useState(initialItems || mockActionItems(200));
+  const [availableYears, setAvailableYears] = useState([]);
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
@@ -130,14 +132,18 @@ const RoPA = ({ initialItems = null }) => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res = await getRopaStats();
+        const res = await getRopaStats({
+          view: month ? "byDay" : "byMonth",
+          year,
+          month,
+        });
         setStats(res.data);
       } catch (err) {
         console.error("Failed to fetch stats", err);
       }
     };
     fetchStats();
-  }, []);
+  }, [year, month]);
 
   useEffect(() => {
     const fetchChartData = async () => {
@@ -146,16 +152,41 @@ const RoPA = ({ initialItems = null }) => {
         if (year) params.year = year;
         if (month) params.month = month;
 
-        const res = await getRopaStats(params);
+        const res = await getRopaGraphData({
+          view: month ? "byDay" : "byMonth",
+          year,
+          month,
+        });
 
-        const data = {
-          ...res.data,
-          byMonth: res.data.byMonth || [5, 3, 2, 6, 4, 1, 0, 2, 4, 5, 3, 2],
-          byDay: res.data.byDay || [1, 3, 2, 4, 1, 0],
-        };
+        const graph = res.data.graphData;
 
-        setStats(data);
-        buildChartData(data);
+        const uniqueYears = Array.from(new Set(graph.map((g) => g.year))).sort(
+          (a, b) => b - a
+        );
+
+        setAvailableYears(uniqueYears);
+
+        // Auto-select the latest year if not chosen
+        if (!year) {
+          setYear(uniqueYears[0]);
+        }
+
+        const labels = graph.map((g) => g.label);
+        const values = graph.map((g) => g.total);
+
+        setChartData({
+          labels,
+          datasets: [
+            {
+              label: "Total RoPA",
+              data: values,
+              borderColor: "#5de992",
+              backgroundColor: "rgba(93, 233, 146, 0.25)",
+              fill: true,
+              tension: 0.4,
+            },
+          ],
+        });
       } catch (err) {
         console.error("Failed to fetch chart", err);
       }
@@ -164,39 +195,39 @@ const RoPA = ({ initialItems = null }) => {
     fetchChartData();
   }, [year, month]);
 
-  const buildChartData = (stats) => {
-    if (!month) {
-      // YEAR VIEW (12 months)
-      setChartData({
-        labels: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"],
-        datasets: [
-          {
-            label: "RoPA per Month",
-            data: stats.byMonth || [],
-            borderColor: "#5de992",
-            backgroundColor: "rgba(93, 233, 146, 0.25)",
-            tension: 0.4,
-            fill: true,
-          },
-        ],
-      });
-    } else {
-      // MONTH VIEW (Daily)
-      setChartData({
-        labels: ["1", "5", "10", "15", "20", "25", "30"],
-        datasets: [
-          {
-            label: `RoPA in ${month}/${year}`,
-            data: stats.byDay || [],
-            borderColor: "#5de992",
-            backgroundColor: "rgba(93, 233, 146, 0.25)",
-            tension: 0.4,
-            fill: true,
-          },
-        ],
-      });
-    }
-  };
+  // const buildChartData = (stats) => {
+  //   if (!month) {
+  //     // YEAR VIEW (12 months)
+  //     setChartData({
+  //       labels: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"],
+  //       datasets: [
+  //         {
+  //           label: "RoPA per Month",
+  //           data: stats.byMonth || [],
+  //           borderColor: "#5de992",
+  //           backgroundColor: "rgba(93, 233, 146, 0.25)",
+  //           tension: 0.4,
+  //           fill: true,
+  //         },
+  //       ],
+  //     });
+  //   } else {
+  //     // MONTH VIEW (Daily)
+  //     setChartData({
+  //       labels: ["1", "5", "10", "15", "20", "25", "30"],
+  //       datasets: [
+  //         {
+  //           label: `RoPA in ${month}/${year}`,
+  //           data: stats.byDay || [],
+  //           borderColor: "#5de992",
+  //           backgroundColor: "rgba(93, 233, 146, 0.25)",
+  //           tension: 0.4,
+  //           fill: true,
+  //         },
+  //       ],
+  //     });
+  //   }
+  // };
 
   if (!stats || !chartData) return <div className="p-10">Loading...</div>;
 
@@ -490,7 +521,11 @@ const RoPA = ({ initialItems = null }) => {
                     onChange={(e) => setYear(e.target.value)}
                   >
                     {" "}
-                    <option>2025</option> <option>2024</option>{" "}
+                    {availableYears.map((yr) => (
+                      <option key={yr} value={yr}>
+                        {yr}
+                      </option>
+                    ))}
                   </select>{" "}
                   <select
                     className="px-2 py-1 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
