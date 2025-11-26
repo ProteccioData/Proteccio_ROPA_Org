@@ -16,75 +16,59 @@ import {
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import useTheme from "../hooks/useTheme";
-
-const menuItems = [
-  { name: "Home", icon: LayoutGrid, path: "/" },
-  {
-    name: "RoPA",
-    icon: FileText,
-    path: "/RoPA",
-  },
-  { name: "Assessments", icon: FileCheck, path: "/assessments" },
-  {
-    name: "Data Mapping",
-    icon: Database,
-    path: "/data-mapping",
-  },
-  {
-    name: "Setup",
-    icon: FilePlus2,
-    path: "/setup",
-  },
-  {
-    name: "Audit Logs",
-    icon: Clock,
-    path: "/audit-logs",
-  },
-  {
-    name: "Reports",
-    icon: FileChartLine,
-    path: "/reports",
-  },
-  {
-    name: "User Setup",
-    icon: User2,
-    path: "/user-setup",
-  },
-  {
-    name: "Action Items",
-    icon: ListCheck,
-    path: "/action-item",
-  },
-];
+import {  useAuth } from "../../context/AuthContext"
 
 export default function Sidebar({ collapsed, setCollapsed }) {
   const { theme, toggleTheme } = useTheme();
+  const { user } = useAuth();   // ⬅ logged-in user
+
+  const isOrgAdmin = user?.role === "org_admin";
+  const isSuperAdmin = user?.role === "super_admin";
+
+  const menuItems = [
+    { name: "Home", icon: LayoutGrid, path: "/" },
+    { name: "RoPA", icon: FileText, path: "/RoPA" },
+    { name: "Assessments", icon: FileCheck, path: "/assessments" },
+    { name: "Data Mapping", icon: Database, path: "/data-mapping" },
+    { name: "Setup", icon: FilePlus2, path: "/setup" },
+    { name: "Audit Logs", icon: Clock, path: "/audit-logs" },
+    { name: "Reports", icon: FileChartLine, path: "/reports" },
+
+    // ⛔ Only org_admin OR super_admin can see this item
+    ...(isOrgAdmin || isSuperAdmin
+      ? [
+          {
+            name: "User Setup",
+            icon: User2,
+            path: "/user-setup",
+          },
+        ]
+      : []),
+
+    { name: "Action Items", icon: ListCheck, path: "/action-item" },
+  ];
 
   return (
     <div
       className={`flex flex-col border border-r border-[#828282] dark:text-gray-100 bg-[#FAFAFA] dark:bg-gray-800 dark:border-gray-600 transition-all duration-300  
         ${collapsed ? "w-24" : "w-48"} h-[calc(100vh-4rem)]`}
     >
-      {/* --- Top section (static) --- */}
+      {/* Top section */}
       <div
-        className={`p-4 flex justify-between  ${
+        className={`p-4 flex justify-between ${
           collapsed ? "items-center" : ""
         } gap-4`}
       >
         <button
           onClick={toggleTheme}
-          className={`
-                w-12 h-6 rounded-full relative transition-colors duration-300 border border-[#828282] dark:border-gray-600 hover:cursor-pointer
+          className={`w-12 h-6 rounded-full relative transition-colors duration-300 border border-[#828282] dark:border-gray-600 hover:cursor-pointer
                 ${theme === "dark" ? "bg-[#5DE992]" : "bg-gray-300"}
-                ${collapsed ? "mx-auto" : ""}
-              `}
+                ${collapsed ? "mx-auto" : ""}`}
         >
           <div
-            className={`
-                  w-5 h-5 bg-white rounded-full top-0 transition-transform duration-300
+            className={`w-5 h-5 bg-white rounded-full top-0 transition-transform duration-300
                   ${theme === "dark" ? "translate-x-6" : "translate-x-0"}
-                  flex items-center justify-center
-                `}
+                  flex items-center justify-center`}
           >
             {theme === "dark" ? (
               <Sun className="w-3 h-3 text-black" />
@@ -94,19 +78,17 @@ export default function Sidebar({ collapsed, setCollapsed }) {
           </div>
         </button>
 
-        {/* Collapse Toggle Button */}
+        {/* Collapse toggle */}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className={`
-                w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 
+          className={`w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 
                 hover:bg-gray-200 dark:hover:bg-gray-600 
                 flex items-center justify-center transition-all duration-200 border border-[#828282] dark:border-gray-400 hover:cursor-pointer
                 ${
                   collapsed
                     ? "absolute -right-4 bg-white dark:bg-gray-800 shadow-md"
                     : ""
-                }
-              `}
+                }`}
         >
           {collapsed ? (
             <ChevronRight className="w-4 h-4 text-gray-900 dark:text-gray-300" />
@@ -116,7 +98,7 @@ export default function Sidebar({ collapsed, setCollapsed }) {
         </button>
       </div>
 
-      {/* --- Middle nav (scrollable) --- */}
+      {/* Nav */}
       <nav
         className={`flex-1 overflow-y-auto ${
           collapsed
@@ -129,17 +111,15 @@ export default function Sidebar({ collapsed, setCollapsed }) {
             {({ isActive }) => (
               <div
                 className={`flex items-center gap-3 w-full rounded-md px-3 py-2 text-sm transition
-        ${
-          isActive
-            ? "bg-[#5DEE92] text-black"
-            : "hover:bg-gray-200 dark:hover:bg-gray-700"
-        }`}
+                  ${
+                    isActive
+                      ? "bg-[#5DEE92] text-black"
+                      : "hover:bg-gray-200 dark:hover:bg-gray-700"
+                  }`}
               >
                 <Icon size={`${collapsed ? 24 : 20}`} />
                 {!collapsed && (
-                  <div className="flex flex-col items-start">
-                    <span className="font-medium">{name}</span>
-                  </div>
+                  <span className="font-medium">{name}</span>
                 )}
               </div>
             )}
@@ -147,7 +127,7 @@ export default function Sidebar({ collapsed, setCollapsed }) {
         ))}
       </nav>
 
-      {/* --- Bottom section (fixed at bottom) --- */}
+      {/* Bottom section */}
       <div
         className={`py-4 flex gap-2 ${
           collapsed
@@ -156,7 +136,6 @@ export default function Sidebar({ collapsed, setCollapsed }) {
         }`}
       >
         <NavLink
-          key={name}
           to="/settings"
           className={({ isActive }) =>
             `flex items-center justify-center rounded-full w-10 h-10 text-sm transition gap-2
@@ -170,15 +149,11 @@ export default function Sidebar({ collapsed, setCollapsed }) {
           <Settings size={20} />
         </NavLink>
 
-        <div
-          className={`
-              text-center ${collapsed ? "mt-4" : ""} transition-all duration-300
-            `}
-        >
+        {!collapsed && (
           <span className="text-sm text-gray-800 dark:text-gray-400 font-mono border border-[#828282] dark:border-gray-600 px-2 py-1 rounded">
             V:2.0
           </span>
-        </div>
+        )}
       </div>
     </div>
   );

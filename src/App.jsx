@@ -24,6 +24,7 @@ import TandCPage from "./components/pages/T&C";
 import ExtensiveDiagramStudio from "./components/modules/DiagramBuilder";
 import ForgotPassword from "./components/pages/ForgotPassword";
 import ResetPassword from "./components/pages/ResetPassword";
+import { ProtectedUserSetup } from "./components/modules/ProtectedUser";
 
 export default function App() {
   const [collapsed, setCollapsed] = useState(false);
@@ -135,7 +136,9 @@ export default function App() {
               path="/user-setup"
               element={
                 <ProtectedRoute>
-                  <UserManagement />
+                  <ProtectedUserSetup>
+                    <UserManagement />
+                  </ProtectedUserSetup>
                 </ProtectedRoute>
               }
             />

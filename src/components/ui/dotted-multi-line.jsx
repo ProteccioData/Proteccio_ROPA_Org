@@ -10,65 +10,15 @@ import {
 } from "chart.js";
 import { Line } from "react-chartjs-2";
 
-ChartJS.register(LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Legend);
+ChartJS.register(
+  LineElement,
+  PointElement,
+  LinearScale,
+  CategoryScale,
+  Tooltip,
+  Legend
+);
 
-const chartData = {
-  labels: [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-  ],
-  datasets: [
-    {
-      label: "Assessments",
-      data: [186, 305, 237, 73, 209, 214, 186, 305, 237, 73, 209, 214],
-      borderColor: "#10B981",
-      backgroundColor: "#10B981",
-      borderWidth: 2,
-      tension: 0.4,
-      pointRadius: 0,
-    },
-    {
-      label: "LIA",
-      data: [87, 163, 142, 195, 118, 231, 87, 163, 142, 195, 118, 231],
-      borderColor: "#F97316",
-      backgroundColor: "#F97316",
-      borderWidth: 2,
-      borderDash: [6, 6],
-      tension: 0.4,
-      pointRadius: 0,
-    },
-    {
-      label: "DPIA",
-      data: [74, 24, 104, 124, 14, 34, 74, 24, 104, 124, 14, 34],
-      borderColor: "#8B5CF6",
-      backgroundColor: "#8B5CF6",
-      borderWidth: 2,
-      borderDash: [4, 6],
-      tension: 0.4,
-      pointRadius: 0,
-    },
-    {
-      label: "TIA",
-      data: [204, 24, 74, 94, 24, 204, 204, 24, 74, 94, 24, 204],
-      borderColor: "#FF00FF",
-      backgroundColor: "#FF00FF",
-      borderWidth: 2,
-      borderDash: [2, 6],
-      tension: 0.4,
-      pointRadius: 0,
-    },
-  ],
-};
 
 const chartOptions = {
   responsive: true,
@@ -120,8 +70,51 @@ const chartOptions = {
   },
 };
 
-export function DottedMultiLineChart() {
+export function DottedMultiLineChart({ data }) {
   const chartRef = useRef(null);
+  if (!data || data.length === 0)
+    return (
+      <div className="w-full h-[220px] flex items-center justify-center text-gray-400">
+        No data
+      </div>
+    );
+
+  const labels = data.map((d) => d.label);
+
+  const chartData = {
+    labels,
+    datasets: [
+      {
+        label: "LIA",
+        data: data.map((d) => d.LIA || 0),
+        borderColor: "#10B981",
+        backgroundColor: "#10B981",
+        borderWidth: 2,
+        tension: 0.4,
+        pointRadius: 0,
+      },
+      {
+        label: "DPIA",
+        data: data.map((d) => d.DPIA || 0),
+        borderColor: "#F97316",
+        backgroundColor: "#F97316",
+        borderWidth: 2,
+        borderDash: [6, 6],
+        tension: 0.4,
+        pointRadius: 0,
+      },
+      {
+        label: "TIA",
+        data: data.map((d) => d.TIA || 0),
+        borderColor: "#8B5CF6",
+        backgroundColor: "#8B5CF6",
+        borderWidth: 2,
+        borderDash: [4, 6],
+        tension: 0.4,
+        pointRadius: 0,
+      },
+    ],
+  };
 
   useEffect(() => {
     const chart = chartRef.current;

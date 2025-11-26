@@ -1,3 +1,4 @@
+// src/pages/ModernUserManagement.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -12,6 +13,22 @@ import {
   Check,
   Settings,
 } from "lucide-react";
+
+import {
+  apiGetTeams,
+  apiCreateTeam,
+  apiUpdateTeam,
+  apiDeleteTeam,
+  apiGetUsers,
+  apiCreateUser,
+  apiUpdateUser,
+  apiDeleteUser,
+  apiAddUserToTeam,
+  apiRemoveUserFromTeam,
+  apiGetPermissionsStructure,
+} from "../../services/UserSetupService";
+
+import { useToast } from "../ui/ToastProvider"; // keep as your project uses
 
 const STORAGE_KEY = "um:modern:v1";
 const BRAND = {
@@ -47,76 +64,7 @@ const permissionGroups = Object.entries(PERMISSIONS).map(([group, perms]) => ({
 const uid = (pre = "") => pre + Math.random().toString(36).slice(2, 9);
 const nowISO = () => new Date().toISOString();
 
-/* ========== Sample initial data (will be loaded if no localStorage) ========== */
-const SAMPLE = {
-  teams: [
-    {
-      id: "team_hr",
-      name: "HR Team",
-      description: "Employee lifecycle",
-      permissions: {
-        ROPA: ["VIEW"],
-        ASSESSMENTS: ["VIEW"],
-        MAPPING: ["VIEW"],
-        SETUP: [],
-        AUDIT: ["USER_SPECIFIC"],
-        REPORTS: ["VIEW"],
-      },
-      createdAt: nowISO(),
-    },
-    {
-      id: "team_sec",
-      name: "Security Ops",
-      description: "Security and compliance",
-      permissions: {
-        ROPA: ["VIEW", "EDIT", "ASSIGN"],
-        ASSESSMENTS: ["CREATE", "VIEW", "EDIT"],
-        MAPPING: ["VIEW", "EDIT"],
-        SETUP: ["SECURITY_REVIEW"],
-        AUDIT: ["ALL"],
-        REPORTS: ["GENERATE"],
-      },
-      createdAt: nowISO(),
-    },
-  ],
-  users: [
-    {
-      id: "user_1",
-      name: "Alice Patel",
-      email: "alice@company.com",
-      department: "HR",
-      password: "•••••••",
-      teams: ["team_hr"],
-      createdAt: nowISO(),
-    },
-    {
-      id: "user_2",
-      name: "Bob Singh",
-      email: "bob@company.com",
-      department: "Security",
-      password: "•••••••",
-      teams: ["team_sec"],
-      createdAt: nowISO(),
-    },
-  ],
-};
-
-function loadState() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return SAMPLE;
-    return JSON.parse(raw);
-  } catch {
-    return SAMPLE;
-  }
-}
-function saveState(payload) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-}
-
-/* ========== UI Primitives ========== */
-
-/* ToggleSwitch - modern animated toggle */
+/* ========== UI Primitives (unchanged) ========== */
 function ToggleSwitch({ checked = false, onChange, size = "md", ariaLabel }) {
   const sizes = {
     sm: { width: 36, height: 20, knob: 16 },
@@ -157,7 +105,6 @@ function ToggleSwitch({ checked = false, onChange, size = "md", ariaLabel }) {
   );
 }
 
-/* Small pill label for chips */
 function Pill({ children }) {
   return (
     <span className="text-xs px-2 py-1 rounded-md bg-white/60 dark:bg-white/6 border border-[#828282] text-gray-800 dark:text-gray-100">
@@ -166,7 +113,6 @@ function Pill({ children }) {
   );
 }
 
-/* Modal shell - full width feel but centered */
 function ModalShell({ title, onClose, children, footer }) {
   return (
     <div className="fixed inset-0 z-60 flex items-center justify-center p-4">
@@ -201,6 +147,239 @@ function ModalShell({ title, onClose, children, footer }) {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+/* ========== Team Modal (create / edit) ========== */
+function TeamModal({ initial = null, onClose, onSave }) {
+  const isEdit = Boolean(initial);
+  const [name, setName] = useState(initial?.name || "");
+  const [desc, setDesc] = useState(initial?.description || "");
+  const [permissions, setPermissions] = useState(initial?.permissions || {});
+
+  useEffect(() => {
+    // ensure all groups exist
+    permissionGroups.forEach(({ group }) => {
+      if (!permissions[group]) {
+        setPermissions((p) => ({
+          ...p,
+          [group]: initial?.permissions?.[group] || [],
+        }));
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function handleSave() {
+    if (!name.trim()) return alert("Please provide team name");
+
+    const flatPermissions = {};
+
+    // main
+    if (permissions.ROPA?.includes("CREATE"))
+      flatPermissions.create_ropa = true;
+    if (permissions.ROPA?.includes("ASSIGN"))
+      flatPermissions.assign_ropa = true;
+    if (permissions.ROPA?.includes("LINK")) flatPermissions.link_ropa = true;
+    if (permissions.ROPA?.includes("ARCHIVE"))
+      flatPermissions.archive_ropa = true;
+
+    // view stages
+    permissions.ROPA_VIEW_STAGES?.forEach((s) => {
+      flatPermissions[`view_ropa_${s.toLowerCase()}`] = true;
+    });
+
+    // edit stages
+    permissions.ROPA_EDIT_STAGES?.forEach((s) => {
+      flatPermissions[`edit_ropa_${s.toLowerCase()}`] = true;
+    });
+
+    const payload = {
+      id: initial?.id || uid("team_"),
+      name: name.trim(),
+      description: desc.trim(),
+      permissions: flatPermissions,
+      createdAt: initial?.createdAt || nowISO(),
+    };
+
+    onSave(payload);
+  }
+
+  return (
+    <ModalShell
+      title={isEdit ? "Edit Team" : "Create Team"}
+      onClose={onClose}
+      footer={
+        <>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded border border-[#828282] dark:text-gray-300"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            className="px-4 py-2 rounded bg-[#5DEE92] text-black font-semibold"
+          >
+            {isEdit ? "Save" : "Create"}
+          </button>
+        </>
+      }
+    >
+      <div className="space-y-6">
+        <div>
+          <label className="block text-sm dark:text-gray-400 font-medium">
+            Team name
+          </label>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="mt-2 w-full border rounded px-3 py-2 bg-white dark:bg-gray-800 border-[#e6e6e6] dark:border-[#2b2b2b]"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium dark:text-gray-400">
+            Description
+          </label>
+          <input
+            value={desc}
+            onChange={(e) => setDesc(e.target.value)}
+            className="mt-2 w-full border rounded px-3 py-2 bg-white dark:bg-gray-800 border-[#e6e6e6] dark:border-[#2b2b2b]"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-2 dark:text-gray-400">
+            Permissions
+          </label>
+          <div className="rounded-xl border border-[#e6e6e6] dark:border-[#2b2b2b] p-4 bg-white dark:bg-gray-900">
+            <PermissionsEditor value={permissions} onChange={setPermissions} />
+          </div>
+        </div>
+      </div>
+    </ModalShell>
+  );
+}
+
+/* ========== User Modal (create / edit) ========== */
+function UserModal({ initial = null, onClose, onSave, teams = [] }) {
+  const isEdit = Boolean(initial);
+  const [name, setName] = useState(initial?.name || "");
+  const [email, setEmail] = useState(initial?.email || "");
+  const [password, setPassword] = useState("");
+  const [department, setDepartment] = useState(initial?.department || "");
+  const [assigned, setAssigned] = useState(initial?.teams || []);
+
+  function toggleTeam(tid) {
+    setAssigned((s) =>
+      s.includes(tid) ? s.filter((x) => x !== tid) : [...s, tid]
+    );
+  }
+  function handleSave() {
+    if (!name.trim() || !email.trim()) return alert("Name and email required");
+    const payload = {
+      id: initial?.id || uid("user_"),
+      name: name.trim(),
+      email: email.trim(),
+      password: password ? password : initial?.password || "••••••",
+      department,
+      teams: assigned,
+      createdAt: initial?.createdAt || nowISO(),
+    };
+    onSave(payload);
+  }
+
+  return (
+    <ModalShell
+      title={isEdit ? "Edit User" : "Create User"}
+      onClose={onClose}
+      footer={
+        <>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded border border-[#828282] dark:text-gray-300"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            className="px-4 py-2 rounded bg-[#5DEE92] text-black font-semibold"
+          >
+            {isEdit ? "Save" : "Create"}
+          </button>
+        </>
+      }
+    >
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium dark:text-gray-400">
+            Full name
+          </label>
+          <input
+            className="mt-2 w-full border rounded px-3 py-2 dark:text-gray-200 bg-white dark:bg-gray-800"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium dark:text-gray-400">
+            Email
+          </label>
+          <input
+            className="mt-2 w-full border rounded px-3 py-2 bg-white dark:text-gray-200 dark:bg-gray-800"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium dark:text-gray-400">
+            Password
+          </label>
+          <input
+            type="password"
+            className="mt-2 w-full border rounded px-3 py-2 bg-white dark:bg-gray-800 dark:text-gray-200"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder={isEdit ? "leave empty to keep" : ""}
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium dark:text-gray-400">
+            Department
+          </label>
+          <input
+            className="mt-2 w-full border rounded px-3 py-2 bg-white dark:bg-gray-800 dark:text-gray-200"
+            value={department}
+            onChange={(e) => setDepartment(e.target.value)}
+          />
+        </div>
+
+        <div className="sm:col-span-2">
+          <label className="block text-sm font-medium mb-2 dark:text-gray-400">
+            Assign to teams
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {teams.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => toggleTeam(t.id)}
+                className={`px-3 py-1 rounded-md text-sm transition ${
+                  assigned.includes(t.id)
+                    ? "bg-[#5DEE92] text-black border border-[#5DEE92]"
+                    : "bg-white dark:bg-gray-800 border border-[#e6e6e6] dark:border-[#2b2b2b] text-gray-700 dark:text-gray-200"
+                }`}
+              >
+                {t.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </ModalShell>
   );
 }
 
@@ -456,7 +635,12 @@ function PermissionsEditor({ value = {}, onChange }) {
       {permissionGroups
         .filter(
           ({ group }) =>
-            !["ROPA", "ROPA_VIEW_STAGES", "ROPA_EDIT_STAGES" , "ASSESSMENTS"].includes(group)
+            ![
+              "ROPA",
+              "ROPA_VIEW_STAGES",
+              "ROPA_EDIT_STAGES",
+              "ASSESSMENTS",
+            ].includes(group)
         )
         .map(({ group, perms }) => (
           <PermissionGroupRow
@@ -477,245 +661,12 @@ function PermissionsEditor({ value = {}, onChange }) {
   );
 }
 
-/* ========== Team Modal (create / edit) ========== */
-function TeamModal({ initial = null, onClose, onSave }) {
-  const isEdit = Boolean(initial);
-  const [name, setName] = useState(initial?.name || "");
-  const [desc, setDesc] = useState(initial?.description || "");
-  const [permissions, setPermissions] = useState(initial?.permissions || {});
+export default function UserManagement() {
+  const { addToast } = useToast();
 
-  useEffect(() => {
-    // ensure all groups exist
-    permissionGroups.forEach(({ group }) => {
-      if (!permissions[group]) {
-        setPermissions((p) => ({
-          ...p,
-          [group]: initial?.permissions?.[group] || [],
-        }));
-      }
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  function handleSave() {
-    if (!name.trim()) return alert("Please provide team name");
-
-    const flatPermissions = {};
-
-    // main
-    if (permissions.ROPA?.includes("CREATE"))
-      flatPermissions.create_ropa = true;
-    if (permissions.ROPA?.includes("ASSIGN"))
-      flatPermissions.assign_ropa = true;
-    if (permissions.ROPA?.includes("LINK")) flatPermissions.link_ropa = true;
-    if (permissions.ROPA?.includes("ARCHIVE"))
-      flatPermissions.archive_ropa = true;
-
-    // view stages
-    permissions.ROPA_VIEW_STAGES?.forEach((s) => {
-      flatPermissions[`view_ropa_${s.toLowerCase()}`] = true;
-    });
-
-    // edit stages
-    permissions.ROPA_EDIT_STAGES?.forEach((s) => {
-      flatPermissions[`edit_ropa_${s.toLowerCase()}`] = true;
-    });
-
-    const payload = {
-      id: initial?.id || uid("team_"),
-      name: name.trim(),
-      description: desc.trim(),
-      permissions: flatPermissions,
-      createdAt: initial?.createdAt || nowISO(),
-    };
-
-    onSave(payload);
-  }
-
-  return (
-    <ModalShell
-      title={isEdit ? "Edit Team" : "Create Team"}
-      onClose={onClose}
-      footer={
-        <>
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded border border-[#828282] dark:text-gray-300"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            className="px-4 py-2 rounded bg-[#5DEE92] text-black font-semibold"
-          >
-            {isEdit ? "Save" : "Create"}
-          </button>
-        </>
-      }
-    >
-      <div className="space-y-6">
-        <div>
-          <label className="block text-sm dark:text-gray-400 font-medium">
-            Team name
-          </label>
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="mt-2 w-full border rounded px-3 py-2 bg-white dark:bg-gray-800 border-[#e6e6e6] dark:border-[#2b2b2b]"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium dark:text-gray-400">
-            Description
-          </label>
-          <input
-            value={desc}
-            onChange={(e) => setDesc(e.target.value)}
-            className="mt-2 w-full border rounded px-3 py-2 bg-white dark:bg-gray-800 border-[#e6e6e6] dark:border-[#2b2b2b]"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-2 dark:text-gray-400">
-            Permissions
-          </label>
-          <div className="rounded-xl border border-[#e6e6e6] dark:border-[#2b2b2b] p-4 bg-white dark:bg-gray-900">
-            <PermissionsEditor value={permissions} onChange={setPermissions} />
-          </div>
-        </div>
-      </div>
-    </ModalShell>
-  );
-}
-
-/* ========== User Modal (create / edit) ========== */
-function UserModal({ initial = null, onClose, onSave, teams = [] }) {
-  const isEdit = Boolean(initial);
-  const [name, setName] = useState(initial?.name || "");
-  const [email, setEmail] = useState(initial?.email || "");
-  const [password, setPassword] = useState("");
-  const [department, setDepartment] = useState(initial?.department || "");
-  const [assigned, setAssigned] = useState(initial?.teams || []);
-
-  function toggleTeam(tid) {
-    setAssigned((s) =>
-      s.includes(tid) ? s.filter((x) => x !== tid) : [...s, tid]
-    );
-  }
-  function handleSave() {
-    if (!name.trim() || !email.trim()) return alert("Name and email required");
-    const payload = {
-      id: initial?.id || uid("user_"),
-      name: name.trim(),
-      email: email.trim(),
-      password: password ? password : initial?.password || "••••••",
-      department,
-      teams: assigned,
-      createdAt: initial?.createdAt || nowISO(),
-    };
-    onSave(payload);
-  }
-
-  return (
-    <ModalShell
-      title={isEdit ? "Edit User" : "Create User"}
-      onClose={onClose}
-      footer={
-        <>
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded border border-[#828282] dark:text-gray-300"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            className="px-4 py-2 rounded bg-[#5DEE92] text-black font-semibold"
-          >
-            {isEdit ? "Save" : "Create"}
-          </button>
-        </>
-      }
-    >
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium dark:text-gray-400">
-            Full name
-          </label>
-          <input
-            className="mt-2 w-full border rounded px-3 py-2 dark:text-gray-200 bg-white dark:bg-gray-800"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium dark:text-gray-400">
-            Email
-          </label>
-          <input
-            className="mt-2 w-full border rounded px-3 py-2 bg-white dark:text-gray-200 dark:bg-gray-800"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium dark:text-gray-400">
-            Password
-          </label>
-          <input
-            type="password"
-            className="mt-2 w-full border rounded px-3 py-2 bg-white dark:bg-gray-800 dark:text-gray-200"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder={isEdit ? "leave empty to keep" : ""}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium dark:text-gray-400">
-            Department
-          </label>
-          <input
-            className="mt-2 w-full border rounded px-3 py-2 bg-white dark:bg-gray-800 dark:text-gray-200"
-            value={department}
-            onChange={(e) => setDepartment(e.target.value)}
-          />
-        </div>
-
-        <div className="sm:col-span-2">
-          <label className="block text-sm font-medium mb-2 dark:text-gray-400">
-            Assign to teams
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {teams.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => toggleTeam(t.id)}
-                className={`px-3 py-1 rounded-md text-sm transition ${
-                  assigned.includes(t.id)
-                    ? "bg-[#5DEE92] text-black border border-[#5DEE92]"
-                    : "bg-white dark:bg-gray-800 border border-[#e6e6e6] dark:border-[#2b2b2b] text-gray-700 dark:text-gray-200"
-                }`}
-              >
-                {t.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    </ModalShell>
-  );
-}
-
-/* ========== Main Page ========== */
-export default function ModernUserManagement() {
-  // load initial state once
-  const initial = useMemo(() => loadState(), []);
-  const [teams, setTeams] = useState(initial.teams || []);
-  const [users, setUsers] = useState(initial.users || []);
+  // UI state (unchanged)
+  const [teams, setTeams] = useState([]);
+  const [users, setUsers] = useState([]);
 
   const [showTeamModal, setShowTeamModal] = useState(false);
   const [teamToEdit, setTeamToEdit] = useState(null);
@@ -726,60 +677,297 @@ export default function ModernUserManagement() {
   const [query, setQuery] = useState("");
   const [teamFilter, setTeamFilter] = useState("all");
 
-  // Persist on change
-  useEffect(() => {
-    saveState({ teams, users });
-  }, [teams, users]);
+  const [loadingTeams, setLoadingTeams] = useState(false);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [permissionsStructure, setPermissionsStructure] = useState(null);
 
-  /* Team handlers */
-  function handleSaveTeam(team) {
-    setTeams((prev) => {
-      const exists = prev.some((t) => t.id === team.id);
-      if (exists) return prev.map((t) => (t.id === team.id ? team : t));
-      return [team, ...prev];
-    });
-    setShowTeamModal(false);
-    setTeamToEdit(null);
-  }
-  function handleDeleteTeam(teamId) {
+  // Fetch initial data
+  useEffect(() => {
+    fetchAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const fetchAll = async () => {
+    await Promise.all([
+      fetchTeams(),
+      fetchUsers(),
+      fetchPermissionsStructure(),
+    ]);
+  };
+
+  const fetchTeams = async () => {
+    setLoadingTeams(true);
+    try {
+      const data = await apiGetTeams({ limit: 100 }); // fetch many for management UI
+      // backend returns { teams, pagination } or similar; adapt safely:
+      const fetchedTeams = Array.isArray(data.teams) ? data.teams : data;
+      // Normalize team shape to match UI (id, name, description, permissions, createdAt)
+
+      function normalizePermissions(permObj = {}) {
+        const grouped = {
+          ROPA: [],
+          ROPA_VIEW_STAGES: [],
+          ROPA_EDIT_STAGES: [],
+          ASSESSMENTS: [],
+          ASSESS_LIA: [],
+          ASSESS_DPIA: [],
+          ASSESS_TIA: [],
+          MAPPING: [],
+          SETUP: [],
+          AUDIT: [],
+          REPORTS: [],
+        };
+
+        for (const [key, val] of Object.entries(permObj)) {
+          if (!val) continue;
+
+          // ROPA main
+          if (key === "create_ropa") grouped.ROPA.push("CREATE");
+          if (key === "assign_ropa") grouped.ROPA.push("ASSIGN");
+          if (key === "link_ropa") grouped.ROPA.push("LINK");
+          if (key === "archive_ropa") grouped.ROPA.push("ARCHIVE");
+
+          // View stages
+          if (key.startsWith("view_ropa_")) {
+            grouped.ROPA_VIEW_STAGES.push(
+              key
+                .replace("view_ropa_", "")
+                .replace(/^\w/, (c) => c.toUpperCase())
+            );
+          }
+
+          // Edit stages
+          if (key.startsWith("edit_ropa_")) {
+            grouped.ROPA_EDIT_STAGES.push(
+              key
+                .replace("edit_ropa_", "")
+                .replace(/^\w/, (c) => c.toUpperCase())
+            );
+          }
+
+          // Assessments
+          if (["create", "view", "edit", "delete", "archive"].includes(key))
+            grouped.ASSESSMENTS.push(key.toUpperCase());
+
+          if (key.startsWith("lia_"))
+            grouped.ASSESS_LIA.push(key.replace("lia_", "").toUpperCase());
+          if (key.startsWith("dpia_"))
+            grouped.ASSESS_DPIA.push(key.replace("dpia_", "").toUpperCase());
+          if (key.startsWith("tia_"))
+            grouped.ASSESS_TIA.push(key.replace("tia_", "").toUpperCase());
+        }
+
+        return grouped;
+      }
+
+      const normalized = fetchedTeams.map((t) => ({
+        id: t.id,
+        name: t.name,
+        description: t.description,
+        permissions: normalizePermissions(t.permissions || {}),
+        createdAt: t.created_at || t.createdAt || nowISO(),
+      }));
+      setTeams(normalized);
+    } catch (err) {
+      console.error("fetchTeams error", err);
+      addToast("error", err?.response?.data?.error || "Failed to fetch teams");
+    } finally {
+      setLoadingTeams(false);
+    }
+  };
+
+  const fetchUsers = async () => {
+    setLoadingUsers(true);
+    try {
+      const data = await apiGetUsers({ limit: 200 });
+      const fetchedUsers = Array.isArray(data.users) ? data.users : data;
+      const normalized = fetchedUsers.map((u) => ({
+        id: u.id,
+        name: u.full_name || u.name || "",
+        email: u.email,
+        department: u.department || "",
+        password: "•••••••",
+        teams: (u.teams || []).map((tm) => (tm?.id ? tm.id : tm)),
+        createdAt: u.created_at || u.createdAt || nowISO(),
+        role: u.role,
+        status: u.status,
+      }));
+      setUsers(normalized);
+    } catch (err) {
+      console.error("fetchUsers error", err);
+      addToast("error", err?.response?.data?.error || "Failed to fetch users");
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  const fetchPermissionsStructure = async () => {
+    try {
+      const data = await apiGetPermissionsStructure();
+      setPermissionsStructure(data.permissions || {});
+    } catch (err) {
+      // Not critical; fall back to default PERMISSIONS constant
+      console.warn("Could not fetch permissions structure; falling back.");
+      setPermissionsStructure(null);
+    }
+  };
+
+  /* ---------- Team operations ---------- */
+
+  const handleSaveTeam = async (teamPayload) => {
+    // teamPayload is the same structure as your original onSave emit
+    // It should contain: id (or generated), name, description, permissions (object)
+    try {
+      if (teams.some((t) => t.id === teamPayload.id)) {
+        // update
+        await apiUpdateTeam(teamPayload.id, {
+          name: teamPayload.name,
+          description: teamPayload.description,
+          permissions: teamPayload.permissions,
+          status: "active",
+        });
+        addToast("success", "Team updated");
+      } else {
+        // create
+        await apiCreateTeam({
+          name: teamPayload.name,
+          description: teamPayload.description,
+          permissions: teamPayload.permissions,
+        });
+        addToast("success", "Team created");
+      }
+
+      // Refresh teams and users (members count may change)
+      await fetchTeams();
+      await fetchUsers();
+      setShowTeamModal(false);
+      setTeamToEdit(null);
+    } catch (err) {
+      console.error("handleSaveTeam error", err);
+      addToast(
+        "error",
+        err?.response?.data?.error || "Failed to create/update team"
+      );
+    }
+  };
+
+  const handleDeleteTeam = async (teamId) => {
     if (!confirm("Delete team? This will remove team assignment from users."))
       return;
-    setTeams((prev) => prev.filter((t) => t.id !== teamId));
-    setUsers((prev) =>
-      prev.map((u) => ({ ...u, teams: u.teams.filter((id) => id !== teamId) }))
-    );
-  }
+    try {
+      await apiDeleteTeam(teamId);
+      addToast("success", "Team deleted");
+      await fetchTeams();
+      await fetchUsers();
+    } catch (err) {
+      console.error("handleDeleteTeam error", err);
+      addToast("error", err?.response?.data?.error || "Failed to delete team");
+    }
+  };
 
-  /* User handlers */
-  function handleSaveUser(user) {
-    setUsers((prev) => {
-      const exists = prev.some((u) => u.id === user.id);
-      if (exists)
-        return prev.map((u) => (u.id === user.id ? { ...u, ...user } : u));
-      return [user, ...prev];
-    });
-    setShowUserModal(false);
-    setUserToEdit(null);
-  }
-  function handleDeleteUser(userId) {
+  /* ---------- User operations ---------- */
+
+  const handleSaveUser = async (userPayload) => {
+    // userPayload shape: { id?, name, email, password, department, teams }
+    try {
+      if (users.some((u) => u.id === userPayload.id)) {
+        // update (backend expects fullName)
+        await apiUpdateUser(userPayload.id, {
+          fullName: userPayload.name,
+          department: userPayload.department,
+          password: userPayload.password ? userPayload.password : undefined,
+        });
+        addToast("success", "User updated");
+      } else {
+        if (!userPayload.email.trim().match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+          addToast("error", "Please enter a valid email address");
+          return;
+        }
+        // create
+        await apiCreateUser({
+          email: userPayload.email,
+          password: userPayload.password || "TempPass@123",
+          fullName: userPayload.name,
+          department: userPayload.department,
+        });
+        addToast("success", "User created");
+      }
+
+      // Sync team memberships
+      const oldTeams = users.find((u) => u.id === userPayload.id)?.teams || [];
+      const newTeams = userPayload.teams || [];
+
+      // Add missing
+      for (const tid of newTeams) {
+        if (!oldTeams.includes(tid)) {
+          await apiAddUserToTeam(tid, userPayload.id);
+        }
+      }
+
+      // Remove extra
+      for (const tid of oldTeams) {
+        if (!newTeams.includes(tid)) {
+          await apiRemoveUserFromTeam(tid, userPayload.id);
+        }
+      }
+
+      // Refresh frontend
+      await fetchUsers();
+      await fetchTeams();
+
+      setShowUserModal(false);
+      setUserToEdit(null);
+    } catch (err) {
+      console.error("handleSaveUser error", err);
+      addToast("error", err?.response?.data?.error || "Failed to save user");
+    }
+  };
+
+  const handleDeleteUser = async (userId) => {
     if (!confirm("Delete user?")) return;
-    setUsers((prev) => prev.filter((u) => u.id !== userId));
-  }
+    try {
+      await apiDeleteUser(userId);
+      addToast("success", "User deleted");
+      await fetchUsers();
+      await fetchTeams();
+    } catch (err) {
+      console.error("handleDeleteUser error", err);
+      addToast("error", err?.response?.data?.error || "Failed to delete user");
+    }
+  };
 
-  function quickAssign(userId, teamId) {
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.id === userId
-          ? {
-              ...u,
-              teams: u.teams.includes(teamId) ? u.teams : [...u.teams, teamId],
-            }
-          : u
-      )
-    );
-  }
+  const quickAssign = async (userId, teamId) => {
+    if (!teamId) {
+      addToast("error", "No team to assign");
+      return;
+    }
+    try {
+      await apiAddUserToTeam(teamId, userId);
+      addToast("success", "User assigned to team");
+      await fetchUsers();
+      await fetchTeams();
+    } catch (err) {
+      console.error("quickAssign error", err);
+      addToast("error", err?.response?.data?.error || "Failed to assign user");
+    }
+  };
 
-  /* Derived: effective permissions for user (union of teams) */
+  /* remove user from team */
+  const removeUserFromTeam = async (teamId, userId) => {
+    if (!confirm("Remove user from team?")) return;
+    try {
+      await apiRemoveUserFromTeam(teamId, userId);
+      addToast("success", "User removed from team");
+      await fetchUsers();
+      await fetchTeams();
+    } catch (err) {
+      console.error("removeUserFromTeam error", err);
+      addToast("error", err?.response?.data?.error || "Failed to remove user");
+    }
+  };
+
+  /* ---------- Derived and filters (unchanged) ---------- */
+
   function effectivePermissionsForUser(user) {
     const agg = {};
 
@@ -788,16 +976,13 @@ export default function ModernUserManagement() {
       if (!t) return;
 
       Object.entries(t.permissions || {}).forEach(([key, value]) => {
-        // Case 1: array permissions (like old system)
         if (Array.isArray(value)) {
           agg[key] = Array.from(new Set([...(agg[key] || []), ...value]));
           return;
         }
-
-        // Case 2: boolean permissions (new flattened system)
         if (value === true) {
           if (!agg[key]) agg[key] = [];
-          agg[key].push(key); // store the permission name itself
+          agg[key].push(key);
         }
       });
     });
@@ -805,15 +990,14 @@ export default function ModernUserManagement() {
     return agg;
   }
 
-  /* Filters */
   const filteredUsers = users.filter((u) => {
     const q = query.trim().toLowerCase();
     if (teamFilter !== "all" && !u.teams.includes(teamFilter)) return false;
     if (!q) return true;
     return (
-      u.name.toLowerCase().includes(q) ||
-      u.email.toLowerCase().includes(q) ||
-      (u.department || "").toLowerCase().includes(q)
+      (u.name || "").toLowerCase().includes(q) ||
+      (u.email || "").toLowerCase().includes(q) ||
+      ((u.department || "") + "").toLowerCase().includes(q)
     );
   });
 
@@ -821,15 +1005,15 @@ export default function ModernUserManagement() {
     const q = query.trim().toLowerCase();
     if (!q) return true;
     return (
-      t.name.toLowerCase().includes(q) ||
-      (t.description || "").toLowerCase().includes(q)
+      (t.name || "").toLowerCase().includes(q) ||
+      ((t.description || "") + "").toLowerCase().includes(q)
     );
   });
 
-  /* UI colors for dark mode improvements */
   const cardClass =
     "rounded-2xl border border-[#828282] bg-white dark:bg-[#0f1720] dark:border-[#2a2a2a] shadow-sm";
 
+  /* ========== RENDER ========== */
   return (
     <div className="p-6 min-h-screen" style={{ fontFamily: BRAND.font }}>
       <div className="flex items-start justify-between gap-4 mb-6">
@@ -911,6 +1095,11 @@ export default function ModernUserManagement() {
                   {teams.length} teams
                 </p>
               </div>
+              <div>
+                {loadingTeams ? (
+                  <div className="text-sm">Loading...</div>
+                ) : null}
+              </div>
             </div>
 
             <div className="mt-4 space-y-3">
@@ -939,7 +1128,7 @@ export default function ModernUserManagement() {
                       </div>
                       <div className="mt-2 flex gap-2 flex-wrap">
                         {Object.entries(t.permissions || {}).map(([g, perms]) =>
-                          perms.length > 0 ? (
+                          perms && perms.length > 0 ? (
                             <div
                               key={g}
                               className="px-2 py-1 bg-[#f7fff9] dark:bg-[#8fddc3] border border-[#e6e6e6] dark:border-[#172425] rounded text-xs"
@@ -997,7 +1186,11 @@ export default function ModernUserManagement() {
               </div>
 
               <div className="flex items-center gap-2">
-                <Filter className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+                {loadingUsers ? (
+                  <div className="text-sm">Loading...</div>
+                ) : (
+                  <Filter className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+                )}
               </div>
             </div>
 
@@ -1011,10 +1204,12 @@ export default function ModernUserManagement() {
                   <div className="flex items-center gap-4">
                     <div className="w-11 h-11 rounded-full bg-[#5DEE92] text-black flex items-center justify-center font-semibold">
                       {u.name
-                        .split(" ")
-                        .map((n) => n[0])
-                        .slice(0, 2)
-                        .join("")}
+                        ? u.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .slice(0, 2)
+                            .join("")
+                        : ""}
                     </div>
 
                     <div>
@@ -1046,6 +1241,7 @@ export default function ModernUserManagement() {
                     <div className="text-xs text-gray-500 dark:text-gray-400">
                       Joined: {new Date(u.createdAt).toLocaleDateString()}
                     </div>
+
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => {
@@ -1113,6 +1309,8 @@ export default function ModernUserManagement() {
               setTeamToEdit(null);
             }}
             onSave={handleSaveTeam}
+            // pass permissions structure so UI can show defaults if needed
+            permissionsStructure={permissionsStructure}
           />
         )}
 

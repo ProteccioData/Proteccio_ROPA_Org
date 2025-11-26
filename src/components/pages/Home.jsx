@@ -26,11 +26,19 @@ import {
 } from "lucide-react";
 import RiskGauge from "../ui/RiskGauge";
 import {
+  getAllDataTransfers,
+  getAssessmentTrend,
+  getComplianceScore,
   getDashboardActivity,
   getDashboardSummary,
+  getDataMappingStats,
+  getDataTransferStats,
+  getRiskOverview,
   getRopaStats,
+  getUpcomingAudits,
 } from "../../services/DashboardService";
 import { useAuth } from "../../context/AuthContext";
+import { getAssessments } from "../../services/AssessmentService";
 
 ChartJS.register(
   CategoryScale,
@@ -50,6 +58,19 @@ export default function Home() {
   const [summary, setSummary] = useState(null);
   const [activityList, setActivityList] = useState([]);
   const { user } = useAuth();
+  const [assessmentTrend, setAssessmentTrend] = useState([]);
+  const [availableYears, setAvailableYears] = useState([]);
+  const [selectedYear, setSelectedYear] = useState(null);
+  const [selectedMonth, setSelectedMonth] = useState(null);
+  const [trendData, setTrendData] = useState(null);
+  const [summaryData, setSummaryData] = useState(null);
+  const [riskOverview, setRiskOverview] = useState(null);
+  const [upcomingAudits, setUpcomingAudits] = useState([]);
+  const [auditSummary, setAuditSummary] = useState(null);
+  const [dataMappingStats, setDataMappingStats] = useState(null);
+  const [dataMapping, setDataMapping] = useState(null);
+  const [transferStats, setTransferStats] = useState(null);
+  const [recentTransfers, setRecentTransfers] = useState([]);
 
   const [ropaPieData, setRopaPieData] = useState([]);
 
@@ -59,6 +80,7 @@ export default function Home() {
     transfers: 0,
     compliance: 0,
     risk: 0,
+    dataMappings: 0,
   });
 
   // sample data (kept same as your previous)
@@ -112,43 +134,43 @@ export default function Home() {
     },
   ];
 
-  const recentTransfers = [
-    {
-      id: 1,
-      region: "EU → US",
-      dataType: "Customer Data",
-      risk: "Low",
-      date: "15 Oct",
-    },
-    {
-      id: 2,
-      region: "IN → UK",
-      dataType: "Employee Data",
-      risk: "Medium",
-      date: "12 Oct",
-    },
-    {
-      id: 3,
-      region: "SG → FR",
-      dataType: "Analytics Logs",
-      risk: "High",
-      date: "09 Oct",
-    },
-    {
-      id: 4,
-      region: "US → DE",
-      dataType: "Vendor Info",
-      risk: "Low",
-      date: "06 Oct",
-    },
-    {
-      id: 5,
-      region: "IN → EU",
-      dataType: "Marketing Data",
-      risk: "Medium",
-      date: "02 Oct",
-    },
-  ];
+  // const recentTransfers = [
+  //   {
+  //     id: 1,
+  //     region: "EU → US",
+  //     dataType: "Customer Data",
+  //     risk: "Low",
+  //     date: "15 Oct",
+  //   },
+  //   {
+  //     id: 2,
+  //     region: "IN → UK",
+  //     dataType: "Employee Data",
+  //     risk: "Medium",
+  //     date: "12 Oct",
+  //   },
+  //   {
+  //     id: 3,
+  //     region: "SG → FR",
+  //     dataType: "Analytics Logs",
+  //     risk: "High",
+  //     date: "09 Oct",
+  //   },
+  //   {
+  //     id: 4,
+  //     region: "US → DE",
+  //     dataType: "Vendor Info",
+  //     risk: "Low",
+  //     date: "06 Oct",
+  //   },
+  //   {
+  //     id: 5,
+  //     region: "IN → EU",
+  //     dataType: "Marketing Data",
+  //     risk: "Medium",
+  //     date: "02 Oct",
+  //   },
+  // ];
 
   const activities = [
     {
@@ -193,32 +215,37 @@ export default function Home() {
       };
     });
 
-  const upcomingAudits = [
-    {
-      id: 1,
-      dept: "LIA Review",
-      date: "20 Oct",
-      team: "Privacy team",
-      status: "Scheduled",
-    },
-    {
-      id: 2,
-      dept: "DPIA Renewal",
-      date: "02 Nov",
-      team: "Legal",
-      status: "Pending",
-    },
-    {
-      id: 3,
-      dept: "Security Audit",
-      date: "10 Nov",
-      team: "IT Security",
-      status: "In Review",
-    },
-  ];
+  // const upcomingAudits = [
+  //   {
+  //     id: 1,
+  //     dept: "LIA Review",
+  //     date: "20 Oct",
+  //     team: "Privacy team",
+  //     status: "Scheduled",
+  //   },
+  //   {
+  //     id: 2,
+  //     dept: "DPIA Renewal",
+  //     date: "02 Nov",
+  //     team: "Legal",
+  //     status: "Pending",
+  //   },
+  //   {
+  //     id: 3,
+  //     dept: "Security Audit",
+  //     date: "10 Nov",
+  //     team: "IT Security",
+  //     status: "In Review",
+  //   },
+  // ];
 
   // Compliance small bar data
-  const ropaStages = { Infovoyage: 350, CheckSync: 450, Beam: 200 };
+  const ropaStages = {
+    Infovoyage: summary?.complianceBreakdown?.infovoyage?.count || 0,
+    CheckSync: summary?.complianceBreakdown?.checksync?.count || 0,
+    Beam: summary?.complianceBreakdown?.beam?.count || 0,
+  };
+
   const ropaOptions = {
     indexAxis: "y",
     responsive: true,
@@ -318,6 +345,27 @@ export default function Home() {
   // }, []);
 
   useEffect(() => {
+    const loadInitialData = async () => {
+      const res = await getAssessments();
+
+      const years = new Set();
+
+      res.data.assessments.forEach((a) => {
+        if (a.createdAt) {
+          years.add(new Date(a.createdAt).getFullYear());
+        }
+      });
+
+      const sortedYears = Array.from(years).sort((a, b) => b - a);
+
+      setAvailableYears(sortedYears);
+      setSelectedYear(sortedYears[0]); // latest year
+    };
+
+    loadInitialData();
+  }, []);
+
+  useEffect(() => {
     setMounted(true);
 
     const fetchData = async () => {
@@ -325,8 +373,54 @@ export default function Home() {
         const summaryRes = await getDashboardSummary();
         const activityRes = await getDashboardActivity();
         const ropaStatsRes = await getRopaStats();
+        // const assessTrendRes = await getAssessmentTrend();
+        // setAssessmentTrend(assessTrendRes.data.graphData);
+        const riskRes = await getRiskOverview();
 
-        setSummary(summaryRes.data);
+        const risk = riskRes.data.summary;
+
+        const auditRes = await getUpcomingAudits(30, 20);
+
+        setUpcomingAudits(auditRes.data.upcomingAudits || []);
+        setAuditSummary(auditRes.data.summary || {});
+
+        const dataMapRes = await getDataMappingStats();
+        const dataMap = dataMapRes.data.summary;
+
+        const radarData = dataMapRes.data
+          ? Object.entries(dataMapRes.data.byCategory).map(([key, value]) => ({
+              label: key,
+              value,
+            }))
+          : [];
+
+        setDataMapping(radarData);
+
+        setDataMappingStats(dataMap); // Create state for details
+
+        const compRes = await getComplianceScore();
+        const complianceScore = compRes.data?.complianceScore || {};
+        const breakdown = complianceScore.stage_breakdown || {};
+        const compliancePercent = complianceScore.compliance_percentage || 0;
+
+        setSummary((prev) => ({
+          ...summaryRes.data,
+          complianceBreakdown: breakdown,
+        }));
+
+        setRiskOverview(risk);
+
+        try {
+          const transferRes = await getDataTransferStats();
+          setTransferStats(transferRes.data);
+
+          const allTransfers = await getAllDataTransfers({ limit: 5, page: 1 });
+          setRecentTransfers(allTransfers.data.transfers || []);
+        } catch (err) {
+          console.warn("Transfer stats failed:", err.response?.status);
+          setTransferStats({ summary: { total: 0 }, byRiskLevel: {} });
+        }
+
         setActivityList(transformActivities(activityRes.data.activities));
         const formattedPieData = ropaStatsRes.data.byCategory.map(
           (item, index) => ({
@@ -337,8 +431,16 @@ export default function Home() {
         );
 
         setRopaPieData(formattedPieData);
-        // Animate numbers using real values
-        startNumberAnimation(summaryRes.data);
+
+        startNumberAnimation({
+          ...summaryRes.data,
+          stats: {
+            ...summaryRes.data.stats,
+            completionAverage: compliancePercent,
+            risk: Math.round(risk.averageRiskScore),
+            dataMappings: dataMap.total,
+          },
+        });
       } catch (err) {
         console.error("Dashboard load error", err);
       }
@@ -346,6 +448,30 @@ export default function Home() {
 
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (!selectedYear) return;
+
+    const loadTrend = async () => {
+      try {
+        const res = await getAssessmentTrend("yearly", selectedYear);
+
+        let graph = res.data.graphData;
+
+        // filter using selectedMonth (1–12)
+        if (selectedMonth !== null) {
+          graph = graph.filter((item) => item.month === selectedMonth);
+        }
+
+        setTrendData(graph);
+        setSummaryData(res.data.summary);
+      } catch (err) {
+        console.error("Trend load error", err);
+      }
+    };
+
+    loadTrend();
+  }, [selectedYear, selectedMonth]);
 
   const cardAnim = {
     hidden: { opacity: 0, y: 8 },
@@ -369,6 +495,55 @@ export default function Home() {
     if (diff < 0) return `${diff} this month`; // diff is negative automatically
     return "No change this month";
   };
+
+  const getAssessmentChangeText = () => {
+    if (!trendData || trendData.length === 0) return "";
+
+    if (selectedMonth === null) {
+      const total = trendData.reduce((sum, m) => sum + (m.total || 0), 0);
+      return `+${total} this year`;
+    }
+
+    const current =
+      trendData.find((m) => m.month === selectedMonth)?.total || 0;
+    const previous =
+      trendData.find((m) => m.month === selectedMonth - 1)?.total || 0;
+
+    const diff = current - previous;
+
+    if (diff > 0) return `+${diff} this month`;
+    if (diff < 0) return `${diff} this month`; // negative
+    return "No change this month";
+  };
+
+  const getAssessmentNumbers = () => {
+    if (!summaryData || !trendData) return { total: 0, changeText: "" };
+
+    const total = summaryData.total || 0;
+
+    if (selectedMonth === null) {
+      const yearlyTotal = trendData.reduce((sum, m) => sum + (m.total || 0), 0);
+      return {
+        total,
+        changeText: `+${yearlyTotal} this year`,
+      };
+    }
+
+    const curr = trendData.find((m) => m.month === selectedMonth)?.total || 0;
+    const prev =
+      trendData.find((m) => m.month === selectedMonth - 1)?.total || 0;
+
+    const diff = curr - prev;
+
+    let changeText = "";
+    if (diff > 0) changeText = `+${diff} this month`;
+    else if (diff < 0) changeText = `${diff} this month`;
+    else changeText = "No change this month";
+
+    return { total, changeText };
+  };
+
+  const thisWeek = dataMappingStats?.recentActivity?.created_last_30_days || 0;
 
   // Stroke dash handling for radial gauge
   // Using a 100-length circumference shorthand so strokeDasharray can be percentage based
@@ -445,7 +620,7 @@ export default function Home() {
                   <div className="mt-3">
                     <div className="text-3xl font-extrabold text-[#1F6B3B]">
                       {/* {animateNumbers.compliance}% */}
-                      {summary?.stats?.completionAverage ?? 0}%
+                      {animateNumbers.compliance}%
                     </div>
                     <div className="text-sm text-gray-500 dark:text-gray-300 mt-1">
                       Overall compliance across tracked RoPA entries
@@ -554,7 +729,7 @@ export default function Home() {
               animate="show"
               variants={cardAnim}
               custom={1}
-              className={`rounded-2xl p-5 shadow-sm transition-all hover:shadow-lg duration-300 border border-[#828282] dark:bg-gray-800 bg-white flex flex-col h-full`}
+              className={`rounded-2xl p-5 shadow-sm transition-all hover:shadow-lg duration-300 border border-[#828282] dark:bg-gray-800 bg-white flex flex-col h-full max-w-full overflow-hidden`}
             >
               <div className="flex justify-between items-start">
                 <div>
@@ -563,25 +738,65 @@ export default function Home() {
                   </p>
                   <div className="flex items-baseline gap-2 mt-1">
                     <h2 className="text-4xl font-extrabold text-[#5DE992]">
-                      {summary.stats.totalAssessments ||
-                        animateNumbers.assessments}
+                      {getAssessmentNumbers().total}
                     </h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-300">+ 12 This month</p>
+
+                    <p className="text-sm text-gray-500 dark:text-gray-300">
+                      {getAssessmentChangeText()}
+                    </p>
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <select className="text-xs px-2 py-1 rounded border bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 dark:text-gray-300">
-                    <option>Monthly</option>
+                  <select
+                    className="text-xs px-2 py-1 rounded border bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 dark:text-gray-300"
+                    value={selectedMonth ?? "all"}
+                    onChange={(e) =>
+                      setSelectedMonth(
+                        e.target.value === "all"
+                          ? null
+                          : parseInt(e.target.value)
+                      )
+                    }
+                  >
+                    <option value={"all"}>All</option>
+                    {[
+                      "Jan",
+                      "Feb",
+                      "Mar",
+                      "Apr",
+                      "May",
+                      "Jun",
+                      "Jul",
+                      "Aug",
+                      "Sep",
+                      "Oct",
+                      "Nov",
+                      "Dec",
+                    ].map((m, i) => (
+                      <option value={i + 1} key={i}>
+                        {m}
+                      </option>
+                    ))}
                   </select>
-                  <select className="text-xs px-2 py-1 rounded border bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 dark:text-gray-300">
-                    <option>2025</option>
+                  <select
+                    className="text-xs px-2 py-1 rounded border bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 dark:text-gray-300"
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                  >
+                    {availableYears.map((yr) => (
+                      <option key={yr} value={yr}>
+                        {yr}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
 
-              <div className=" flex-1">
-                <div className="w-full">
-                  <DottedMultiLineChart />
+              <div className=" flex-1 overflow-hidden">
+                <div className="w-full max-h-[220px] overflow-hidden">
+                  <DottedMultiLineChart
+                    data={trendData || assessmentTrend || []}
+                  />
                 </div>
               </div>
             </motion.div>
@@ -655,7 +870,11 @@ export default function Home() {
                       {/* Center label */}
                       <div className="absolute flex flex-col items-center justify-center">
                         <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                          {animateNumbers.risk}
+                          {
+                            (animateNumbers.risk = Math.round(
+                              riskOverview.averageRiskScore
+                            ))
+                          }
                           <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
                             /25
                           </span>
@@ -671,7 +890,7 @@ export default function Home() {
                       {/* Low Risk */}
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-6 bg-green-50 text-green-700 rounded flex items-center justify-center font-semibold">
-                          11
+                          {riskOverview?.riskDistribution?.Low || 0}
                         </div>
                         <span className="font-medium text-gray-700 dark:text-gray-200">
                           Low Risk
@@ -681,7 +900,7 @@ export default function Home() {
                       {/* Medium Risk */}
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-6 bg-yellow-50 text-yellow-700 rounded flex items-center justify-center font-semibold">
-                          5
+                          {riskOverview?.riskDistribution?.Medium || 0}
                         </div>
                         <span className="font-medium text-gray-700 dark:text-gray-200">
                           Medium Risk
@@ -691,7 +910,7 @@ export default function Home() {
                       {/* High Risk */}
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-6 bg-orange-50 text-orange-700 rounded flex items-center justify-center font-semibold">
-                          5
+                          {riskOverview?.riskDistribution?.High || 0}
                         </div>
                         <span className="font-medium text-gray-700 dark:text-gray-200">
                           High Risk
@@ -701,7 +920,7 @@ export default function Home() {
                       {/* Very High */}
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-6 bg-red-50 text-red-700 rounded flex items-center justify-center font-semibold">
-                          5
+                          {riskOverview?.riskDistribution?.["Very High"] || 0}
                         </div>
                         <span className="font-medium text-gray-700 dark:text-gray-200">
                           Very High
@@ -711,7 +930,7 @@ export default function Home() {
                       {/* Critical */}
                       <div className="flex items-center gap-3 col-span-2">
                         <div className="w-8 h-6 bg-red-100 text-red-800 rounded flex items-center justify-center font-semibold">
-                          5
+                          {riskOverview?.riskDistribution?.Critical || 0}
                         </div>
                         <span className="font-medium text-gray-700 dark:text-gray-200">
                           Critical
@@ -728,13 +947,20 @@ export default function Home() {
                 animate="show"
                 variants={cardAnim}
                 custom={5}
-                className="rounded-2xl p-4 shadow-sm transition-all hover:shadow-lg duration-300 border border-[#828282] dark:bg-gray-800 bg-white h-full"
+                className="rounded-2xl p-4 shadow-sm transition-all hover:shadow-lg duration-300 border border-[#828282] dark:bg-gray-800 bg-white h-full min-h-[260px]"
                 // style={{ flex: 1, minHeight: 0 }}
               >
                 <h3 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-3">
                   Upcoming Audits
                 </h3>
                 <div className="space-y-3">
+                  {upcomingAudits.length === 0 && (
+                    <div className=" text-gray-500 dark:text-gray-400 text-lg text-center">
+                      No upcoming audits in the next{" "}
+                      {auditSummary?.days_ahead || 30} days.
+                    </div>
+                  )}
+
                   {upcomingAudits.map((a) => (
                     <div
                       key={a.id}
@@ -742,22 +968,28 @@ export default function Home() {
                     >
                       <div>
                         <div className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                          {a.dept}
+                          {a.entity_type === "ROPA" ? a.name : a.title}
                         </div>
-                        <div className="text-xs text-gray-500">{a.team}</div>
+                        <div className="text-xs text-gray-500">
+                          {a.entity_type} • {a.type || a.category}
+                        </div>
                       </div>
-                      <div className="text-sm text-gray-500">{a.date}</div>
+                      <div className="text-sm text-gray-500">
+                        {new Date(a.next_review_date).toLocaleDateString(
+                          "en-IN"
+                        )}
+                      </div>
                       <div className="ml-4">
                         <span
                           className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                            a.status === "Scheduled"
-                              ? "bg-green-100 text-green-700"
-                              : a.status === "Pending"
+                            a.days_until_review <= 7
+                              ? "bg-red-100 text-red-700"
+                              : a.days_until_review <= 15
                               ? "bg-yellow-100 text-yellow-700"
-                              : "bg-blue-100 text-blue-700"
+                              : "bg-green-100 text-green-700"
                           }`}
                         >
-                          {a.status}
+                          {a.days_until_review} days
                         </span>
                       </div>
                     </div>
@@ -783,13 +1015,17 @@ export default function Home() {
                   </p>
                   <div className="flex flex-col">
                     <h2 className="text-4xl text-right font-extrabold text-gray-900 dark:text-white">
-                      {animateNumbers.transfers}
+                      {animateNumbers.dataMappings}
                     </h2>
-                    <p className="text-sm text-gray-500 mt-1">+ 8 This Week</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      + {thisWeek} this month
+                    </p>
                   </div>
                 </div>
                 <div className="w-full h-full min-h-48">
-                  <GlowingStrokeRadarChart />
+                  {Array.isArray(dataMapping) && dataMapping.length > 0 && (
+                    <GlowingStrokeRadarChart data={dataMapping} />
+                  )}
                 </div>
               </div>
             </motion.div>
@@ -818,7 +1054,7 @@ export default function Home() {
                 <div className="mt-4 grid grid-cols-2 gap-3">
                   <div className="rounded-lg p-4 bg-indigo-50 ">
                     <div className="text-2xl font-semibold text-indigo-700">
-                      4
+                      {transferStats?.summary?.total || 0}
                     </div>
                     <div className="text-xs text-gray-500 mt-1">
                       Total Transfers
@@ -826,7 +1062,7 @@ export default function Home() {
                   </div>
                   <div className="rounded-lg p-4 bg-pink-50 ">
                     <div className="text-2xl font-semibold text-pink-700">
-                      2
+                      {transferStats?.byRiskLevel?.High || 0}
                     </div>
                     <div className="text-xs text-gray-500 mt-1">High Risk</div>
                   </div>
@@ -840,13 +1076,15 @@ export default function Home() {
                 <div className="space-y-2 pr-1">
                   {recentTransfers.map((t) => (
                     <div
-                      key={t.id}
+                      key={t.transfer_id}
                       className="flex justify-between items-center text-sm border-b dark:border-gray-700 border-gray-100 pb-2"
                     >
                       <div className="truncate max-w-[50%] dark:text-gray-200 text-gray-800">
                         {t.region}
                       </div>
-                      <div className="text-xs text-gray-500">{t.dataType}</div>
+                      <div className="text-xs text-gray-500">
+                        {t.transfer_type}
+                      </div>
                       <span
                         className={`text-xs font-medium px-2 py-0.5 rounded-full ${
                           t.risk === "High"
@@ -856,7 +1094,7 @@ export default function Home() {
                             : "bg-green-100 text-green-700"
                         }`}
                       >
-                        {t.risk}
+                        {t.risk_level || "Unassessed"}
                       </span>
                     </div>
                   ))}
