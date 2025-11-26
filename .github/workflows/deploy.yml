@@ -22,7 +22,7 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "
             cd ~/ropa-portal && \
-            git pull && \
+            git pull --force && \
             npm install && \
             npm run build && \
             rm -rf /var/www/ropa-portal/* && \
