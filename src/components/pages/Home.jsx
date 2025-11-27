@@ -858,7 +858,9 @@ export default function Home() {
                           strokeLinecap="round"
                           strokeDasharray="100"
                           strokeDashoffset={
-                            100 - (animateNumbers.risk / 25) * 100
+                            100 - ((animateNumbers.risk = Math.round(
+                              riskOverview.averageRiskScore
+                            )) / 25) * 100
                           }
                           style={{
                             transition:
