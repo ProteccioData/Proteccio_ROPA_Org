@@ -12,126 +12,230 @@ import {
   Edit3,
 } from "lucide-react";
 import Button from "../ui/Button";
-import ExtensiveDiagramStudio from "../modules/DiagramBuilder";
-import { Navigate, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import CreateFlowModal from "../modules/CreateFlowModal";
 
-// Enhanced data structure for flows
-const initialDataMappings = [
-  {
-    id: "DM-001",
-    title: "Customer Data Flow",
-    description: "Data flow for customer onboarding process",
-    createdBy: "John Doe",
-    createdAt: "2025-06-04",
-    updatedAt: "2025-06-04",
-    type: "diagram",
-    status: "active", // active, archived
-    diagramData: null, // This would contain the actual flow data
-  },
-  {
-    id: "DM-002",
-    title: "Payment Processing",
-    description: "Payment data flow diagram",
-    createdBy: "Jane Smith",
-    createdAt: "2025-06-04",
-    updatedAt: "NA",
-    type: "diagram",
-    status: "active",
-    diagramData: null,
-  },
-];
+import {
+  getAllDataMappings,
+  createDataMapping,
+  updateDataMapping,
+  deleteDataMapping,
+  archiveDataMapping,
+  restoreDataMapping,
+  getSVGExport,
+} from "../../services/DataMappingService";
+import ViewFlowModal from "../modules/ViewFlowModal";
+import ConfirmationModal from "../ui/ConfirmationModal";
 
 export default function DataMappingTable() {
-  const [mappings, setMappings] = useState(initialDataMappings);
+  const [mappings, setMappings] = useState([]);
   const [openMenu, setOpenMenu] = useState(null);
   const [showDiagramBuilder, setShowDiagramBuilder] = useState(false);
   const [editingFlow, setEditingFlow] = useState(null);
-  const [filterStatus, setFilterStatus] = useState('all'); // all, active, archived
-  const dropdownRef = useRef(null);
+  const [filterStatus, setFilterStatus] = useState("all"); // all, active, archived
   const navigate = useNavigate();
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [viewFlow, setViewFlow] = useState(null);
+  const [confirmModal, setConfirmModal] = useState({
+    open: false,
+    action: null, // 'delete' | 'archive' | 'unarchive'
+    flow: null,
+  });
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
   const toggleMenu = (id) => {
     setOpenMenu(openMenu === id ? null : id);
   };
 
-  // Filter flows based on status
-  const filteredMappings = mappings.filter(flow => {
-    if (filterStatus === 'all') return true;
-    return flow.status === filterStatus;
-  });
-
-  const handleCreateNewFlow = () => {
-    setEditingFlow(null);
-    navigate("/diagram-builder")
-  };
-
-  const handleEditFlow = (flow) => {
-    setEditingFlow(flow);
-    setShowDiagramBuilder(true);
-  };
-
-  const handleSaveFlow = (flowData) => {
-    if (editingFlow) {
-      // Update existing flow
-      setMappings(prev => prev.map(flow => 
-        flow.id === editingFlow.id 
-          ? { ...flow, ...flowData, updatedAt: new Date().toISOString().split('T')[0] }
-          : flow
-      ));
-    } else {
-      // Create new flow
-      const newFlow = {
-        id: `DM-${String(mappings.length + 1).padStart(3, '0')}`,
-        title: flowData.name,
-        description: `Diagram: ${flowData.name}`,
-        createdBy: "Current User", // You would get this from auth context
-        createdAt: new Date().toISOString().split('T')[0],
-        updatedAt: new Date().toISOString().split('T')[0],
-        type: "diagram",
-        status: "active",
-        diagramData: flowData.data,
-      };
-      setMappings(prev => [...prev, newFlow]);
+  const fetchList = async () => {
+    try {
+      setLoading(true);
+      const res = await getAllDataMappings();
+      setMappings(res.data?.dataMappings || []);
+    } catch (err) {
+      console.error("Failed to fetch data mappings:", err);
+    } finally {
+      setLoading(false);
     }
-    setShowDiagramBuilder(false);
-    setEditingFlow(null);
-  };
-
-  const handleArchiveFlow = (flowId) => {
-    setMappings(prev => prev.map(flow => 
-      flow.id === flowId 
-        ? { ...flow, status: flow.status === 'archived' ? 'active' : 'archived' }
-        : flow
-    ));
-    setOpenMenu(null);
-  };
-
-  const handleDeleteFlow = (flowId) => {
-    if (window.confirm('Are you sure you want to delete this flow?')) {
-      setMappings(prev => prev.filter(flow => flow.id !== flowId));
-      setOpenMenu(null);
-    }
-  };
-
-  const handleExportSVG = (flowId) => {
-    // Implementation for exporting specific flow as SVG
-    console.log('Exporting flow:', flowId);
-    setOpenMenu(null);
   };
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setOpenMenu(null);
+    fetchList();
+  }, []);
+
+  const handleOpenCreateModal = () => {
+    setEditingFlow(null);
+    setShowCreateModal(true);
+  };
+
+  const handleCreate = async (payload) => {
+    try {
+      setShowCreateModal(false);
+      setLoading(true);
+      const res = await createDataMapping({
+        name: payload.name,
+        description: payload.description,
+        category: payload.category === "Other" ? "Other" : payload.category,
+        diagram_data: {},
+        status: payload.status || "active",
+      });
+
+      const newMapping = res.data?.dataMapping;
+      await fetchList();
+
+      if (newMapping && newMapping.id) {
+        navigate(`/diagram-builder/${newMapping.id}`);
+      } else {
+        // fallback: open main page and let user choose
+        console.warn(
+          "Created mapping but couldn't get id to open diagram builder"
+        );
       }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    } catch (err) {
+      console.error("Failed to create mapping:", err);
+      setShowCreateModal(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenEditModal = (flow) => {
+    setEditingFlow(flow);
+    setShowCreateModal(true);
+  };
+
+  // Called by CreateFlowModal for updates
+  const handleUpdate = async (id, payload) => {
+    try {
+      setShowCreateModal(false);
+      setLoading(true);
+
+      await updateDataMapping(id, {
+        name: payload.name,
+        description: payload.description,
+        status: payload.status,
+        category: payload.category === "Other" ? "Other" : payload.category,
+      });
+
+      await fetchList();
+    } catch (err) {
+      console.error("Failed to update mapping:", err);
+      setShowCreateModal(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenDiagramEditor = (flow) => {
+    navigate(`/diagram-builder/${flow.id}`);
+  };
+
+  // const handleViewDiagram = (flow) => {
+  //   navigate(`/diagram-builder/${flow.id}?view=1`);
+  // };
+
+  const handleViewMeta = (flow) => {
+    setEditingFlow(flow);
+    setShowCreateModal(true);
+    setViewMode(true);
+  };
+
+  const handleArchiveFlow = (flow) => {
+    setConfirmModal({
+      open: true,
+      action: flow.status === "archived" ? "unarchive" : "archive",
+      flow,
+    });
+    setOpenMenu(null);
+  };
+
+  const handleDeleteFlow = (flowId, flowName) => {
+    setConfirmModal({
+      open: true,
+      action: "delete",
+      flow: { id: flowId, name: flowName },
+    });
+    setOpenMenu(null);
+  };
+
+  const handleConfirmAction = async () => {
+    if (!confirmModal.flow) return;
+
+    setConfirmLoading(true);
+
+    try {
+      if (confirmModal.action === "delete") {
+        await deleteDataMapping(confirmModal.flow.id);
+      } else if (confirmModal.action === "archive") {
+        await archiveDataMapping(confirmModal.flow.id);
+      } else if (confirmModal.action === "unarchive") {
+        await restoreDataMapping(confirmModal.flow.id);
+      }
+
+      await fetchList();
+    } catch (err) {
+      console.error("Action failed:", err);
+    } finally {
+      setConfirmLoading(false);
+      setConfirmModal({ open: false, action: null, flow: null });
+    }
+  };
+
+  const handleExportSVG = async (flowId, name = "diagram") => {
+    try {
+      const res = await getSVGExport(flowId);
+      const svgString = res.data?.svg;
+      if (!svgString) {
+        alert("No SVG available for this flow.");
+        return;
+      }
+      const blob = new Blob([svgString], { type: "image/svg+xml" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${(name || "diagram").replace(/\s+/g, "_")}.svg`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setOpenMenu(null);
+    } catch (err) {
+      console.error("Export SVG failed:", err);
+      alert("Failed to download SVG.");
+    }
+  };
+
+  const handleExportPNG = () => {
+    if (!stageRef.current) return;
+
+    const uri = stageRef.current.toDataURL({
+      pixelRatio: 3,
+      mimeType: "image/png",
+    });
+
+    const a = document.createElement("a");
+    a.href = uri;
+    a.download = `${flowMeta?.name || "diagram"}.png`;
+    a.click();
+  };
+
+  const filteredMappings = mappings.filter((flow) => {
+    if (filterStatus === "all") return true;
+    return flow.status === filterStatus;
+  });
+
+  useEffect(() => {
+    function handleClick() {
+      setOpenMenu(null);
+    }
+
+    window.addEventListener("click", handleClick);
+    return () => window.removeEventListener("click", handleClick);
   }, []);
 
   return (
     <>
-      <div className="bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 border border-[#828282] rounded-lg shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 border border-[#828282] rounded-lg shadow-sm">
         {/* Header */}
         <div className="px-6 py-4 border-b border-[#828282] dark:border-gray-700 flex justify-between items-start">
           <div>
@@ -142,7 +246,7 @@ export default function DataMappingTable() {
           </div>
           <div className="flex justify-center gap-4">
             {/* Status Filter */}
-            <select 
+            <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
               className="flex items-center gap-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-black dark:text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-600 transition cursor-pointer"
@@ -151,9 +255,9 @@ export default function DataMappingTable() {
               <option value="active">Active</option>
               <option value="archived">Archived</option>
             </select>
-            
+
             <Button
-              onClick={handleCreateNewFlow}
+              onClick={() => setShowCreateModal(true)}
               text="Create New Flow"
               icon={CirclePlus}
             />
@@ -175,99 +279,133 @@ export default function DataMappingTable() {
 
           {/* Rows */}
           <div className="space-y-4 mt-2 relative">
-            {filteredMappings.map((flow, index) => {
-              const isLast = index === filteredMappings.length - 1;
+            {loading && <div className="p-4">Loading...</div>}
 
-              return (
-                <div
-                  key={flow.id}
-                  className="grid grid-cols-7 gap-4 items-center bg-[#F4F4F4] dark:bg-gray-900 rounded-lg shadow-sm px-4 py-3 hover:shadow-md transition relative"
-                >
-                  <div className="text-sm font-semibold text-gray-800 dark:text-gray-100">
-                    {flow.title}
-                  </div>
-                  <div className="text-sm text-gray-700 dark:text-gray-300 truncate">
-                    {flow.description}
-                  </div>
-                  <div className="text-sm text-gray-800 dark:text-gray-100">
-                    {flow.createdBy}
-                  </div>
-                  <div className="text-sm text-gray-800 dark:text-gray-100">
-                    {flow.createdAt}
-                  </div>
-                  <div className="text-sm text-gray-800 dark:text-gray-100">
-                    {flow.updatedAt}
-                  </div>
-                  <div className="text-sm">
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                      flow.status === 'active' 
-                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
-                        : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-                    }`}>
-                      {flow.status}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-end space-x-2 relative">
-                    <button 
-                      onClick={() => handleEditFlow(flow)}
-                      className="text-gray-400 hover:text-[#5DEE92] transition"
-                      title="Edit Diagram"
-                    >
-                      <Edit3 size={16} />
-                    </button>
-                    <button className="text-gray-400 hover:text-[#5DEE92] transition">
-                      <Eye size={16} />
-                    </button>
-                    <div className="relative" ref={dropdownRef}>
-                      <button
-                        onClick={() => toggleMenu(flow.id)}
-                        className="text-gray-400 hover:text-[#5DEE92] transition"
+            {!loading &&
+              filteredMappings.map((flow, index) => {
+                const isLast = index === filteredMappings.length - 1;
+
+                // Friendly fallbacks if older objects have different keys
+                const title = flow.name || flow.title || "Untitled";
+                const description = flow.description || flow.desc || "";
+                const createdBy =
+                  flow.creator?.full_name || flow.createdBy || "—";
+                const createdAt = flow.created_at || flow.createdAt || null;
+                const updatedAt = flow.updated_at || flow.updatedAt || null;
+
+                return (
+                  <div
+                    key={flow.id}
+                    className="grid grid-cols-7 gap-4 items-center bg-[#F4F4F4] dark:bg-gray-900 rounded-lg shadow-sm px-4 py-3 hover:shadow-md transition relative"
+                  >
+                    <div className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+                      {title}
+                    </div>
+                    <div className="text-sm text-gray-700 dark:text-gray-300 truncate">
+                      {description}
+                    </div>
+                    <div className="text-sm text-gray-800 dark:text-gray-100">
+                      {createdBy}
+                    </div>
+                    <div className="text-sm text-gray-800 dark:text-gray-100">
+                      {createdAt
+                        ? new Date(createdAt).toLocaleDateString()
+                        : "—"}
+                    </div>
+                    <div className="text-sm text-gray-800 dark:text-gray-100">
+                      {updatedAt
+                        ? new Date(updatedAt).toLocaleDateString()
+                        : "—"}
+                    </div>
+                    <div className="text-sm">
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs ${
+                          (flow.status || "active") === "active"
+                            ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                            : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
+                        }`}
                       >
-                        <EllipsisVertical size={16} />
+                        {flow.status}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-end space-x-2 relative">
+                      <button
+                        onClick={() => {
+                          // Edit metadata: opens modal with current fields + option to open diagram
+                          handleOpenEditModal(flow);
+                        }}
+                        className="text-gray-400 hover:text-[#5DEE92] transition"
+                        title="Edit Metadata"
+                      >
+                        <Edit3 size={16} />
                       </button>
 
-                      {openMenu === flow.id && (
-                        <div
-                          className={`absolute right-0 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 ${
-                            isLast ? "bottom-full mb-2" : "top-full mt-2"
-                          }`}
+                      <button
+                        onClick={() => {
+                          setViewFlow(flow);
+                          setViewModalOpen(true);
+                        }}
+                        className="text-gray-400 hover:text-[#5DEE92]"
+                      >
+                        <Eye size={16} />
+                      </button>
+
+                      <div className="relative">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleMenu(flow.id);
+                          }}
+                          className="text-gray-400 hover:text-[#5DEE92] transition"
                         >
-                          <button 
-                            onClick={() => handleExportSVG(flow.id)}
-                            className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          <EllipsisVertical size={16} />
+                        </button>
+
+                        {openMenu === flow.id && (
+                          <div
+                            onClick={(e) => e.stopPropagation()}
+                            className={`absolute right-0 w-48  bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-[9999] ${
+                              isLast ? "bottom-full mb-2" : "top-full mt-2"
+                            }`}
                           >
-                            <Download size={16} className="mr-2" /> Export SVG
-                          </button>
-                          <button 
-                            onClick={() => handleArchiveFlow(flow.id)}
-                            className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                          >
-                            <Archive size={14} className="mr-2" /> 
-                            {flow.status === 'archived' ? 'Unarchive' : 'Archive'}
-                          </button>
-                          <button 
-                            onClick={() => handleDeleteFlow(flow.id)}
-                            className="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-                          >
-                            <Trash2 size={14} className="mr-2" /> Delete
-                          </button>
-                        </div>
-                      )}
+                            {/* <button
+                              onClick={() => handleExportPNG()}
+                              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            >
+                              <Download size={16} className="mr-2" /> Export
+                            </button> */}
+                            <button
+                              onClick={() => handleArchiveFlow(flow)}
+                              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            >
+                              <Archive size={14} className="mr-2" />
+                              {flow.status === "archived"
+                                ? "Unarchive"
+                                : "Archive"}
+                            </button>
+                            <button
+                              onClick={() => handleDeleteFlow(flow.id, title)}
+                              className="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            >
+                              <Trash2 size={14} className="mr-2" /> Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
           </div>
 
           {/* Empty State */}
-          {filteredMappings.length === 0 && (
+          {!loading && filteredMappings.length === 0 && (
             <div className="text-center py-12">
               <div className="text-gray-400 dark:text-gray-500 mb-4">
                 No flows found
               </div>
               <Button
-                onClick={handleCreateNewFlow}
+                onClick={() => setShowCreateModal(true)}
                 text="Create Your First Flow"
                 icon={CirclePlus}
               />
@@ -276,17 +414,76 @@ export default function DataMappingTable() {
         </div>
       </div>
 
-      {/* Diagram Builder Modal */}
-      {showDiagramBuilder && (
-        <ExtensiveDiagramStudio
-          onSave={handleSaveFlow}
-          onClose={() => {
-            setShowDiagramBuilder(false);
-            setEditingFlow(null);
-          }}
-          initialData={editingFlow?.diagramData}
-        />
-      )}
+      <ViewFlowModal
+        open={viewModalOpen}
+        flow={viewFlow}
+        onClose={() => {
+          setViewModalOpen(false);
+          setViewFlow(null);
+        }}
+        onViewDiagram={(id) => navigate(`/diagram-builder/${id}?view=1`)}
+      />
+
+      {/* CREATE / EDIT MODAL */}
+      <CreateFlowModal
+        open={showCreateModal}
+        initialData={editingFlow}
+        onClose={() => {
+          setShowCreateModal(false);
+          setEditingFlow(null);
+        }}
+        onCreate={handleCreate}
+        onUpdate={handleUpdate}
+        onOpenDiagram={(id) => {
+          // open diagram builder for editing (from inside modal)
+          setShowCreateModal(false);
+          navigate(`/diagram-builder/${id}`);
+        }}
+      />
+
+      <ConfirmationModal
+        isOpen={confirmModal.open}
+        onClose={() =>
+          setConfirmModal({ open: false, action: null, flow: null })
+        }
+        onConfirm={handleConfirmAction}
+        isLoading={confirmLoading}
+        title={
+          confirmModal.action === "delete"
+            ? "Delete Data Mapping"
+            : confirmModal.action === "archive"
+            ? "Archive Data Mapping"
+            : "Restore Data Mapping"
+        }
+        message={
+          confirmModal.action === "delete"
+            ? `Are you sure you want to permanently delete "${confirmModal.flow?.name}"? This action cannot be undone.`
+            : confirmModal.action === "archive"
+            ? `Are you sure you want to archive "${confirmModal.flow?.name}"?`
+            : `Restore "${confirmModal.flow?.name}" back to active status?`
+        }
+        confirmText={
+          confirmModal.action === "delete"
+            ? "Delete"
+            : confirmModal.action === "archive"
+            ? "Archive"
+            : "Restore"
+        }
+        type={
+          confirmModal.action === "delete"
+            ? "danger"
+            : confirmModal.action === "archive"
+            ? "warning"
+            : "info"
+        }
+        confirmColor={
+          confirmModal.action === "delete"
+            ? "red"
+            : confirmModal.action === "archive"
+            ? "yellow"
+            : "blue"
+        }
+      />
     </>
   );
 }

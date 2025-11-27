@@ -61,10 +61,20 @@ import {
   Server,
   Cloud,
   LockKeyhole,
+  Save,
+  Loader,
 } from "lucide-react";
 import { Html } from "react-konva-utils";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import {
+  getDataMappingById,
+  updateDataMapping,
+  updateDiagramData,
+  getSVGExport,
+  saveDiagramSVG,
+} from "../../services/DataMappingService";
+import { useParams } from "react-router-dom";
 
 /* ---------- Constants ---------- */
 const STORAGE_KEY = "extensive_diagram_studio_v1";
@@ -150,10 +160,18 @@ const getConnectionPoint = (shape, targetShape) => {
 
 /* ---------- Main Component ---------- */
 export default function ExtensiveDiagramStudio() {
+  const readOnly =
+    new URLSearchParams(window.location.search).get("view") === "1";
+
   const stageRef = useRef(null);
   const transformerRef = useRef(null);
   const layerRef = useRef(null);
   const fileInputRef = useRef(null);
+
+  const { id } = useParams();
+  const [flowMeta, setFlowMeta] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const navigate = useNavigate();
 
@@ -232,36 +250,94 @@ export default function ExtensiveDiagramStudio() {
   }, []);
 
   // Load from storage
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const data = JSON.parse(stored);
-        setShapes(data.shapes || []);
-      }
-    } catch (err) {
-      console.warn("Failed to load:", err);
-    }
-  }, []);
+  // useEffect(() => {
+  //   try {
+  //     const stored = localStorage.getItem(STORAGE_KEY);
+  //     if (stored) {
+  //       const data = JSON.parse(stored);
+  //       setShapes(data.shapes || []);
+  //     }
+  //   } catch (err) {
+  //     console.warn("Failed to load:", err);
+  //   }
+  // }, []);
 
-  // Save to storage
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const load = async () => {
       try {
-        localStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify({
-            shapes,
-            timestamp: Date.now(),
-          })
-        );
-      } catch (err) {
-        console.warn("Failed to save:", err);
-      }
-    }, 1000);
+        const res = await getDataMappingById(id);
+        setFlowMeta(res.data?.dataMapping);
 
-    return () => clearTimeout(timer);
-  }, [shapes]);
+        const diagram = res.data?.dataMapping?.diagram_data;
+        if (diagram && diagram.shapes) {
+          setShapes(diagram.shapes);
+        }
+      } catch (err) {
+        console.error("Failed to load diagram:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, [id]);
+
+  // // Save to storage
+  // useEffect(() => {
+  //   const timer = setTimeout(() => {
+  //     try {
+  //       localStorage.setItem(
+  //         STORAGE_KEY,
+  //         JSON.stringify({
+  //           shapes,
+  //           timestamp: Date.now(),
+  //         })
+  //       );
+  //     } catch (err) {
+  //       console.warn("Failed to save:", err);
+  //     }
+  //   }, 1000);
+
+  //   return () => clearTimeout(timer);
+  // }, [shapes]);
+
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      if (!id) return;
+      if (!stageRef.current) return;
+
+      // 1. Save diagram JSON
+      await updateDataMapping(id, {
+        diagram_data: { shapes },
+      });
+
+      // 2. Generate SVG and save
+      // try {
+      //   const svgString = stageRef.current.toSVG();
+      //   if (svgString) {
+      //     await saveDiagramSVG(id, svgString);
+      //   }
+      // } catch (err) {
+      //   console.error("Auto-save SVG failed:", err);
+      // }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [id, shapes]);
+
+  const handleExportPNG = () => {
+    if (!stageRef.current) return;
+
+    const uri = stageRef.current.toDataURL({
+      pixelRatio: 3,
+      mimeType: "image/png",
+    });
+
+    const a = document.createElement("a");
+    a.href = uri;
+    a.download = `${flowMeta?.name || "diagram"}.png`;
+    a.click();
+  };
 
   // History management
   const saveHistory = useCallback(() => {
@@ -401,6 +477,30 @@ export default function ExtensiveDiagramStudio() {
     },
     [shapes, saveHistory]
   );
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+
+      await updateDataMapping(id, {
+        diagram_data: {
+          shapes,
+          version: "1.0",
+          savedAt: new Date().toISOString(),
+        },
+      });
+
+      // if (stageRef.current) {
+      //   const svgString = stageRef.current.toSVG();
+      //   await saveDiagramSVG(id, svgString);
+      // }
+    } catch (err) {
+      console.error("Failed to save diagram:", err);
+      alert("Failed to save.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   // Handle mouse down on stage
   const handleStageMouseDown = useCallback(
@@ -583,7 +683,7 @@ export default function ExtensiveDiagramStudio() {
             fill: "transparent",
             dash: [8, 6],
             curved: true,
-            locked: true, // ✅ non-draggable, non-transformable
+            locked: true, // non-draggable, non-transformable
             visible: true,
           };
 
@@ -940,6 +1040,26 @@ export default function ExtensiveDiagramStudio() {
     URL.revokeObjectURL(url);
   }, [shapes]);
 
+  const handleExportSVG = async () => {
+    try {
+      const res = await getSVGExport(id);
+      const svgString = res.data;
+
+      const blob = new Blob([svgString], { type: "image/svg+xml" });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${flowMeta?.name || "diagram"}.svg`;
+      a.click();
+
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("SVG export failed:", err);
+      alert("Failed to export.");
+    }
+  };
+
   const importJSON = useCallback(
     (e) => {
       const file = e.target.files[0];
@@ -969,7 +1089,7 @@ export default function ExtensiveDiagramStudio() {
 
     const commonProps = {
       id: shape.id,
-      draggable: !shape.locked && mode === "select",
+      draggable: !readOnly && !shape.locked && mode === "select",
       onClick: (e) => handleShapeClick(e, shape.id),
       onTap: (e) => handleShapeClick(e, shape.id),
       onDragEnd: (e) => handleDragEnd(e, shape.id),
@@ -1302,7 +1422,7 @@ export default function ExtensiveDiagramStudio() {
           </button>
 
           <h1 className="text-xl font-bold text-gray-800 ml-2 mr-4">
-            Diagram Studio
+            Data Mapping
           </h1>
 
           {/* Tool buttons */}
@@ -1331,6 +1451,7 @@ export default function ExtensiveDiagramStudio() {
           <div className="flex items-center gap-1 border-r pr-2">
             <button
               onClick={() => setMode("shape-rectangle")}
+              disabled={readOnly}
               className={`p-2 rounded hover:bg-gray-100 ${
                 mode === "shape-rectangle" ? "bg-blue-100 text-blue-600" : ""
               }`}
@@ -1340,6 +1461,7 @@ export default function ExtensiveDiagramStudio() {
             </button>
             <button
               onClick={() => setMode("shape-circle")}
+              disabled={readOnly}
               className={`p-2 rounded hover:bg-gray-100 ${
                 mode === "shape-circle" ? "bg-blue-100 text-blue-600" : ""
               }`}
@@ -1349,6 +1471,7 @@ export default function ExtensiveDiagramStudio() {
             </button>
             <button
               onClick={() => setMode("shape-diamond")}
+              disabled={readOnly}
               className={`p-2 rounded hover:bg-gray-100 ${
                 mode === "shape-diamond" ? "bg-blue-100 text-blue-600" : ""
               }`}
@@ -1358,6 +1481,7 @@ export default function ExtensiveDiagramStudio() {
             </button>
             <button
               onClick={() => setMode("shape-triangle")}
+              disabled={readOnly}
               className={`p-2 rounded hover:bg-gray-100 ${
                 mode === "shape-triangle" ? "bg-blue-100 text-blue-600" : ""
               }`}
@@ -1367,6 +1491,7 @@ export default function ExtensiveDiagramStudio() {
             </button>
             <button
               onClick={() => setMode("shape-arrow")}
+              disabled={readOnly}
               className={`p-2 rounded hover:bg-gray-100 ${
                 mode === "shape-arrow" ? "bg-blue-100 text-blue-600" : ""
               }`}
@@ -1382,6 +1507,7 @@ export default function ExtensiveDiagramStudio() {
               onClick={() =>
                 addShape("icon", { iconSymbol: "👤", width: 50, height: 50 })
               }
+              disabled={readOnly}
               className="p-2 rounded hover:bg-gray-100"
               title="User"
             >
@@ -1392,6 +1518,7 @@ export default function ExtensiveDiagramStudio() {
               onClick={() =>
                 addShape("icon", { iconSymbol: "🧑‍💼", width: 50, height: 50 })
               }
+              disabled={readOnly}
               className="p-2 rounded hover:bg-gray-100"
               title="Employee"
             >
@@ -1402,6 +1529,7 @@ export default function ExtensiveDiagramStudio() {
               onClick={() =>
                 addShape("icon", { iconSymbol: "💾", width: 50, height: 50 })
               }
+              disabled={readOnly}
               className="p-2 rounded hover:bg-gray-100"
               title="Database"
             >
@@ -1412,6 +1540,7 @@ export default function ExtensiveDiagramStudio() {
               onClick={() =>
                 addShape("icon", { iconSymbol: "☁️", width: 50, height: 50 })
               }
+              disabled={readOnly}
               className="p-2 rounded hover:bg-gray-100"
               title="Cloud"
             >
@@ -1422,6 +1551,7 @@ export default function ExtensiveDiagramStudio() {
               onClick={() =>
                 addShape("icon", { iconSymbol: "📄", width: 50, height: 50 })
               }
+              disabled={readOnly}
               className="p-2 rounded hover:bg-gray-100"
               title="Document"
             >
@@ -1432,6 +1562,7 @@ export default function ExtensiveDiagramStudio() {
               onClick={() =>
                 addShape("icon", { iconSymbol: "🔒", width: 50, height: 50 })
               }
+              disabled={readOnly}
               className="p-2 rounded hover:bg-gray-100"
               title="Lock"
             >
@@ -1442,6 +1573,7 @@ export default function ExtensiveDiagramStudio() {
               onClick={() =>
                 addShape("icon", { iconSymbol: "🛡️", width: 50, height: 50 })
               }
+              disabled={readOnly}
               className="p-2 rounded hover:bg-gray-100"
               title="Shield"
             >
@@ -1452,6 +1584,7 @@ export default function ExtensiveDiagramStudio() {
               onClick={() =>
                 addShape("icon", { iconSymbol: "🧾", width: 50, height: 50 })
               }
+              disabled={readOnly}
               className="p-2 rounded hover:bg-gray-100"
               title="Compliance Record"
             >
@@ -1463,6 +1596,7 @@ export default function ExtensiveDiagramStudio() {
           <div className="flex items-center gap-1 border-r pr-2">
             <button
               onClick={() => setMode("draw")}
+              disabled={readOnly}
               className={`p-2 rounded hover:bg-gray-100 ${
                 mode === "draw" ? "bg-blue-100 text-blue-600" : ""
               }`}
@@ -1472,6 +1606,7 @@ export default function ExtensiveDiagramStudio() {
             </button>
             <button
               onClick={() => setMode("text")}
+              disabled={readOnly}
               className={`p-2 rounded hover:bg-gray-100 ${
                 mode === "text" ? "bg-blue-100 text-blue-600" : ""
               }`}
@@ -1485,6 +1620,7 @@ export default function ExtensiveDiagramStudio() {
           <div className="flex items-center gap-1 border-r pr-2">
             <button
               onClick={undo}
+              disabled={readOnly}
               className="p-2 rounded hover:bg-gray-100"
               title="Undo (Ctrl+Z)"
             >
@@ -1492,6 +1628,7 @@ export default function ExtensiveDiagramStudio() {
             </button>
             <button
               onClick={redo}
+              disabled={readOnly}
               className="p-2 rounded hover:bg-gray-100"
               title="Redo (Ctrl+Y)"
             >
@@ -1559,7 +1696,7 @@ export default function ExtensiveDiagramStudio() {
             }}
             className="p-2 rounded hover:bg-gray-100"
             title="Duplicate (Ctrl+D)"
-            disabled={selectedIds.length === 0}
+            disabled={readOnly || selectedIds.length === 0}
           >
             <Copy size={18} />
           </button>
@@ -1571,9 +1708,17 @@ export default function ExtensiveDiagramStudio() {
             }}
             className="p-2 rounded hover:bg-gray-100 text-red-600"
             title="Delete (Del)"
-            disabled={selectedIds.length === 0}
+            disabled={readOnly || selectedIds.length === 0}
           >
             <Trash2 size={18} />
+          </button>
+
+          <button
+            onClick={handleSave}
+            disabled={readOnly}
+            className="px-3 py-2 bg-[#5DEE92] text-white rounded hover:opacity-90 cursor-pointer"
+          >
+            {saving ? <Loader size={18} /> : <Save size={18} />}
           </button>
 
           <div className="border-l pl-2 flex items-center gap-1">
@@ -1585,14 +1730,7 @@ export default function ExtensiveDiagramStudio() {
               className="hidden"
             />
             <button
-              onClick={() => fileInputRef.current?.click()}
-              className="p-2 rounded hover:bg-gray-100"
-              title="Import"
-            >
-              <Upload size={18} />
-            </button>
-            <button
-              onClick={exportJSON}
+              onClick={handleExportPNG}
               className="p-2 rounded hover:bg-gray-100"
               title="Export"
             >
@@ -1648,6 +1786,7 @@ export default function ExtensiveDiagramStudio() {
                       type="number"
                       value={Math.round(selectedShape.x)}
                       onChange={(e) =>
+                        !readOnly &&
                         updateShape(selectedShape.id, {
                           x: Number(e.target.value),
                         })
@@ -1663,6 +1802,7 @@ export default function ExtensiveDiagramStudio() {
                       type="number"
                       value={Math.round(selectedShape.y)}
                       onChange={(e) =>
+                        !readOnly &&
                         updateShape(selectedShape.id, {
                           y: Number(e.target.value),
                         })
@@ -1684,9 +1824,10 @@ export default function ExtensiveDiagramStudio() {
                           value={Math.round(selectedShape.width || 0)}
                           onChange={(e) => {
                             saveHistory();
-                            updateShape(selectedShape.id, {
-                              width: Math.max(10, Number(e.target.value)),
-                            });
+                            !readOnly &&
+                              updateShape(selectedShape.id, {
+                                width: Math.max(10, Number(e.target.value)),
+                              });
                           }}
                           className="w-full px-2 py-1 border rounded text-sm"
                         />
@@ -1700,9 +1841,10 @@ export default function ExtensiveDiagramStudio() {
                           value={Math.round(selectedShape.height || 0)}
                           onChange={(e) => {
                             saveHistory();
-                            updateShape(selectedShape.id, {
-                              height: Math.max(10, Number(e.target.value)),
-                            });
+                            !readOnly &&
+                              updateShape(selectedShape.id, {
+                                height: Math.max(10, Number(e.target.value)),
+                              });
                           }}
                           className="w-full px-2 py-1 border rounded text-sm"
                         />
@@ -1720,9 +1862,10 @@ export default function ExtensiveDiagramStudio() {
                         value={selectedShape.text || ""}
                         onChange={(e) => {
                           saveHistory();
-                          updateShape(selectedShape.id, {
-                            text: e.target.value,
-                          });
+                          !readOnly &&
+                            updateShape(selectedShape.id, {
+                              text: e.target.value,
+                            });
                         }}
                         className="w-full px-2 py-1 border rounded text-sm"
                         rows={3}
@@ -1737,9 +1880,10 @@ export default function ExtensiveDiagramStudio() {
                         value={selectedShape.fontSize || 16}
                         onChange={(e) => {
                           saveHistory();
-                          updateShape(selectedShape.id, {
-                            fontSize: Number(e.target.value),
-                          });
+                          !readOnly &&
+                            updateShape(selectedShape.id, {
+                              fontSize: Number(e.target.value),
+                            });
                         }}
                         className="w-full px-2 py-1 border rounded text-sm"
                       />
@@ -1757,7 +1901,10 @@ export default function ExtensiveDiagramStudio() {
                       value={selectedShape.fill || "#ffffff"}
                       onChange={(e) => {
                         saveHistory();
-                        updateShape(selectedShape.id, { fill: e.target.value });
+                        !readOnly &&
+                          updateShape(selectedShape.id, {
+                            fill: e.target.value,
+                          });
                       }}
                       className="w-12 h-8 rounded border"
                     />
@@ -1766,7 +1913,10 @@ export default function ExtensiveDiagramStudio() {
                       value={selectedShape.fill || "#ffffff"}
                       onChange={(e) => {
                         saveHistory();
-                        updateShape(selectedShape.id, { fill: e.target.value });
+                        !readOnly &&
+                          updateShape(selectedShape.id, {
+                            fill: e.target.value,
+                          });
                       }}
                       className="flex-1 px-2 py-1 border rounded text-sm"
                     />
@@ -1783,9 +1933,10 @@ export default function ExtensiveDiagramStudio() {
                       value={selectedShape.stroke || "#000000"}
                       onChange={(e) => {
                         saveHistory();
-                        updateShape(selectedShape.id, {
-                          stroke: e.target.value,
-                        });
+                        !readOnly &&
+                          updateShape(selectedShape.id, {
+                            stroke: e.target.value,
+                          });
                       }}
                       className="w-12 h-8 rounded border"
                     />
@@ -1794,9 +1945,10 @@ export default function ExtensiveDiagramStudio() {
                       value={selectedShape.stroke || "#000000"}
                       onChange={(e) => {
                         saveHistory();
-                        updateShape(selectedShape.id, {
-                          stroke: e.target.value,
-                        });
+                        !readOnly &&
+                          updateShape(selectedShape.id, {
+                            stroke: e.target.value,
+                          });
                       }}
                       className="flex-1 px-2 py-1 border rounded text-sm"
                     />
@@ -1814,9 +1966,10 @@ export default function ExtensiveDiagramStudio() {
                     value={selectedShape.strokeWidth || 2}
                     onChange={(e) => {
                       saveHistory();
-                      updateShape(selectedShape.id, {
-                        strokeWidth: Number(e.target.value),
-                      });
+                      !readOnly &&
+                        updateShape(selectedShape.id, {
+                          strokeWidth: Number(e.target.value),
+                        });
                     }}
                     className="w-full"
                   />
@@ -1834,9 +1987,10 @@ export default function ExtensiveDiagramStudio() {
                     value={selectedShape.opacity || 1}
                     onChange={(e) => {
                       saveHistory();
-                      updateShape(selectedShape.id, {
-                        opacity: Number(e.target.value),
-                      });
+                      !readOnly &&
+                        updateShape(selectedShape.id, {
+                          opacity: Number(e.target.value),
+                        });
                     }}
                     className="w-full"
                   />
@@ -1853,9 +2007,10 @@ export default function ExtensiveDiagramStudio() {
                     value={selectedShape.rotation || 0}
                     onChange={(e) => {
                       saveHistory();
-                      updateShape(selectedShape.id, {
-                        rotation: Number(e.target.value),
-                      });
+                      !readOnly &&
+                        updateShape(selectedShape.id, {
+                          rotation: Number(e.target.value),
+                        });
                     }}
                     className="w-full"
                   />
@@ -1914,6 +2069,7 @@ export default function ExtensiveDiagramStudio() {
                         updateShape(shape.id, { fill: avgFill });
                       });
                     }}
+                    disabled={readOnly}
                     className="w-full px-3 py-2 border rounded hover:bg-gray-50 text-sm"
                   >
                     Apply Same Fill
@@ -1926,6 +2082,7 @@ export default function ExtensiveDiagramStudio() {
                         updateShape(shape.id, { stroke: avgStroke });
                       });
                     }}
+                    disabled={readOnly}
                     className="w-full px-3 py-2 border rounded hover:bg-gray-50 text-sm"
                   >
                     Apply Same Stroke
@@ -1949,6 +2106,7 @@ export default function ExtensiveDiagramStudio() {
                     type="color"
                     value={currentStyle.fill}
                     onChange={(e) =>
+                      !readOnly &&
                       setCurrentStyle((prev) => ({
                         ...prev,
                         fill: e.target.value,
@@ -1965,6 +2123,7 @@ export default function ExtensiveDiagramStudio() {
                     type="color"
                     value={currentStyle.stroke}
                     onChange={(e) =>
+                      !readOnly &&
                       setCurrentStyle((prev) => ({
                         ...prev,
                         stroke: e.target.value,
@@ -1983,6 +2142,7 @@ export default function ExtensiveDiagramStudio() {
                     max="10"
                     value={currentStyle.strokeWidth}
                     onChange={(e) =>
+                      !readOnly &&
                       setCurrentStyle((prev) => ({
                         ...prev,
                         strokeWidth: Number(e.target.value),
@@ -2123,15 +2283,17 @@ export default function ExtensiveDiagramStudio() {
                   />
                 )}
 
-              <Transformer
-                ref={transformerRef}
-                boundBoxFunc={(oldBox, newBox) => {
-                  if (newBox.width < 10 || newBox.height < 10) {
-                    return oldBox;
-                  }
-                  return newBox;
-                }}
-              />
+              {!readOnly && (
+                <Transformer
+                  ref={transformerRef}
+                  boundBoxFunc={(oldBox, newBox) => {
+                    if (newBox.width < 10 || newBox.height < 10) {
+                      return oldBox;
+                    }
+                    return newBox;
+                  }}
+                />
+              )}
             </Layer>
           </Stage>
 

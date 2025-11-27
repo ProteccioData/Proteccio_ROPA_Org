@@ -101,7 +101,7 @@ export default function App() {
               }
             />
             <Route
-              path="/diagram-builder"
+              path="/diagram-builder/:id"
               element={
                 <ProtectedRoute>
                   <ExtensiveDiagramStudio />
