@@ -302,7 +302,8 @@ export default function Home() {
       Object.values(data.ropasByCategory).reduce((a, b) => a + b, 0)
     );
     animate("compliance", data.stats.completionAverage);
-    animate("risk", data.stats.myRopas || 0); // Placeholder (risk not in backend)
+    animate("risk", data.risk || 0);
+    animate("dataMappings" , data.dataMappings)
   };
 
   // useEffect(() => {
@@ -434,11 +435,11 @@ export default function Home() {
 
         startNumberAnimation({
           ...summaryRes.data,
+          dataMappings: dataMap.total,
           stats: {
             ...summaryRes.data.stats,
             completionAverage: compliancePercent,
             risk: Math.round(risk.averageRiskScore),
-            dataMappings: dataMap.total,
           },
         });
       } catch (err) {
@@ -858,9 +859,7 @@ export default function Home() {
                           strokeLinecap="round"
                           strokeDasharray="100"
                           strokeDashoffset={
-                            100 - ((animateNumbers.risk = Math.round(
-                              riskOverview.averageRiskScore
-                            )) / 25) * 100
+                            100 - (animateNumbers.risk / 25) * 100
                           }
                           style={{
                             transition:
