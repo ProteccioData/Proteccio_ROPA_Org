@@ -1,5 +1,5 @@
 // components/SetupWithModals.jsx
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Plus,
@@ -46,6 +46,7 @@ import {
   createSecuritySafeguard,
   updateSecuritySafeguard,
   deleteSecuritySafeguard,
+  CONFIG_TYPE_MAP,
 } from "../../services/SetupService";
 
 import { useToast } from "../ui/ToastProvider";
@@ -141,7 +142,7 @@ const setupOptions = [
   },
 ];
 
-// Sample Data
+// Sample Data (kept as fallback/UI while loading)
 const sampleAssets = [
   {
     id: 1,
@@ -564,6 +565,11 @@ export default function Setup() {
   const [assets, setAssets] = useState([]);
   const [configs, setConfigs] = useState({}); // dynamic object: type → list
 
+  const [fieldErrors, setFieldErrors] = useState({}); // inline errors map param -> message
+
+  // formRef for nested modal form extraction
+  const formRef = useRef(null);
+
   const generateId = () =>
     `ID_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
@@ -600,8 +606,9 @@ export default function Setup() {
   };
 
   const generateDataCollectionTemplate = () => {
-    const headers = ["Data Source Type", "Description"];
+    const headers = ["Name", "Data Source Type", "Description"];
     const sampleData = [
+      "Customer Registration Form",
       "Web Form",
       "Customer registration form data collection",
     ];
@@ -611,20 +618,11 @@ export default function Setup() {
   const handleFileUpload = async (file, configType) => {
     console.log(`Uploading ${file.name} for ${configType}`);
 
-    // Here you would implement the actual file processing
-    // This could involve:
-    // 1. Reading the file content
-    // 2. Parsing CSV/Excel/JSON
-    // 3. Validating data
-    // 4. Mapping to your data structure
-    // 5. Saving to your backend
-
     const reader = new FileReader();
     reader.onload = (e) => {
       const content = e.target.result;
       console.log("File content:", content);
 
-      // Process the file based on configType
       switch (configType) {
         case "assets":
           processAssetImport(content);
@@ -632,7 +630,6 @@ export default function Setup() {
         case "data_collection":
           processDataCollectionImport(content);
           break;
-        // Add more cases for other config types
         default:
           processGenericImport(content, configType);
       }
@@ -641,8 +638,7 @@ export default function Setup() {
   };
 
   const processAssetImport = (content) => {
-    // Parse CSV and create assets
-    const rows = content.split("\n").slice(1); // Skip header
+    const rows = content.split("\n").slice(1);
     const assets = rows.map((row) => {
       const [
         name,
@@ -657,93 +653,302 @@ export default function Setup() {
         supplierManaged,
       ] = row.split(",");
       return {
-        name,
-        type,
-        assetId,
-        description,
-        purchaseDate,
+        asset_name: name,
+        asset_type: type,
+        asset_id_custom: assetId,
+        short_description: description,
+        purchase_date: purchaseDate,
         location,
-        status,
-        owner,
-        warranty,
-        supplierManaged,
+        condition_status: status,
+        owner_assigned_to: owner,
+        warranty_info: warranty,
+        is_supplier_vendor_managed: supplierManaged,
       };
     });
 
     console.log("Processed assets:", assets);
-    // Here you would save to your state or backend
   };
 
   const handleBulkImport = (configType) => {
     setBulkImportModal(configType);
   };
 
+  const sanitizeName = (text) =>
+    text
+      .toString()
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_|_$/g, "");
+
+  // Inject name attributes when inputs lack them (based on neighboring labels)
+  const ensureFieldNames = (formEl) => {
+    if (!formEl) return;
+    const inputs = formEl.querySelectorAll("input, select, textarea");
+    inputs.forEach((input) => {
+      if (input.name) return;
+
+      let name = null;
+      if (input.id) {
+        const lab = formEl.querySelector(`label[for='${input.id}']`);
+        if (lab && lab.innerText) name = sanitizeName(lab.innerText);
+      }
+
+      if (!name) {
+        const prev = input.previousElementSibling;
+        if (prev && prev.tagName === "LABEL" && prev.innerText) {
+          name = sanitizeName(prev.innerText);
+        }
+      }
+
+      if (!name) {
+        if (input.parentElement && input.parentElement.tagName === "LABEL") {
+          name = sanitizeName(input.parentElement.innerText);
+        }
+      }
+
+      if (!name) {
+        name = `${input.tagName.toLowerCase()}_${Math.random()
+          .toString(36)
+          .substr(2, 6)}`;
+      }
+
+      input.name = name;
+    });
+  };
+
+  const normalizeValue = (key, value) => {
+    if (value === null || typeof value === "undefined") return null;
+    if (typeof value === "string") value = value.trim();
+    if (typeof value === "string") {
+      const low = value.toLowerCase();
+      if (low === "yes") return true;
+      if (low === "no") return false;
+      if (low === "true") return true;
+      if (low === "false") return false;
+      if (low === "" || low === "select" || value === "undefined") return null;
+    }
+    if (key.match(/(^|_)id$|count|number|amount/gi) && !isNaN(value)) {
+      return Number(value);
+    }
+    if (key.includes("date") && typeof value === "string") {
+      const d = new Date(value);
+      if (!isNaN(d.getTime())) return d.toISOString();
+    }
+    if (key === "asset_type" && typeof value === "string") {
+      const m = value.toLowerCase();
+      return m === "physical"
+        ? "Physical"
+        : m === "virtual"
+        ? "Virtual"
+        : value;
+    }
+    if (key === "condition_status" && typeof value === "string") {
+      const map = {
+        in_use: "In Use",
+        "in use": "In Use",
+        under_repair: "Under Repair",
+        "under repair": "Under Repair",
+        new: "New",
+        used: "Used",
+        retired: "Retired",
+      };
+      const k = value.toLowerCase().replace(/\s+/g, "_");
+      return map[k] || value;
+    }
+    return value;
+  };
+
+  const buildMetadata = (frontendType, rawValues) => {
+    const topLevelKeys = new Set(["name", "description", "status"]);
+    const metadata = {};
+    Object.entries(rawValues || {}).forEach(([k, v]) => {
+      if (topLevelKeys.has(k)) return;
+      metadata[k] = v;
+    });
+    return metadata;
+  };
+
+  const extractFormData = (frontendType, isAsset = false) => {
+    const formEl = formRef.current;
+    if (!formEl) return {};
+    ensureFieldNames(formEl);
+    const elements = Array.from(
+      formEl.querySelectorAll("input, select, textarea")
+    );
+    const raw = {};
+    elements.forEach((el) => {
+      if (el.disabled) return;
+      const type = el.type;
+      const name = el.name;
+      if (!name) return;
+      let value = null;
+      if (type === "checkbox") {
+        value = el.checked;
+      } else if (type === "radio") {
+        if (!el.checked) return;
+        value = el.value;
+      } else if (el.tagName === "SELECT" && el.multiple) {
+        value = Array.from(el.selectedOptions).map((o) => o.value);
+      } else if (type === "file") {
+        value = el.files ? Array.from(el.files) : [];
+      } else {
+        value = el.value;
+      }
+      raw[name] = normalizeValue(name, value);
+    });
+
+    // Convert for asset payload
+    if (frontendType === "assets_management" || frontendType === "asset") {
+      const mapping = {
+        asset_name: "asset_name",
+        assetname: "asset_name",
+        "asset name": "asset_name",
+        asset_id: "asset_id_custom",
+        assetid: "asset_id_custom",
+        "asset id": "asset_id_custom",
+        asset_id_custom: "asset_id_custom",
+        short_description: "short_description",
+        description: "short_description",
+        purchase_date: "purchase_date",
+        location: "location",
+        condition_status: "condition_status",
+        condition: "condition_status",
+        status: "status",
+        owner_assigned_to: "owner_assigned_to",
+        owner: "owner_assigned_to",
+        warranty_info: "warranty_info",
+        is_supplier_vendor_managed: "is_supplier_vendor_managed",
+        supplier_vendor_name: "supplier_vendor_name",
+      };
+
+      const payload = {};
+      Object.entries(raw).forEach(([k, v]) => {
+        const key = k.toLowerCase();
+        const mapped = mapping[key] || mapping[key.replace(/[_ ]/g, "")] || key;
+        payload[mapped] = v;
+      });
+
+      if (typeof payload.is_supplier_vendor_managed === "string") {
+        payload.is_supplier_vendor_managed =
+          payload.is_supplier_vendor_managed === "yes" ||
+          payload.is_supplier_vendor_managed === "true";
+      }
+
+      return payload;
+    }
+
+    // Config modules: prefer top-level name/description keys
+    const topName =
+      raw.name ||
+      raw.title ||
+      raw["data source type"] ||
+      raw["data_source_type"] ||
+      raw[Object.keys(raw).find((k) => k.includes("name"))];
+    const topDescription =
+      raw.description ||
+      raw.desc ||
+      raw[Object.keys(raw).find((k) => k.includes("description"))];
+
+    const toplevel = {};
+    if (topName) toplevel.name = topName;
+    if (topDescription) toplevel.description = topDescription;
+    const metadata = buildMetadata(frontendType, raw);
+
+    return {
+      name: toplevel.name || generateId(),
+      description: toplevel.description || "",
+      metadata,
+    };
+  };
+
   const loadModuleData = async (modalKey) => {
     try {
       setLoading(true);
 
+      // ASSETS
       if (modalKey === "assets_management") {
         const res = await getAssets();
-        setAssets(res.data.assets);
-      } else if (CONFIG_TYPE_MAP[modalKey]) {
-        const res = await getConfigs(modalKey);
+        setAssets(res.data.assets || []);
+        return;
+      }
+
+      let frontendType = modalKey;
+
+      // NORMALIZE modalKey → frontendType
+      if (
+        modalKey === "data_element" ||
+        modalKey === "edit_data_element" ||
+        modalKey === "new_data_element"
+      )
+        frontendType = "data_elements";
+
+      if (
+        modalKey === "data_subject" ||
+        modalKey === "edit_data_subject" ||
+        modalKey === "new_data_subject"
+      )
+        frontendType = "data_subjects";
+
+      if (modalKey === "data_transfer") frontendType = "data_transfer";
+
+      // Security modules
+      if (modalKey === "compliance_measures")
+        frontendType = "compliance_measures";
+      if (modalKey === "operational_measures")
+        frontendType = "operational_measures";
+      if (modalKey === "ethical_measures") frontendType = "ethical_measures";
+      if (modalKey === "technical_measures")
+        frontendType = "technical_measures";
+      if (modalKey === "access_measures") frontendType = "access_measures";
+      if (modalKey === "data_governance") frontendType = "data_governance";
+      if (modalKey === "transparency_measures")
+        frontendType = "transparency_measures";
+      if (modalKey === "physical_security") frontendType = "physical_security";
+      if (modalKey === "risk_management") frontendType = "risk_management";
+
+      const backendType = CONFIG_TYPE_MAP[frontendType];
+
+      if (backendType) {
+        // security + config modules
+        const res = await getConfigs(frontendType);
         setConfigs((prev) => ({
           ...prev,
           [modalKey]: res.data.configs || [],
         }));
-      } else if (SECURITY_MAP[modalKey]) {
-        const beType = SECURITY_MAP[modalKey];
-        const res = await getConfigs(beType);
+      } else {
+        // fallback → generic get
+        const res = await getConfigs(frontendType);
         setConfigs((prev) => ({
           ...prev,
           [modalKey]: res.data.configs || [],
         }));
       }
     } catch (err) {
+      console.error("Load module error", err);
       addToast("error", "Failed to load data");
     } finally {
       setLoading(false);
     }
   };
 
-  const CONFIG_TYPE_MAP = {
-    data_collection: "data_collection",
-    data_elements: "data_element",
-    data_deletion: "data_deletion",
-    data_subjects: "data_subject",
-    data_transfer: "data_transfer",
-    department: "department",
-    organization: "organization",
-    purpose: "purpose",
-    legal_basis: "legal_basis",
-  };
-
-  const SECURITY_MAP = {
-    compliance_measures: "security_compliance",
-    operational_measures: "security_operational",
-    ethical_measures: "security_ethical",
-    technical_measures: "security_technical",
-    access_measures: "security_access",
-    data_governance: "security_data_governance",
-    transparency_measures: "security_transparency",
-    physical_security: "security_physical",
-    risk_management: "security_risk_management",
-  };
-
   const handleConfigureClick = async (modalKey, event) => {
     event.stopPropagation();
     setActiveModal(modalKey);
     setNestedModal(null);
-
+    setSelectedItem(null);
+    setFieldErrors({});
     await loadModuleData(modalKey);
   };
 
   const handleAddNew = (type) => {
-    setNestedModal(type);
+    setFieldErrors({});
     setSelectedItem(null);
+    setNestedModal(type);
   };
 
   const handleEdit = (item, type) => {
+    setFieldErrors({});
     setSelectedItem(item);
     setNestedModal(type);
   };
@@ -756,10 +961,15 @@ export default function Setup() {
     if (!confirm("Are you sure you want to archive this?")) return;
 
     try {
-      await deleteConfig(CONFIG_TYPE_MAP[type], itemId);
+      if (CONFIG_TYPE_MAP[type]) {
+        await deleteConfig(type, itemId);
+      } else {
+        await deleteSecuritySafeguard(type, itemId);
+      }
       addToast("success", "Archived successfully");
       await loadModuleData(type);
     } catch (err) {
+      console.error(err);
       addToast("error", "Archive failed");
     }
   };
@@ -768,15 +978,15 @@ export default function Setup() {
     if (!confirm("Delete this asset?")) return;
     try {
       await deleteAsset(id);
-      addToast("success", "Asset deleted");
+      addToast("success", "Asset archived");
       loadModuleData("assets_management");
     } catch (e) {
+      console.error(e);
       addToast("error", "Delete failed");
     }
   };
 
   // ===== LIST VIEW COMPONENTS =====
-
   const renderAssetList = () => (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
@@ -794,19 +1004,24 @@ export default function Setup() {
         </motion.button>
       </div>
       <div className="space-y-3">
-        {assets.map((asset) => (
+        {(assets.length ? assets : sampleAssets).map((asset) => (
           <div
             key={asset.id}
             className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
           >
             <div className="flex-1">
               <h4 className="font-medium text-gray-900 dark:text-white">
-                {asset.name}
+                {asset.asset_name || asset.name || asset.assetId || asset.name}
               </h4>
               <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-400 mt-1">
-                <span>ID: {asset.assetId}</span>
-                <span>Type: {asset.type}</span>
-                <span>Status: {asset.status}</span>
+                <span>
+                  ID: {asset.asset_id_custom || asset.assetId || asset.uniqueId}
+                </span>
+                <span>Type: {asset.asset_type || asset.type}</span>
+                <span>
+                  Status:{" "}
+                  {asset.status || asset.condition_status || asset.status}
+                </span>
               </div>
             </div>
             <div className="flex gap-2">
@@ -825,7 +1040,7 @@ export default function Setup() {
                 <Edit size={16} className="text-green-600" />
               </button>
               <button
-                onClick={() => handleArchive(asset.id)}
+                onClick={() => handleArchive(asset.id, "assets_management")}
                 className="p-2 hover:bg-orange-100 dark:hover:bg-orange-900 rounded transition-colors"
                 title="Archive"
               >
@@ -862,7 +1077,10 @@ export default function Setup() {
         </motion.button>
       </div>
       <div className="space-y-3">
-        {sampleDataCollections.map((collection) => (
+        {(configs["data_collection"]?.length
+          ? configs["data_collection"]
+          : sampleDataCollections
+        ).map((collection) => (
           <div
             key={collection.id}
             className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
@@ -872,8 +1090,13 @@ export default function Setup() {
                 {collection.name}
               </h4>
               <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-400 mt-1">
-                <span>ID: {collection.uniqueId}</span>
-                <span>Source: {collection.sourceType}</span>
+                <span>ID: {collection.config_id || collection.uniqueId}</span>
+                <span>
+                  Source:{" "}
+                  {collection.metadata?.source_type ||
+                    collection.sourceType ||
+                    collection.source_type}
+                </span>
               </div>
             </div>
             <div className="flex gap-2">
@@ -890,7 +1113,72 @@ export default function Setup() {
                 <Edit size={16} />
               </button>
               <button
-                onClick={() => handleArchive(collection.id)}
+                onClick={() => handleArchive(collection.id, "data_collection")}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+              >
+                <Archive size={16} />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderDataTransferList = () => (
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-lg font-semibold dark:text-white">
+          Data Transfer Configuration
+        </h3>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => handleAddNew("new_data_transfer")}
+          className="bg-[#5DEE92] text-black px-4 py-2 rounded-lg font-medium hover:bg-green-500 transition-colors text-sm flex items-center gap-2"
+        >
+          <Plus size={16} />
+          New Element
+        </motion.button>
+      </div>
+      <div className="space-y-3">
+        {(configs["data_transfer"]?.length
+          ? configs["data_trasnsfer"]
+          : sampleDataElements
+        ).map((element) => (
+          <div
+            key={element.id}
+            className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
+          >
+            <div className="flex-1">
+              <h4 className="font-medium text-gray-900 dark:text-white">
+                {element.name}
+              </h4>
+              <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-400 mt-1">
+                <span>ID: {element.config_id || element.uniqueId}</span>
+                <span>
+                  Type: {element.metadata?.valueType || element.valueType}
+                </span>
+                <span>
+                  Sensitive: {element.metadata?.sensitive || element.sensitive}
+                </span>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleView(element)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+              >
+                <Eye size={16} />
+              </button>
+              <button
+                onClick={() => handleEdit(element, "edit_data_transfer")}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+              >
+                <Edit size={16} />
+              </button>
+              <button
+                onClick={() => handleArchive(element.id, "data_transfer")}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
               >
                 <Archive size={16} />
@@ -919,7 +1207,10 @@ export default function Setup() {
         </motion.button>
       </div>
       <div className="space-y-3">
-        {configs["data_elements"]?.map((element) => (
+        {(configs["data_elements"]?.length
+          ? configs["data_elements"]
+          : sampleDataElements
+        ).map((element) => (
           <div
             key={element.id}
             className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
@@ -929,9 +1220,13 @@ export default function Setup() {
                 {element.name}
               </h4>
               <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-400 mt-1">
-                <span>ID: {element.uniqueId}</span>
-                <span>Type: {element.valueType}</span>
-                <span>Sensitive: {element.sensitive}</span>
+                <span>ID: {element.config_id || element.uniqueId}</span>
+                <span>
+                  Type: {element.metadata?.valueType || element.valueType}
+                </span>
+                <span>
+                  Sensitive: {element.metadata?.sensitive || element.sensitive}
+                </span>
               </div>
             </div>
             <div className="flex gap-2">
@@ -948,7 +1243,7 @@ export default function Setup() {
                 <Edit size={16} />
               </button>
               <button
-                onClick={() => handleArchive(element.id)}
+                onClick={() => handleArchive(element.id, "data_elements")}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
               >
                 <Archive size={16} />
@@ -977,7 +1272,10 @@ export default function Setup() {
         </motion.button>
       </div>
       <div className="space-y-3">
-        {sampleDataDeletion.map((method) => (
+        {(configs["data_deletion"]?.length
+          ? configs["data_deletion"]
+          : sampleDataDeletion
+        ).map((method) => (
           <div
             key={method.id}
             className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
@@ -987,9 +1285,14 @@ export default function Setup() {
                 {method.name}
               </h4>
               <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-400 mt-1">
-                <span>ID: {method.uniqueId}</span>
-                <span>Frequency: {method.frequency}</span>
-                <span>Verification: {method.verification}</span>
+                <span>ID: {method.config_id || method.uniqueId}</span>
+                <span>
+                  Frequency: {method.metadata?.frequency || method.frequency}
+                </span>
+                <span>
+                  Verification:{" "}
+                  {method.metadata?.verification || method.verification}
+                </span>
               </div>
             </div>
             <div className="flex gap-2">
@@ -1006,7 +1309,7 @@ export default function Setup() {
                 <Edit size={16} />
               </button>
               <button
-                onClick={() => handleArchive(method.id)}
+                onClick={() => handleArchive(method.id, "data_deletion")}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
               >
                 <Archive size={16} />
@@ -1035,7 +1338,10 @@ export default function Setup() {
         </motion.button>
       </div>
       <div className="space-y-3">
-        {sampleDepartments.map((dept) => (
+        {(configs["department"]?.length
+          ? configs["department"]
+          : sampleDepartments
+        ).map((dept) => (
           <div
             key={dept.id}
             className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
@@ -1045,9 +1351,9 @@ export default function Setup() {
                 {dept.name}
               </h4>
               <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-400 mt-1">
-                <span>ID: {dept.uniqueId}</span>
-                <span>Head: {dept.headName}</span>
-                <span>Manager: {dept.manager}</span>
+                <span>ID: {dept.config_id || dept.uniqueId}</span>
+                <span>Head: {dept.metadata?.headName || dept.headName}</span>
+                <span>Manager: {dept.metadata?.manager || dept.manager}</span>
               </div>
             </div>
             <div className="flex gap-2">
@@ -1064,7 +1370,7 @@ export default function Setup() {
                 <Edit size={16} />
               </button>
               <button
-                onClick={() => handleArchive(dept.id)}
+                onClick={() => handleArchive(dept.id, "department")}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
               >
                 <Archive size={16} />
@@ -1093,7 +1399,10 @@ export default function Setup() {
         </motion.button>
       </div>
       <div className="space-y-3">
-        {sampleOrganizations.map((org) => (
+        {(configs["organization"]?.length
+          ? configs["organization"]
+          : sampleOrganizations
+        ).map((org) => (
           <div
             key={org.id}
             className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
@@ -1103,9 +1412,9 @@ export default function Setup() {
                 {org.name}
               </h4>
               <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-400 mt-1">
-                <span>ID: {org.uniqueId}</span>
-                <span>Type: {org.type}</span>
-                <span>Industry: {org.industry}</span>
+                <span>ID: {org.config_id || org.uniqueId}</span>
+                <span>Type: {org.metadata?.type || org.type}</span>
+                <span>Industry: {org.metadata?.industry || org.industry}</span>
               </div>
             </div>
             <div className="flex gap-2">
@@ -1122,7 +1431,7 @@ export default function Setup() {
                 <Edit size={16} />
               </button>
               <button
-                onClick={() => handleArchive(org.id)}
+                onClick={() => handleArchive(org.id, "organization")}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
               >
                 <Archive size={16} />
@@ -1151,19 +1460,27 @@ export default function Setup() {
         </motion.button>
       </div>
       <div className="space-y-3">
-        {sampleDataSubjects.map((subject) => (
+        {(configs["data_subjects"]?.length
+          ? configs["data_subjects"]
+          : sampleDataSubjects
+        ).map((subject) => (
           <div
             key={subject.id}
             className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
           >
             <div className="flex-1">
               <h4 className="font-medium text-gray-900 dark:text-white">
-                {subject.categoryName}
+                {subject.metadata?.categoryName || subject.categoryName}
               </h4>
               <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-400 mt-1">
-                <span>ID: {subject.uniqueId}</span>
-                <span>Type: {subject.categoryType}</span>
-                <span>Subcategory: {subject.subcategory}</span>
+                <span>ID: {subject.config_id || subject.uniqueId}</span>
+                <span>
+                  Type: {subject.metadata?.categoryType || subject.categoryType}
+                </span>
+                <span>
+                  Subcategory:{" "}
+                  {subject.metadata?.subcategory || subject.subcategory}
+                </span>
               </div>
             </div>
             <div className="flex gap-2">
@@ -1180,7 +1497,7 @@ export default function Setup() {
                 <Edit size={16} />
               </button>
               <button
-                onClick={() => handleArchive(subject.id)}
+                onClick={() => handleArchive(subject.id, "data_subjects")}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
               >
                 <Archive size={16} />
@@ -1209,43 +1526,49 @@ export default function Setup() {
         </motion.button>
       </div>
       <div className="space-y-3">
-        {samplePurposes.map((purpose) => (
-          <div
-            key={purpose.id}
-            className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
-          >
-            <div className="flex-1">
-              <h4 className="font-medium text-gray-900 dark:text-white">
-                {purpose.name}
-              </h4>
-              <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-400 mt-1">
-                <span>ID: {purpose.uniqueId}</span>
-                <span>Category: {purpose.category}</span>
-                <span>Primary: {purpose.primary}</span>
+        {(configs["purpose"]?.length ? configs["purpose"] : samplePurposes).map(
+          (purpose) => (
+            <div
+              key={purpose.id}
+              className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
+            >
+              <div className="flex-1">
+                <h4 className="font-medium text-gray-900 dark:text-white">
+                  {purpose.name}
+                </h4>
+                <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  <span>ID: {purpose.config_id || purpose.uniqueId}</span>
+                  <span>
+                    Category: {purpose.metadata?.category || purpose.category}
+                  </span>
+                  <span>
+                    Primary: {purpose.metadata?.primary || purpose.primary}
+                  </span>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleView(purpose)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                >
+                  <Eye size={16} />
+                </button>
+                <button
+                  onClick={() => handleEdit(purpose, "edit_purpose")}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                >
+                  <Edit size={16} />
+                </button>
+                <button
+                  onClick={() => handleArchive(purpose.id, "purpose")}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                >
+                  <Archive size={16} />
+                </button>
               </div>
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleView(purpose)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-              >
-                <Eye size={16} />
-              </button>
-              <button
-                onClick={() => handleEdit(purpose, "edit_purpose")}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-              >
-                <Edit size={16} />
-              </button>
-              <button
-                onClick={() => handleArchive(purpose.id)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-              >
-                <Archive size={16} />
-              </button>
-            </div>
-          </div>
-        ))}
+          )
+        )}
       </div>
     </div>
   );
@@ -1265,7 +1588,10 @@ export default function Setup() {
         </motion.button>
       </div>
       <div className="space-y-3">
-        {sampleLegalBasis.map((basis) => (
+        {(configs["legal_basis"]?.length
+          ? configs["legal_basis"]
+          : sampleLegalBasis
+        ).map((basis) => (
           <div
             key={basis.id}
             className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
@@ -1275,8 +1601,8 @@ export default function Setup() {
                 {basis.name}
               </h4>
               <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-400 mt-1">
-                <span>ID: {basis.uniqueId}</span>
-                <span>{basis.description}</span>
+                <span>ID: {basis.config_id || basis.uniqueId}</span>
+                <span>{basis.description || basis.metadata?.description}</span>
               </div>
             </div>
             <div className="flex gap-2">
@@ -1293,7 +1619,7 @@ export default function Setup() {
                 <Edit size={16} />
               </button>
               <button
-                onClick={() => handleArchive(basis.id)}
+                onClick={() => handleArchive(basis.id, "legal_basis")}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
               >
                 <Archive size={16} />
@@ -1329,7 +1655,6 @@ export default function Setup() {
     </div>
   );
 
-  // Security Module List Views
   const renderSecurityModuleList = (title, sampleData, addKey, editKey) => (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
@@ -1345,7 +1670,10 @@ export default function Setup() {
         </motion.button>
       </div>
       <div className="space-y-3">
-        {sampleData.map((item) => (
+        {(configs[addKey.replace("new_", "")]?.length
+          ? configs[addKey.replace("new_", "")]
+          : sampleData
+        ).map((item) => (
           <div
             key={item.id}
             className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
@@ -1355,8 +1683,8 @@ export default function Setup() {
                 {item.name}
               </h4>
               <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-400 mt-1">
-                <span>ID: {item.uniqueId}</span>
-                <span>{item.description}</span>
+                <span>ID: {item.config_id || item.uniqueId}</span>
+                <span>{item.description || item.metadata?.description}</span>
               </div>
             </div>
             <div className="flex gap-2">
@@ -1373,7 +1701,9 @@ export default function Setup() {
                 <Edit size={16} />
               </button>
               <button
-                onClick={() => handleArchive(item.id)}
+                onClick={() =>
+                  handleArchive(item.id, addKey.replace("new_", ""))
+                }
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
               >
                 <Archive size={16} />
@@ -1385,7 +1715,7 @@ export default function Setup() {
     </div>
   );
 
-  // ===== FORM COMPONENTS =====
+  // ===== FORM COMPONENTS (with name attributes for integration) =====
 
   const renderAssetForm = () => (
     <div className="p-6 space-y-6">
@@ -1395,45 +1725,104 @@ export default function Setup() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormInput
           label="Asset Name"
+          name="asset_name"
           required
-          defaultValue={selectedItem?.name || ""}
+          defaultValue={selectedItem?.asset_name || selectedItem?.name || ""}
         />
         <FormSelect
           label="Asset Type"
+          name="asset_type"
           options={assetTypes}
           required
-          defaultValue={selectedItem?.type?.toLowerCase() || ""}
+          defaultValue={(selectedItem?.asset_type || "").toLowerCase()}
         />
         <FormInput
           label="Asset ID"
-          required
-          defaultValue={selectedItem?.assetId || ""}
-        />
-        <FormInput label="Short Description" required />
-        <FormInput label="Purchase Date" type="date" />
-        <FormInput label="Location" />
-        <FormSelect
-          label="Condition/Status"
-          options={conditionOptions}
+          name="asset_id_custom"
           required
           defaultValue={
-            selectedItem?.status?.toLowerCase().replace(" ", "_") || ""
+            selectedItem?.asset_id_custom || selectedItem?.assetId || ""
           }
         />
-        <FormSelect label="Owner/Assigned to" options={[]} required />
-        <FormInput label="Warranty Information" type="date" />
+        <FormInput
+          label="Short Description"
+          name="short_description"
+          required
+          defaultValue={selectedItem?.short_description || ""}
+        />
+        <FormInput
+          label="Purchase Date"
+          name="purchase_date"
+          type="date"
+          defaultValue={
+            selectedItem?.purchase_date
+              ? selectedItem.purchase_date.split("T")[0]
+              : ""
+          }
+        />
+        <FormInput
+          label="Location"
+          name="location"
+          defaultValue={selectedItem?.location || ""}
+        />
+        <FormSelect
+          label="Condition/Status"
+          name="condition_status"
+          options={conditionOptions}
+          required
+          defaultValue={(selectedItem?.condition_status || "")
+            .toLowerCase()
+            .replace(" ", "_")}
+        />
+        <FormSelect
+          label="Owner/Assigned to"
+          name="owner_assigned_to"
+          options={[]}
+          required
+          defaultValue={selectedItem?.owner_assigned_to || ""}
+        />
+        <FormInput
+          label="Warranty Information"
+          name="warranty_info"
+          type="date"
+          defaultValue={
+            selectedItem?.warranty_info
+              ? selectedItem.warranty_info.split("T")[0]
+              : ""
+          }
+        />
         <FormSelect
           label="Is Supplier/Vendor Managed?"
+          name="is_supplier_vendor_managed"
           options={yesNoOptions}
           required
+          defaultValue={
+            selectedItem?.is_supplier_vendor_managed
+              ? selectedItem.is_supplier_vendor_managed
+                ? "yes"
+                : "no"
+              : ""
+          }
         />
       </div>
       <FileUpload
         label="Attachments/Documents"
+        name="attachments"
         accept=".doc,.docx,.pdf,.xlsx,.jpg,.jpeg,.svg,.eml"
         multiple
         onFilesSelected={handleFilesSelected}
       />
+
+      {/* Inline validation display for any asset fields */}
+      <div>
+        {Object.entries(fieldErrors)
+          .filter(([k]) => k.startsWith("asset"))
+          .map(([k, v]) => (
+            <div key={k} className="text-sm text-red-600 mt-1">
+              {v}
+            </div>
+          ))}
+      </div>
     </div>
   );
 
@@ -1443,18 +1832,42 @@ export default function Setup() {
         {selectedItem ? "Edit Data Collection" : "Add New Data Collection"}
       </h3>
       <div className="grid grid-cols-1 gap-4">
+        {/* top-level name for config */}
+        <FormInput
+          label="Name"
+          name="name"
+          required
+          defaultValue={selectedItem?.name || ""}
+        />
         <FormInput
           label="Data Source Type"
+          name="source_type"
           required
-          defaultValue={selectedItem?.sourceType || ""}
+          defaultValue={selectedItem?.metadata?.source_type || ""}
         />
-        <FormInput label="Description" required />
+        <FormInput
+          label="Description"
+          name="description"
+          required
+          defaultValue={selectedItem?.description || ""}
+        />
         <FileUpload
           label="Attachments/Documents"
+          name="attachments"
           accept=".doc,.docx,.pdf,.xlsx,.jpg,.jpeg,.svg,.eml"
           multiple
           onFilesSelected={handleFilesSelected}
         />
+
+        {/* inline errors */}
+        {fieldErrors["name"] && (
+          <div className="text-sm text-red-600">{fieldErrors["name"]}</div>
+        )}
+        {fieldErrors["source_type"] && (
+          <div className="text-sm text-red-600">
+            {fieldErrors["source_type"]}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1467,28 +1880,49 @@ export default function Setup() {
       <div className="grid grid-cols-1 gap-4">
         <FormInput
           label="Name of the Data Element"
+          name="name"
           required
           defaultValue={selectedItem?.name || ""}
         />
-        <FormInput label="Description" required />
+        <FormInput
+          label="Description"
+          name="description"
+          required
+          defaultValue={selectedItem?.description || ""}
+        />
         <FormSelect
           label="Value Type"
+          name="valueType"
           options={valueTypes}
           required
-          defaultValue={selectedItem?.valueType?.toLowerCase() || ""}
+          defaultValue={(
+            selectedItem?.metadata?.valueType ||
+            selectedItem?.valueType ||
+            ""
+          ).toLowerCase()}
         />
         <FormSelect
           label="Is Sensitive Data?"
+          name="sensitive"
           options={yesNoOptions}
           required
-          defaultValue={selectedItem?.sensitive?.toLowerCase() || ""}
+          defaultValue={(
+            selectedItem?.metadata?.sensitive ||
+            selectedItem?.sensitive ||
+            ""
+          ).toLowerCase()}
         />
         <FileUpload
           label="Attachments/Documents"
+          name="attachments"
           accept=".doc,.docx,.pdf,.xlsx,.jpg,.jpeg,.svg,.eml"
           multiple
           onFilesSelected={handleFilesSelected}
         />
+
+        {fieldErrors["name"] && (
+          <div className="text-sm text-red-600">{fieldErrors["name"]}</div>
+        )}
       </div>
     </div>
   );
@@ -1503,28 +1937,50 @@ export default function Setup() {
       <div className="grid grid-cols-1 gap-4">
         <FormInput
           label="Name of Data Deletion Method"
+          name="name"
           required
           defaultValue={selectedItem?.name || ""}
         />
-        <FormInput label="Description" required />
+        <FormInput
+          label="Description"
+          name="description"
+          required
+          defaultValue={selectedItem?.description || ""}
+        />
         <FormSelect
           label="Deletion Frequency"
+          name="frequency"
           options={deletionFrequency}
-          defaultValue={
-            selectedItem?.frequency?.toLowerCase().replace(" ", "_") || ""
-          }
+          defaultValue={(
+            selectedItem?.metadata?.frequency ||
+            selectedItem?.frequency ||
+            ""
+          ).toLowerCase()}
         />
         <FormSelect
           label="Is Verification Needed?"
+          name="verification"
           options={yesNoOptions}
-          defaultValue={selectedItem?.verification?.toLowerCase() || ""}
+          defaultValue={(
+            selectedItem?.metadata?.verification ||
+            selectedItem?.verification ||
+            ""
+          ).toLowerCase()}
         />
-        <FormSelect label="When Deletion Happens" options={deletionMethods} />
+        <FormSelect
+          label="When Deletion Happens"
+          name="method"
+          options={deletionMethods}
+        />
         <FormSelect
           label="How Deletion is Verified"
+          name="verification_method"
           options={verificationMethods}
         />
       </div>
+      {fieldErrors["name"] && (
+        <div className="text-sm text-red-600">{fieldErrors["name"]}</div>
+      )}
     </div>
   );
 
@@ -1536,24 +1992,55 @@ export default function Setup() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormInput
           label="Department Name"
+          name="name"
           required
           defaultValue={selectedItem?.name || ""}
         />
-        <FormInput label="Description of the Role" required />
-        <FormInput label="Parent Department" required />
-        <FormInput label="Department Head Email ID" required type="email" />
+        <FormInput
+          label="Description of the Role"
+          name="description"
+          required
+          defaultValue={selectedItem?.description || ""}
+        />
+        <FormInput
+          label="Parent Department"
+          name="parent_department"
+          required
+          defaultValue={selectedItem?.metadata?.parent_department || ""}
+        />
+        <FormInput
+          label="Department Head Email ID"
+          name="head_email"
+          required
+          type="email"
+          defaultValue={selectedItem?.metadata?.head_email || ""}
+        />
         <FormInput
           label="Department Head Name"
+          name="headName"
           required
-          defaultValue={selectedItem?.headName || ""}
+          defaultValue={
+            selectedItem?.metadata?.headName || selectedItem?.headName || ""
+          }
         />
         <FormInput
           label="Manager Name"
+          name="manager"
           required
-          defaultValue={selectedItem?.manager || ""}
+          defaultValue={
+            selectedItem?.metadata?.manager || selectedItem?.manager || ""
+          }
         />
-        <FormInput label="Reporting Location" required />
+        <FormInput
+          label="Reporting Location"
+          name="reporting_location"
+          required
+          defaultValue={selectedItem?.metadata?.reporting_location || ""}
+        />
       </div>
+      {fieldErrors["name"] && (
+        <div className="text-sm text-red-600">{fieldErrors["name"]}</div>
+      )}
     </div>
   );
 
@@ -1565,33 +2052,83 @@ export default function Setup() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormInput
           label="Organization Name"
+          name="name"
           required
           defaultValue={selectedItem?.name || ""}
         />
         <FormInput
           label="Organization ID"
+          name="org_id"
           required
-          defaultValue={selectedItem?.orgId || ""}
+          defaultValue={
+            selectedItem?.metadata?.org_id || selectedItem?.orgId || ""
+          }
         />
         <FormSelect
           label="Organization Type"
+          name="type"
           options={organizationTypes}
           required
-          defaultValue={selectedItem?.type?.toLowerCase() || ""}
+          defaultValue={(
+            selectedItem?.metadata?.type ||
+            selectedItem?.type ||
+            ""
+          ).toLowerCase()}
         />
         <FormSelect
           label="Industry Sector"
+          name="industry"
           options={industrySectors}
           required
-          defaultValue={selectedItem?.industry?.toLowerCase() || ""}
+          defaultValue={(
+            selectedItem?.metadata?.industry ||
+            selectedItem?.industry ||
+            ""
+          ).toLowerCase()}
         />
-        <FormInput label="Registration Number" required />
-        <FormInput label="Address" required />
-        <FormInput label="Website" required type="url" />
-        <FormInput label="Parent Organization" required />
-        <FormInput label="Subsidiaries" required />
-        <FormInput label="Departments within Organization" required />
+        <FormInput
+          label="Registration Number"
+          name="registration_number"
+          required
+          defaultValue={selectedItem?.metadata?.registration_number || ""}
+        />
+        <FormInput
+          label="Address"
+          name="address"
+          required
+          defaultValue={selectedItem?.metadata?.address || ""}
+        />
+        <FormInput
+          label="Website"
+          name="website"
+          required
+          type="url"
+          defaultValue={
+            selectedItem?.metadata?.website || selectedItem?.website || ""
+          }
+        />
+        <FormInput
+          label="Parent Organization"
+          name="parent_organization"
+          required
+          defaultValue={selectedItem?.metadata?.parent_organization || ""}
+        />
+        <FormInput
+          label="Subsidiaries"
+          name="subsidiaries"
+          required
+          defaultValue={selectedItem?.metadata?.subsidiaries || ""}
+        />
+        <FormInput
+          label="Departments within Organization"
+          name="departments"
+          required
+          defaultValue={selectedItem?.metadata?.departments || ""}
+        />
       </div>
+      {fieldErrors["name"] && (
+        <div className="text-sm text-red-600">{fieldErrors["name"]}</div>
+      )}
     </div>
   );
 
@@ -1605,22 +2142,47 @@ export default function Setup() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormInput
           label="Category Name"
+          name="categoryName"
           required
-          defaultValue={selectedItem?.categoryName || ""}
+          defaultValue={
+            selectedItem?.metadata?.categoryName ||
+            selectedItem?.categoryName ||
+            ""
+          }
         />
-        <FormInput label="Description" required />
+        <FormInput
+          label="Description"
+          name="description"
+          required
+          defaultValue={selectedItem?.description || ""}
+        />
         <FormSelect
           label="Category Type"
+          name="categoryType"
           options={categoryTypes}
           required
-          defaultValue={selectedItem?.categoryType?.toLowerCase() || ""}
+          defaultValue={(
+            selectedItem?.metadata?.categoryType ||
+            selectedItem?.categoryType ||
+            ""
+          ).toLowerCase()}
         />
         <FormInput
           label="Subcategory Type"
+          name="subcategory"
           required
-          defaultValue={selectedItem?.subcategory || ""}
+          defaultValue={
+            selectedItem?.metadata?.subcategory ||
+            selectedItem?.subcategory ||
+            ""
+          }
         />
       </div>
+      {fieldErrors["categoryName"] && (
+        <div className="text-sm text-red-600">
+          {fieldErrors["categoryName"]}
+        </div>
+      )}
     </div>
   );
 
@@ -1632,23 +2194,45 @@ export default function Setup() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormInput
           label="Purpose Name"
+          name="name"
           required
           defaultValue={selectedItem?.name || ""}
         />
-        <FormInput label="Description" required />
+        <FormInput
+          label="Description"
+          name="description"
+          required
+          defaultValue={selectedItem?.description || ""}
+        />
         <FormSelect
           label="Purpose Category"
+          name="category"
           options={purposeCategories}
           required
-          defaultValue={selectedItem?.category?.toLowerCase() || ""}
+          defaultValue={(
+            selectedItem?.metadata?.category ||
+            selectedItem?.category ||
+            ""
+          ).toLowerCase()}
         />
         <FormInput
           label="Primary Purpose"
+          name="primary"
           required
-          defaultValue={selectedItem?.primary || ""}
+          defaultValue={
+            selectedItem?.metadata?.primary || selectedItem?.primary || ""
+          }
         />
-        <FormInput label="Secondary Purpose" required />
+        <FormInput
+          label="Secondary Purpose"
+          name="secondary"
+          required
+          defaultValue={selectedItem?.metadata?.secondary || ""}
+        />
       </div>
+      {fieldErrors["name"] && (
+        <div className="text-sm text-red-600">{fieldErrors["name"]}</div>
+      )}
     </div>
   );
 
@@ -1660,15 +2244,24 @@ export default function Setup() {
       <div className="grid grid-cols-1 gap-4">
         <FormInput
           label="Legal Basis Name"
+          name="name"
           required
           defaultValue={selectedItem?.name || ""}
         />
         <FormInput
           label="Description"
+          name="description"
           required
-          defaultValue={selectedItem?.description || ""}
+          defaultValue={
+            selectedItem?.description ||
+            selectedItem?.metadata?.description ||
+            ""
+          }
         />
       </div>
+      {fieldErrors["name"] && (
+        <div className="text-sm text-red-600">{fieldErrors["name"]}</div>
+      )}
     </div>
   );
 
@@ -1680,15 +2273,24 @@ export default function Setup() {
       <div className="grid grid-cols-1 gap-4">
         <FormInput
           label={`${title} Name`}
+          name="name"
           required
           defaultValue={selectedItem?.name || ""}
         />
         <FormInput
           label="Description"
+          name="description"
           required
-          defaultValue={selectedItem?.description || ""}
+          defaultValue={
+            selectedItem?.description ||
+            selectedItem?.metadata?.description ||
+            ""
+          }
         />
       </div>
+      {fieldErrors["name"] && (
+        <div className="text-sm text-red-600">{fieldErrors["name"]}</div>
+      )}
     </div>
   );
 
@@ -1702,21 +2304,35 @@ export default function Setup() {
       <div className="grid grid-cols-1 gap-4">
         <FormSelect
           label="Risk Assessment Type"
+          name="type"
           options={riskManagementTypes}
           required
-          defaultValue={selectedItem?.type?.toLowerCase() || ""}
+          defaultValue={(
+            selectedItem?.metadata?.type ||
+            selectedItem?.type ||
+            ""
+          ).toLowerCase()}
         />
         <FormInput
           label="Measure Name"
+          name="name"
           required
           defaultValue={selectedItem?.name || ""}
         />
         <FormInput
           label="Description"
+          name="description"
           required
-          defaultValue={selectedItem?.description || ""}
+          defaultValue={
+            selectedItem?.description ||
+            selectedItem?.metadata?.description ||
+            ""
+          }
         />
       </div>
+      {fieldErrors["name"] && (
+        <div className="text-sm text-red-600">{fieldErrors["name"]}</div>
+      )}
     </div>
   );
 
@@ -1750,7 +2366,7 @@ export default function Setup() {
     },
     data_transfer: {
       title: "Data Transfer Configurations",
-      content: renderDataCollectionList(),
+      content: renderDataTransferList(),
       size: "xl",
     },
     department: {
@@ -2049,62 +2665,155 @@ export default function Setup() {
     },
   };
 
-  const saveNestedForm = async () => {
-    const type = nestedModal.replace("new_", "").replace("edit_", "");
+  // ===== SAVE LOGIC =====
+  const handleSave = async () => {
+    // wrapper to call saveNestedForm
+    await saveNestedForm();
+  };
 
-    if (type === "asset") {
-      if (selectedItem) {
-        await updateAsset(selectedItem.id, formData);
-      } else {
-        await createAsset(formData);
+  const uploadFilesForAsset = async (assetId, files) => {
+    try {
+      for (const file of files) {
+        await uploadAssetAttachment(assetId, file);
       }
-      return;
-    }
-
-    // CONFIG MODULES
-    if (CONFIG_TYPE_MAP[type]) {
-      if (selectedItem) {
-        await updateConfig(type, selectedItem.id, formData);
-      } else {
-        await createConfig(type, formData);
-      }
-      return;
-    }
-
-    // SECURITY MODULES
-    if (SECURITY_MAP[type]) {
-      const beType = SECURITY_MAP[type];
-
-      if (selectedItem) {
-        await updateSecuritySafeguard(beType, selectedItem.id, formData);
-      } else {
-        await createSecuritySafeguard(beType, formData);
-      }
-
-      return;
+    } catch (err) {
+      console.error("upload asset files error", err);
+      // do not throw, asset created — just warn
     }
   };
 
-  const handleSave = async () => {
+  const handleFieldError = (err) => {
+    if (err?.response?.data?.details) {
+      const map = {};
+      err.response.data.details.forEach((d) => {
+        map[d.param] = d.msg;
+      });
+      setFieldErrors(map);
+    } else {
+      addToast("error", "Operation failed");
+    }
+  };
+
+  const saveNestedForm = async () => {
+    if (!nestedModal) return;
+
+    const type = nestedModal.replace("new_", "").replace("edit_", "");
+
     try {
       setLoading(true);
+      setFieldErrors({});
 
-      if (nestedModal) {
-        await saveNestedForm();
+      // asset handling
+      if (type === "asset" || nestedModal.includes("asset")) {
+        const payload = extractFormData("assets_management", true);
+
+        if (selectedItem) {
+          const res = await updateAsset(selectedItem.id, payload);
+          addToast("success", "Asset updated");
+          // if files selected, upload
+          if (selectedFiles && selectedFiles.length) {
+            await uploadFilesForAsset(selectedItem.id, selectedFiles);
+          }
+        } else {
+          const res = await createAsset(payload);
+          addToast("success", "Asset created");
+          const newAssetId = res.data.asset?.id;
+          if (newAssetId && selectedFiles && selectedFiles.length) {
+            await uploadFilesForAsset(newAssetId, selectedFiles);
+          }
+        }
+
+        await loadModuleData("assets_management");
+        setNestedModal(null);
+        setSelectedItem(null);
+        setSelectedFiles([]);
+        return;
       }
 
-      addToast("success", "Saved successfully");
-      await loadModuleData(activeModal);
-    } catch (err) {
-      addToast("error", "Save failed");
-    } finally {
-      setLoading(false);
+      // config & security modules
+
+      let frontendType = type;
+
+      const normalizeTypeMap = {
+        data_element: "data_elements",
+        data_subject: "data_subjects",
+        data_transfer: "data_transfer",
+      };
+
+      if (normalizeTypeMap[type]) {
+        frontendType = normalizeTypeMap[type];
+      }
+
+      // security
+      const secMap = {
+        compliance: "compliance_measures",
+        operational: "operational_measures",
+        ethical: "ethical_measures",
+        technical: "technical_measures",
+        access: "access_measures",
+        data_gov: "data_governance",
+        transparency: "transparency_measures",
+        physical: "physical_security",
+        risk: "risk_management",
+      };
+
+      if (secMap[type]) {
+        frontendType = secMap[type];
+      }
+
+      let backendType = CONFIG_TYPE_MAP[frontendType];
+
+      // build payload
+      const payload = extractFormData(frontendType, false);
+
+      // create / update
+      if (selectedItem) {
+        // update
+        try {
+          if (!backendType) {
+            // security fallback
+            await updateSecuritySafeguard(
+              frontendType,
+              selectedItem.id,
+              payload
+            );
+          } else {
+            await updateConfig(backendType, selectedItem.id, payload);
+          }
+          addToast("success", "Updated successfully");
+        } catch (err) {
+          // map field errors
+          handleFieldError(err);
+          throw err;
+        }
+      } else {
+        // create
+        try {
+          if (backendType) {
+            await createConfig(backendType, payload);
+          } else {
+            await createSecuritySafeguard(frontendType, payload);
+          }
+          addToast("success", "Created successfully");
+        } catch (err) {
+          handleFieldError(err);
+          throw err;
+        }
+      }
+
+      await loadModuleData(activeModal || frontendType);
       setNestedModal(null);
       setSelectedItem(null);
+    } catch (err) {
+      // already handled errors above
+      console.error("Save failed", err);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleCancel = () => {
+    setFieldErrors({});
     if (nestedModal) {
       setNestedModal(null);
     } else {
@@ -2112,6 +2821,66 @@ export default function Setup() {
     }
     setSelectedItem(null);
   };
+
+  // when nested modal opens with selectedItem (edit), prefill fields by setting values on inputs
+  useEffect(() => {
+    if (!nestedModal) {
+      // cleanup form when closed
+      if (formRef.current) {
+        formRef.current.reset();
+      }
+      return;
+    }
+
+    // small timeout to allow modal content to mount
+    setTimeout(async () => {
+      // ensure names are injected
+      if (formRef.current) ensureFieldNames(formRef.current);
+
+      // if editing, prefill
+      if (selectedItem && formRef.current) {
+        const elements = Array.from(
+          formRef.current.querySelectorAll("input, select, textarea")
+        );
+        elements.forEach((el) => {
+          const name = el.name;
+          if (!name) return;
+
+          // read value from selectedItem top-level, metadata or fallback
+          const val =
+            selectedItem[name] ??
+            selectedItem.metadata?.[name] ??
+            selectedItem[name.replace(/_/g, "")] ??
+            selectedItem.metadata?.[name.replace(/_/g, "")];
+
+          if (typeof val !== "undefined" && val !== null) {
+            if (el.type === "checkbox") {
+              el.checked = Boolean(val);
+            } else if (el.type === "file") {
+              // leave files blank
+            } else if (el.tagName === "SELECT") {
+              // try to set value
+              try {
+                el.value = typeof val === "string" ? val.toLowerCase() : val;
+              } catch (e) {}
+            } else {
+              // for dates: if ISO -> set YYYY-MM-DD
+              if (
+                name.includes("date") &&
+                typeof val === "string" &&
+                val.includes("T")
+              ) {
+                el.value = val.split("T")[0];
+              } else {
+                el.value = val;
+              }
+            }
+          }
+        });
+      }
+    }, 40);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nestedModal, selectedItem]);
 
   return (
     <div className="min-h-screen p-6">
@@ -2179,7 +2948,7 @@ export default function Setup() {
         <Modal
           key={key}
           isOpen={activeModal === key && !nestedModal}
-          onClose={handleCancel}
+          onClose={() => setActiveModal(null)}
           title={config.title}
           size={config.size}
         >
@@ -2196,7 +2965,11 @@ export default function Setup() {
           title={config.title}
           size={config.size}
         >
-          {config.content}
+          {/* wrap content in form so extractFormData can read inputs */}
+          <form ref={formRef} className="p-0 m-0">
+            {config.content}
+          </form>
+
           <div className="flex justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700 dark:text-white">
             <button
               onClick={handleCancel}

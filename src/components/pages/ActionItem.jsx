@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from "react";
+import React, { useMemo, useState, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Search,
@@ -22,6 +22,17 @@ import {
   Customized,
 } from "recharts";
 import AddActionItemModal from "../modules/AddActionItem";
+import {
+  getActionItemSummary,
+  getRiskDistribution,
+  getActionItemsTable,
+  getRiskHeatmap,
+  getLinkageHeatmap,
+  exportActionItems,
+  getAlerts,
+} from "../../services/ActionItemsSercvice";
+import ViewActionItemModal from "../modules/ViewActionItem";
+import EditActionItemModal from "../modules/EditActionItem";
 
 const BRAND = "#5DEE92";
 
@@ -153,27 +164,46 @@ function getCategoryColor(k) {
   }
 }
 
-function RechartsHeatmap({ items, onCellClick }) {
-  const aggregated = useMemo(() => {
-    const grid = Array.from({ length: 5 }, () =>
-      Array.from({ length: 5 }, () => ({
-        count: 0,
-        sumLikelihood: 0,
-        sumImpact: 0,
-        items: [],
-      }))
-    );
-    items.forEach((it) => {
-      const col = Math.max(1, Math.min(5, it.likelihood)) - 1;
-      const row = 5 - Math.max(1, Math.min(5, it.impact)); // invert Y so 5 is top
+function RechartsHeatmap({ heatmapMatrix, onCellClick }) {
+  // const aggregated = useMemo(() => {
+  //   const grid = Array.from({ length: 5 }, () =>
+  //     Array.from({ length: 5 }, () => ({
+  //       count: 0,
+  //       sumLikelihood: 0,
+  //       sumImpact: 0,
+  //       items: [],
+  //     }))
+  //   );
+  //   items.forEach((it) => {
+  //     const col = Math.max(1, Math.min(5, it.likelihood)) - 1;
+  //     const row = 5 - Math.max(1, Math.min(5, it.impact)); // invert Y so 5 is top
 
-      grid[row][col].count += 1;
-      grid[row][col].sumLikelihood += it.likelihood;
-      grid[row][col].sumImpact += it.impact;
-      grid[row][col].items.push(it);
+  //     grid[row][col].count += 1;
+  //     grid[row][col].sumLikelihood += it.likelihood;
+  //     grid[row][col].sumImpact += it.impact;
+  //     grid[row][col].items.push(it);
+  //   });
+  //   return grid;
+  // }, [items]);
+
+  const aggregated = useMemo(() => {
+    // Backend matrix is [likelihood][impact]
+    // But your UI expects matrix[row][col] where row=impact, col=likelihood
+    // So transpose + invert rows
+    const transposed = Array(5)
+      .fill(0)
+      .map(() => Array(5).fill(0));
+
+    heatmapMatrix.forEach((likelihoodRow, lIdx) => {
+      likelihoodRow.forEach((count, iIdx) => {
+        const uiRow = 5 - (iIdx + 1); // invert impact
+        const uiCol = lIdx; // likelihood stays same
+        transposed[uiRow][uiCol] = { count };
+      });
     });
-    return grid;
-  }, [items]);
+
+    return transposed;
+  }, [heatmapMatrix]);
 
   const maxCount = useMemo(() => {
     let m = 1;
@@ -212,8 +242,15 @@ function RechartsHeatmap({ items, onCellClick }) {
         likelihood: trueLikelihood,
         impact: trueImpact,
         count: cell.count,
-        sumLikelihood: cell.sumLikelihood,
-        sumImpact: cell.sumImpact,
+
+        // Backend matrix DOES NOT provide sums → replace with null or "-"
+        sumLikelihood: null,
+        sumImpact: null,
+
+        // Add fallback values
+        avgLikelihood: trueLikelihood,
+        avgImpact: trueImpact,
+
         items: cell.items,
       });
     };
@@ -375,8 +412,8 @@ function RechartsHeatmap({ items, onCellClick }) {
             </div>
             {tooltip.count > 0 && (
               <div className="text-xs text-gray-500 mt-1">
-                Avg L: {(tooltip.sumLikelihood / tooltip.count).toFixed(2)} •
-                Avg I: {(tooltip.sumImpact / tooltip.count).toFixed(2)}
+                Avg L: {tooltip.avgLikelihood ?? "-"} • Avg I:{" "}
+                {tooltip.avgImpact ?? "-"}
               </div>
             )}
           </div>
@@ -386,10 +423,9 @@ function RechartsHeatmap({ items, onCellClick }) {
   );
 }
 
-function RiskDistribution({ items }) {
-  const counts = { Low: 0, Medium: 0, High: 0, "Very High": 0, Critical: 0 };
-  items.forEach((i) => counts[i.riskCategory]++);
-  const total = Math.max(1, items.length);
+function RiskDistribution({ backendData }) {
+  const counts = backendData;
+  const total = Object.values(counts).reduce((a, b) => a + b, 0) || 1;
 
   return (
     <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-4 shadow">
@@ -422,21 +458,21 @@ function RiskDistribution({ items }) {
 }
 
 // ---------- Table row ----------
-function TaskRow({ item, onOpen }) {
+function TaskRow({ item, onOpen, onEdit }) {
   const riskColor = chooseHeatColor(item.impact, item.likelihood);
   return (
     <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition">
-      <td className="px-3 py-2 text-sm font-mono">{item.id}</td>
+      <td className="px-3 py-2 text-sm font-mono">{item.action_id}</td>
       <td className="px-3 py-2 text-sm">{item.title}</td>
-      <td className="px-3 py-2 text-sm">{item.assignedToName}</td>
-      <td className="px-3 py-2 text-sm">{formatDate(item.dueDate)}</td>
+      <td className="px-3 py-2 text-sm">{item.assignee.full_name}</td>
+      <td className="px-3 py-2 text-sm">{formatDate(item.due_date)}</td>
       <td className="px-3 py-2 text-sm">{item.status}</td>
       <td className="px-3 py-2 text-sm">
         <span
           className="px-2 py-1 rounded-full text-xs"
           style={{ background: riskColor, color: "#000" }}
         >
-          {item.riskCategory} ({item.riskScore})
+          {item.risk_category} ({item.risk_score})
         </span>
       </td>
       <td className="px-3 py-2 text-sm">
@@ -450,6 +486,7 @@ function TaskRow({ item, onOpen }) {
           </button>
           <button
             title="Edit"
+            onClick={() => onEdit(item)}
             className={`} hover:text-blue-500 cursor-pointer`}
           >
             <Pencil className="w-4 h-4" />
@@ -494,12 +531,88 @@ export default function ActionDashboard({
   const [page, setPage] = useState(1);
   const perPage = 8;
   const [open, setOpen] = useState(false);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [searchDebounced, setSearchDebounced] = useState("");
+
+  const [summary, setSummary] = useState({
+    total: 0,
+    openOverdue: 0,
+    highRisk: 0,
+    linkedCount: 0,
+    evidence: 0,
+  });
+
+  const [riskData, setRiskData] = useState({
+    Low: 0,
+    Medium: 0,
+    High: 0,
+    "Very High": 0,
+    Critical: 0,
+  });
+
+  const [heatmapMatrix, setHeatmapMatrix] = useState(
+    Array(5)
+      .fill(0)
+      .map(() => Array(5).fill(0))
+  );
+
+  const [heatmapMeta, setHeatmapMeta] = useState([]);
+
+  const [alerts, setAlerts] = useState({
+    overdue: [],
+    critical: [],
+    upcoming: [],
+  });
+
+  const [loadingAlerts, setLoadingAlerts] = useState(false);
+  const [alertModalOpen, setAlertModalOpen] = useState(false);
+  const [alertModalTitle, setAlertModalTitle] = useState("");
+  const [alertModalItems, setAlertModalItems] = useState([]);
+
+  const [backendItems, setBackendItems] = useState([]);
+  const [tableLoading, setTableLoading] = useState(false);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    total: 0,
+    pages: 1,
+  });
 
   function handleCreate(newItem) {
     // newItem contains all fields including auto-generated id & createdDate
     // push to server or update state
     console.log("Created", newItem);
     setOpen(false);
+  }
+
+  function openAlertModal(type, items) {
+    const titles = {
+      overdue: "Overdue Tasks",
+      critical: "Critical Risk Items",
+      upcoming: "Due in Next 7 Days",
+    };
+
+    setAlertModalTitle(titles[type] || "Alerts");
+    setAlertModalItems(items || []);
+    setAlertModalOpen(true);
+  }
+
+  function handleOpen(item) {
+    setSelectedItem(item);
+    setViewModalOpen(true);
+  }
+
+  function handleEdit(item) {
+    setSelectedItem(item);
+    setEditModalOpen(true);
+  }
+
+  function handleSaveEdit(updated) {
+    // update only UI for now
+    setBackendItems((prev) =>
+      prev.map((it) => (it.id === selectedItem.id ? { ...it, ...updated } : it))
+    );
   }
 
   const currentUser = {
@@ -549,42 +662,235 @@ export default function ActionDashboard({
 
   const total = filtered.length;
   const pages = Math.max(1, Math.ceil(total / perPage));
-  const pageItems = filtered.slice((page - 1) * perPage, page * perPage);
+  const pageItems = backendItems;
 
-  const summary = useMemo(() => {
-    const total = items.length;
-    const openOverdue = items.filter(
-      (i) => i.status === "Open" || i.status === "Overdue"
-    ).length;
-    const highRisk = items.filter((i) =>
-      ["High", "Very High", "Critical"].includes(i.riskCategory)
-    ).length;
-    const linkedCount = items.filter(
-      (i) => i.linked.ropa || i.linked.assessment
-    ).length;
-    const evidence = items.filter((i) => i.evidenceCollected).length;
-    return { total, openOverdue, highRisk, linkedCount, evidence };
-  }, [items]);
+  useEffect(() => {
+    const t = setTimeout(() => setSearchDebounced(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
 
-  function handleOpen(item) {
-    alert(`Open action item ${item.id} (placeholder)`);
+  useEffect(() => {
+    async function fetchSummary() {
+      try {
+        const res = await getActionItemSummary();
+        const s = res.data.summary;
+
+        setSummary({
+          total: s.total_action_items,
+          openOverdue: s.open_overdue_items,
+          highRisk: s.high_risk_items,
+          linkedCount: (s.linked_to_ropa || 0) + (s.linked_to_assessments || 0),
+          evidence: s.items_with_evidence || 0,
+        });
+      } catch (err) {
+        console.error("Summary fetch error:", err);
+      }
+    }
+
+    fetchSummary();
+  }, []);
+
+  useEffect(() => {
+    async function fetchRiskDistribution() {
+      try {
+        const res = await getRiskDistribution();
+        const { labels, data } = res.data;
+
+        const mapped = {};
+        labels.forEach((label, index) => {
+          mapped[label] = data[index] || 0;
+        });
+
+        setRiskData(mapped);
+      } catch (err) {
+        console.error("Risk distribution fetch error:", err);
+      }
+    }
+
+    fetchRiskDistribution();
+  }, []);
+
+  useEffect(() => {
+    async function fetchHeatmap() {
+      try {
+        const res = await getRiskHeatmap();
+        const backend = res.data.heatmap;
+
+        setHeatmapMatrix(backend.matrix);
+
+        // We don't get all items from backend, so drilldown will rely on matrix only.
+        // If you eventually want item lists, you must extend backend.
+      } catch (err) {
+        console.error("Heatmap fetch failed:", err);
+      }
+    }
+
+    fetchHeatmap();
+  }, []);
+
+  useEffect(() => {
+    async function loadAlerts() {
+      try {
+        setLoadingAlerts(true);
+        const res = await getAlerts();
+        setAlerts(res.data.alerts);
+      } catch (err) {
+        console.error("Failed to load alerts", err);
+      } finally {
+        setLoadingAlerts(false);
+      }
+    }
+
+    loadAlerts();
+  }, []);
+
+  async function loadTableData() {
+    try {
+      setTableLoading(true);
+
+      const params = {
+        page,
+        limit: perPage,
+      };
+
+      // SEARCH
+      if (searchDebounced.trim() !== "")
+        params.search_query = searchDebounced.trim();
+
+      // STATUS (lowercase, snake_case)
+      if (statusFilter !== "All") {
+        params.status = statusFilter;
+      }
+
+      // RISK CATEGORY
+      if (riskFilter !== "All") {
+        params.risk_level = riskFilter;
+      }
+
+      // DEPARTMENT
+      if (deptFilter !== "All") {
+        params.department = deptFilter;
+      }
+
+      // LINKED FILTER
+      if (linkedFilter === "RoPA") {
+        params.linked_component = true;
+      } else if (linkedFilter === "Assessment") {
+        params.linked_component = true;
+      }
+
+      // DATE FILTERS
+      if (dateFrom && dateTo) {
+        params.date_range = `${dateFrom},${dateTo}`;
+      }
+
+      const res = await getActionItemsTable(params);
+
+      setBackendItems(res.data.actionItems || []);
+      setPagination(res.data.pagination);
+    } catch (err) {
+      console.error("Failed to load table", err);
+    } finally {
+      setTableLoading(false);
+    }
   }
+
+  useEffect(() => {
+    loadTableData();
+  }, [
+    page,
+    searchDebounced,
+    statusFilter,
+    riskFilter,
+    deptFilter,
+    linkedFilter,
+    dateFrom,
+    dateTo,
+  ]);
 
   // function handleCreate() {
   //   alert("Open Create Action Item panel (placeholder)");
   // }
 
-  function handleExport() {
-    exportCSV(
-      items.map((i) => ({
-        id: i.id,
-        title: i.title,
-        assignedTo: i.assignedToName,
-        status: i.status,
-        risk: i.riskCategory,
-        dueDate: i.dueDate,
-      }))
-    );
+  function exportFullActionItemsCSV(items, filename = "action_items.csv") {
+    if (!items || items.length === 0) return;
+
+    const flat = items.map((i) => ({
+      id: i.id,
+      action_id: i.action_id,
+      ropa_id: i.ropa_id,
+      title: i.title,
+      description: i.description,
+      assigned_to: i.assigned_to,
+      assignee_name: i.assignee?.full_name || "",
+      assignee_email: i.assignee?.email || "",
+      due_date: i.due_date,
+      status: i.status,
+      priority: i.priority,
+      created_by: i.created_by,
+      creator_name: i.creator?.full_name || "",
+      creator_email: i.creator?.email || "",
+      likelihood: i.likelihood,
+      impact: i.impact,
+      risk_score: i.risk_score,
+      risk_category: i.risk_category,
+      linked_assessment_id: i.linked_assessment_id,
+      linked_data_mapping_id: i.linked_data_mapping_id,
+      linked_assessment_title: i.linkedAssessment?.title || "",
+      linked_assessment_type: i.linkedAssessment?.type || "",
+      ropa_name: i.ropa?.name || "",
+      ropa_identifier: i.ropa?.ropa_id || "",
+      comments: i.comments,
+      notes: i.notes,
+      department: i.department,
+      completed_at: i.completed_at,
+      created_at: i.createdAt,
+      updated_at: i.updatedAt,
+    }));
+
+    const headers = Object.keys(flat[0]);
+    const csv = [
+      headers.join(","),
+      ...flat.map((row) =>
+        headers.map((h) => JSON.stringify(row[h] ?? "")).join(",")
+      ),
+    ].join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+
+    URL.revokeObjectURL(link.href);
+  }
+
+  async function handleExport() {
+    try {
+      // 1) If filters are applied → export shown (backendItems)
+      const isFiltered =
+        statusFilter !== "All" ||
+        riskFilter !== "All" ||
+        deptFilter !== "All" ||
+        linkedFilter !== "All" ||
+        (dateFrom && dateTo) ||
+        search.length > 0 ||
+        cellFilter !== null;
+
+      if (isFiltered) {
+        exportFullActionItemsCSV(backendItems, "filtered_action_items.csv");
+        return;
+      }
+
+      // 2) Else → fetch ALL items from backend (no pagination)
+      const res = await getActionItemsTable({ page: 1, limit: 99999 });
+
+      exportFullActionItemsCSV(res.data.actionItems, "all_action_items.csv");
+    } catch (err) {
+      console.error("Export failed", err);
+      alert("Export failed");
+    }
   }
 
   function handleUploadEvidence(e) {
@@ -730,10 +1036,10 @@ export default function ActionDashboard({
               className="rounded-md border px-2 py-1 bg-white dark:bg-gray-800 text-sm"
             >
               <option value="All">All Statuses</option>
-              <option>Open</option>
-              <option>In Progress</option>
-              <option>Completed</option>
-              <option>Overdue</option>
+              <option value="open">Open</option>
+              <option value="in_progress">In Progress</option>
+              <option value="completed">Completed</option>
+              <option value="overdue">Overdue</option>
             </select>
           </div>
           <div>
@@ -815,36 +1121,88 @@ export default function ActionDashboard({
               ) : null}
             </div>
 
-            <RechartsHeatmap items={items} onCellClick={handleHeatCellClick} />
+            <RechartsHeatmap heatmapMatrix={heatmapMatrix} />
           </div>
 
           <div className="lg:col-span-1">
-            <RiskDistribution items={items} />
+            <RiskDistribution backendData={riskData} />
 
             <div className="mt-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-4 shadow">
               <h4 className="font-semibold text-gray-900 dark:text-white">
                 Notifications & Alerts
               </h4>
-              <div className="mt-3 space-y-2">
-                <div className="flex items-center gap-2 p-2 rounded-md bg-yellow-50 dark:bg-yellow-900/10">
-                  <Bell className="h-5 w-5 text-yellow-600" />
-                  <div className="text-sm text-gray-700 dark:text-gray-200">
-                    3 overdue tasks. <button className="underline">View</button>
-                  </div>
+              {loadingAlerts ? (
+                <div className="mt-3 text-sm text-gray-500">
+                  Loading alerts…
                 </div>
-                <div className="flex items-center gap-2 p-2 rounded-md bg-red-50 dark:bg-red-900/10">
-                  <Bell className="h-5 w-5 text-red-600" />
-                  <div className="text-sm text-gray-700 dark:text-gray-200">
-                    2 critical risk items — escalation suggested.
-                  </div>
+              ) : (
+                <div className="mt-3 space-y-2">
+                  {/* Overdue Alerts */}
+                  {/* Overdue Alerts */}
+                  {alerts.overdue.length > 0 && (
+                    <div className="flex items-center gap-2 p-2 rounded-md bg-red-50 dark:bg-red-900/20">
+                      <Bell className="h-5 w-5 text-red-600" />
+                      <div className="text-sm text-gray-700 dark:text-gray-200">
+                        {alerts.overdue.length} overdue tasks.{" "}
+                        <button
+                          className="underline cursor-pointer"
+                          onClick={() =>
+                            openAlertModal("overdue", alerts.overdue)
+                          }
+                        >
+                          View
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Critical Alerts */}
+                  {alerts.critical.length > 0 && (
+                    <div className="flex items-center gap-2 p-2 rounded-md bg-orange-50 dark:bg-orange-900/20">
+                      <Bell className="h-5 w-5 text-orange-600" />
+                      <div className="text-sm text-gray-700 dark:text-gray-200">
+                        {alerts.critical.length} critical risk items —
+                        escalation suggested.{" "}
+                        <button
+                          className="underline cursor-pointer"
+                          onClick={() =>
+                            openAlertModal("critical", alerts.critical)
+                          }
+                        >
+                          View
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Upcoming Alerts */}
+                  {alerts.upcoming.length > 0 && (
+                    <div className="flex items-center gap-2 p-2 rounded-md bg-yellow-50 dark:bg-yellow-900/20">
+                      <Bell className="h-5 w-5 text-yellow-600" />
+                      <div className="text-sm text-gray-700 dark:text-gray-200">
+                        {alerts.upcoming.length} items due in next 7 days.{" "}
+                        <button
+                          className="underline cursor-pointer"
+                          onClick={() =>
+                            openAlertModal("upcoming", alerts.upcoming)
+                          }
+                        >
+                          View
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* No alerts */}
+                  {alerts.overdue.length === 0 &&
+                    alerts.critical.length === 0 &&
+                    alerts.upcoming.length === 0 && (
+                      <div className="text-sm text-gray-500 dark:text-gray-300">
+                        No alerts at the moment.
+                      </div>
+                    )}
                 </div>
-                <div className="flex items-center gap-2 p-2 rounded-md bg-green-50 dark:bg-green-900/10">
-                  <FilePlus className="h-5 w-5 text-[#1a7f4d]" />
-                  <div className="text-sm text-gray-700 dark:text-gray-200">
-                    5 items have evidence pending upload.
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
@@ -860,11 +1218,11 @@ export default function ActionDashboard({
                 Page
               </label>
               <select
-                value={page}
+                value={pagination.page}
                 onChange={(e) => setPage(Number(e.target.value))}
                 className="rounded-md border px-2 py-1 bg-white dark:bg-gray-800 text-sm"
               >
-                {Array.from({ length: pages }).map((_, idx) => (
+                {Array.from({ length: pagination.pages }).map((_, idx) => (
                   <option key={idx} value={idx + 1}>
                     {idx + 1}
                   </option>
@@ -888,7 +1246,12 @@ export default function ActionDashboard({
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                 {pageItems.map((it) => (
-                  <TaskRow key={it.id} item={it} onOpen={handleOpen} />
+                  <TaskRow
+                    key={it.id}
+                    item={it}
+                    onOpen={handleOpen}
+                    onEdit={handleEdit}
+                  />
                 ))}
               </tbody>
             </table>
@@ -896,18 +1259,23 @@ export default function ActionDashboard({
 
           <div className="mt-4 flex items-center justify-between">
             <div className="text-sm text-gray-600 dark:text-gray-300">
-              Showing {(page - 1) * perPage + 1} -{" "}
-              {Math.min(page * perPage, total)} of {total} results
+              Showing {(pagination.page - 1) * perPage + 1} –{" "}
+              {Math.min(pagination.page * perPage, pagination.total)} of{" "}
+              {pagination.total} results
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setPage(Math.max(1, page - 1))}
+                onClick={() => setPage(Math.max(1, pagination.page - 1))}
+                disabled={pagination.page === 1}
                 className="px-3 py-2 rounded-md border"
               >
                 Prev
               </button>
               <button
-                onClick={() => setPage(Math.min(pages, page + 1))}
+                onClick={() =>
+                  setPage(Math.min(pagination.pages, pagination.page + 1))
+                }
+                disabled={pagination.page === pagination.pages}
                 className="px-3 py-2 rounded-md border"
               >
                 Next
@@ -916,6 +1284,69 @@ export default function ActionDashboard({
           </div>
         </div>
       </div>
+      {alertModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 w-full max-w-lg shadow-xl">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold dark:text-white">
+                {alertModalTitle}
+              </h3>
+              <button
+                onClick={() => setAlertModalOpen(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="mt-4 max-h-80 overflow-y-auto space-y-3">
+              {alertModalItems.map((item, idx) => (
+                <div
+                  key={idx}
+                  className="p-3 border rounded-lg bg-gray-50 dark:bg-gray-700/30 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                  onClick={() => {
+                    // OPTIONAL → highlight item in main table
+                    setSearch(item.title || "");
+                    setAlertModalOpen(false);
+                  }}
+                >
+                  <div className="font-medium dark:text-white">
+                    {item.title || "Untitled"}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-300">
+                    Assigned to: {item.assignee?.full_name || "Unassigned"}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-300">
+                    Due: {formatDate(item.due_date)}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => setAlertModalOpen(false)}
+                className="px-4 py-2 rounded-md border dark:bg-gray-300 cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <ViewActionItemModal
+        isOpen={viewModalOpen}
+        onClose={() => setViewModalOpen(false)}
+        item={selectedItem}
+      />
+
+      <EditActionItemModal
+        isOpen={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        item={selectedItem}
+        onSave={handleSaveEdit}
+      />
     </div>
   );
 }

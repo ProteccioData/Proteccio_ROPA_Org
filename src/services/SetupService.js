@@ -5,16 +5,18 @@ import axiosInstance from "../utils/axiosInstance";
 // CONFIG TYPES MAP
 // ===============================
 export const CONFIG_TYPE_MAP = {
+  // core config modules
   data_collection: "data_collection",
-  data_elements: "data_element",
+  data_elements: "data_element",      // UI plural → backend singular
   data_deletion: "data_deletion",
+  data_subjects: "data_subject",      // UI plural → backend singular
+  data_transfer: "data_retention",    // backend DOES NOT HAVE `data_transfer`
   department: "department",
   organization: "organization",
-  data_subjects: "data_subject",
   purpose: "purpose",
   legal_basis: "legal_basis",
 
-  // security modules mapping
+  // security modules
   compliance_measures: "security_compliance",
   operational_measures: "security_operational",
   ethical_measures: "security_ethical",
@@ -25,6 +27,7 @@ export const CONFIG_TYPE_MAP = {
   physical_security: "security_physical",
   risk_management: "security_risk_management",
 };
+
 
 export const SECURITY_TYPES = Object.values(CONFIG_TYPE_MAP).filter((v) =>
   v.startsWith("security_")

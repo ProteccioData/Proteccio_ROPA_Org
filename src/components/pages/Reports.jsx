@@ -40,9 +40,15 @@ export default function ReportsPage() {
   const [selectedReportFormat, setSelectedReportFormat] = useState({});
   const [form, setForm] = useState({
     reportType: "",
+    name: "",
+    description: "",
     frequency: "daily",
     date: "",
+    format: "pdf",
+    dateFrom: "",
+    dateTo: "",
   });
+
   const [stats, setStats] = useState({
     generated: 0,
     scheduled: 0,
@@ -124,12 +130,12 @@ export default function ReportsPage() {
     try {
       await generateReport({
         report_type: form.reportType,
-        name: form.name,
-        description: form.description,
+        name: form.name || undefined,
+        description: form.description || undefined,
         format: form.format,
         parameters: {
-          date_from: form.dateFrom,
-          date_to: form.dateTo,
+          date_from: form.dateFrom || undefined,
+          date_to: form.dateTo || undefined,
         },
       });
 
@@ -170,7 +176,7 @@ export default function ReportsPage() {
     await scheduleReport({
       report_type: form.reportType,
       frequency: form.frequency,
-      scheduled_at: form.date,
+      scheduled_at: form.date ? new Date(form.date).toISOString() : undefined,
       format: form.format,
       parameters: {},
     });
@@ -373,15 +379,28 @@ export default function ReportsPage() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
                   Report Type
                 </label>
-                <input
-                  type="text"
-                  placeholder="Enter report name"
+
+                <select
                   value={form.reportType}
                   onChange={(e) =>
                     setForm({ ...form, reportType: e.target.value })
                   }
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:border-green-400"
-                />
+                >
+                  <option value="">Select report type</option>
+                  <option value="full_ropa">Full ROPA</option>
+                  <option value="departmental_summary">
+                    Departmental Summary
+                  </option>
+                  <option value="third_party_sharing">
+                    Third Party Sharing
+                  </option>
+                  <option value="data_categories">Data Categories</option>
+                  <option value="legal_basis">Legal Basis</option>
+                  <option value="risk_impact">Risk Impact</option>
+                  <option value="change_history">Change History</option>
+                  <option value="custom">Custom Report</option>
+                </select>
               </div>
 
               {/* Frequency */}
@@ -399,6 +418,8 @@ export default function ReportsPage() {
                   <option value="daily">Daily</option>
                   <option value="weekly">Weekly</option>
                   <option value="monthly">Monthly</option>
+                  <option value="quarterly">Quarterly</option>
+                  <option value="yearly">Yearly</option>
                 </select>
               </div>
 

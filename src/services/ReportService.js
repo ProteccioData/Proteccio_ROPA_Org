@@ -17,3 +17,7 @@ export const downloadReport = (id) =>
 export const deleteReport = (id) => {
   return axiosInstance.delete(`/portal/reports/${id}`);
 };
+
+export const getAlerts = () => {
+  return axiosInstance.get("/portal/action-items/dashboard/alerts");
+};
