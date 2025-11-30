@@ -4,17 +4,53 @@ import { Bell, User, LogOut, Settings, FileText } from "lucide-react";
 import SearchBar from "../ui/SearchBar";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import NotificationSidebar from "../modules/NotificationsSidebar";
+import NotificationService from "../../services/NotificationService";
+import Portal from "../../utils/portal";
+import GlobalSearchBar from "../modules/GlobalSearchBar";
 
 export default function Topbar() {
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const { logout, user } = useAuth();
 
   const fullName = user?.full_name || "User";
   const email = user?.email || "email@example.com";
   const initial = fullName?.charAt(0).toUpperCase();
+
+  const loadNotifications = async () => {
+    try {
+      const res = await NotificationService.getAllNotifications({
+        page: 1,
+        limit: 30,
+      });
+      setNotifications(res.notifications || []);
+    } catch (err) {
+      console.error("Failed to load notifications:", err);
+    }
+  };
+
+  const loadUnread = async () => {
+    try {
+      const res = await NotificationService.getUnreadCount();
+      setUnreadCount(res.count || 0);
+    } catch (err) {}
+  };
+
+  useEffect(() => {
+    loadUnread();
+    const int = setInterval(loadUnread, 30000);
+    return () => clearInterval(int);
+  }, []);
+
+  useEffect(() => {
+    if (notifOpen) loadNotifications();
+  }, [notifOpen]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -64,7 +100,7 @@ export default function Topbar() {
         className="flex-1 max-w-2xl mx-4"
       >
         <div className="relative">
-          <SearchBar />
+          <GlobalSearchBar />
         </div>
       </motion.div>
 
@@ -88,9 +124,20 @@ export default function Topbar() {
         <motion.button
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.95 }}
-          className="p-2 rounded-full border border-[#828282]/60 dark:border-gray-600/60 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm hover:bg-gray-100/80 dark:hover:bg-gray-700/80 transition cursor-pointer"
+          onClick={() => setNotifOpen(true)}
+          className="relative p-2 rounded-full border border-[#828282]/60 dark:border-gray-600/60 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm hover:bg-gray-100/80 dark:hover:bg-gray-700/80 transition cursor-pointer"
         >
           <Bell className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+          {unreadCount > 0 && (
+            <span
+              className="
+              absolute -top-1 -right-1 bg-red-500 text-white text-[10px]
+              w-4 h-4 flex items-center justify-center rounded-full shadow
+            "
+            >
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
+          )}
         </motion.button>
 
         {/* Profile Dropdown */}
@@ -156,6 +203,13 @@ export default function Topbar() {
             )}
           </AnimatePresence>
         </div>
+        <Portal>
+          <NotificationSidebar
+            isOpen={notifOpen}
+            onClose={() => setNotifOpen(false)}
+            onUnreadChange={(count) => setUnreadCount(count)}
+          />
+        </Portal>
       </div>
     </header>
   );

@@ -40,6 +40,7 @@ import {
 } from "../../services/DashboardService";
 import { useAuth } from "../../context/AuthContext";
 import { getAssessments } from "../../services/AssessmentService";
+import { useNavigate } from "react-router-dom";
 
 ChartJS.register(
   CategoryScale,
@@ -73,6 +74,8 @@ export default function Home() {
   const [transferStats, setTransferStats] = useState(null);
   const [recentTransfers, setRecentTransfers] = useState([]);
   const [recentReports, setRecentReports] = useState([]);
+
+  const navigate = useNavigate();
 
   const [ropaPieData, setRopaPieData] = useState([]);
 
