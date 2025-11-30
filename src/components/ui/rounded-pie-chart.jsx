@@ -56,6 +56,7 @@ export function RoundedPieChart({ data }) {
             fontSize={12}
             fontWeight={500}
             fill="currentColor"
+            formatter={(value) => (value > 0 ? value : "")}
           />
         </Pie>
       </PieChart>

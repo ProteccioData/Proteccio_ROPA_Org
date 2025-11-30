@@ -34,6 +34,12 @@ export const getSVGExport = (id, svg_data) => {
   });
 };
 
+export const getPNGExport = (id) => {
+  return axiosInstance.get(`/portal/data-mappings/${id}/png`, {
+    responseType: "blob",
+  });
+};
+
 export const archiveDataMapping = (id) => {
   return axiosInstance.post(`/portal/data-mappings/${id}/archive`);
 };

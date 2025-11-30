@@ -23,6 +23,7 @@ import {
   archiveDataMapping,
   restoreDataMapping,
   getSVGExport,
+  getPNGExport,
 } from "../../services/DataMappingService";
 import ViewFlowModal from "../modules/ViewFlowModal";
 import ConfirmationModal from "../ui/ConfirmationModal";
@@ -44,6 +45,10 @@ export default function DataMappingTable() {
     flow: null,
   });
   const [confirmLoading, setConfirmLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 25;
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
   const toggleMenu = (id) => {
     setOpenMenu(openMenu === id ? null : id);
@@ -52,8 +57,15 @@ export default function DataMappingTable() {
   const fetchList = async () => {
     try {
       setLoading(true);
-      const res = await getAllDataMappings();
+      const res = await getAllDataMappings({
+        page: currentPage,
+        limit: ITEMS_PER_PAGE,
+        status: filterStatus !== "all" ? filterStatus : undefined,
+      });
+
       setMappings(res.data?.dataMappings || []);
+      setTotalPages(res.data?.pagination?.pages || 1);
+      setTotalCount(res.data?.pagination?.total || 0);
     } catch (err) {
       console.error("Failed to fetch data mappings:", err);
     } finally {
@@ -63,7 +75,7 @@ export default function DataMappingTable() {
 
   useEffect(() => {
     fetchList();
-  }, []);
+  }, [currentPage, filterStatus]);
 
   const handleOpenCreateModal = () => {
     setEditingFlow(null);
@@ -205,19 +217,28 @@ export default function DataMappingTable() {
     }
   };
 
-  const handleExportPNG = () => {
-    if (!stageRef.current) return;
+  // const handleExportPNG = async (flowId, name = "diagram") => {
+  //   try {
+  //     const res = await getPNGExport(flowId);
 
-    const uri = stageRef.current.toDataURL({
-      pixelRatio: 3,
-      mimeType: "image/png",
-    });
+  //     // Create blob and download link
+  //     const blob = new Blob([res.data], { type: "image/png" });
+  //     const url = URL.createObjectURL(blob);
 
-    const a = document.createElement("a");
-    a.href = uri;
-    a.download = `${flowMeta?.name || "diagram"}.png`;
-    a.click();
-  };
+  //     const a = document.createElement("a");
+  //     a.href = url;
+  //     a.download = `${name.replace(/\s+/g, "_")}.png`;
+  //     a.click();
+
+  //     URL.revokeObjectURL(url);
+  //     setOpenMenu(null);
+  //   } catch (err) {
+  //     console.error("PNG export failed:", err);
+  //     alert(
+  //       err?.response?.data?.error || err?.message || "Failed to download PNG"
+  //     );
+  //   }
+  // };
 
   const filteredMappings = mappings.filter((flow) => {
     if (filterStatus === "all") return true;
@@ -282,7 +303,7 @@ export default function DataMappingTable() {
             {loading && <div className="p-4">Loading...</div>}
 
             {!loading &&
-              filteredMappings.map((flow, index) => {
+              mappings.map((flow, index) => {
                 const isLast = index === filteredMappings.length - 1;
 
                 // Friendly fallbacks if older objects have different keys
@@ -309,12 +330,20 @@ export default function DataMappingTable() {
                     </div>
                     <div className="text-sm text-gray-800 dark:text-gray-100">
                       {createdAt
-                        ? new Date(createdAt).toLocaleDateString()
+                        ? new Date(createdAt).toLocaleDateString("en-IN", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                          })
                         : "—"}
                     </div>
                     <div className="text-sm text-gray-800 dark:text-gray-100">
                       {updatedAt
-                        ? new Date(updatedAt).toLocaleDateString()
+                        ? new Date(updatedAt).toLocaleDateString("en-IN", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                          })
                         : "—"}
                     </div>
                     <div className="text-sm">
@@ -369,11 +398,12 @@ export default function DataMappingTable() {
                             }`}
                           >
                             {/* <button
-                              onClick={() => handleExportPNG()}
+                              onClick={() => handleExportPNG(flow.id, title)}
                               className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                             >
-                              <Download size={16} className="mr-2" /> Export
+                              <Download size={16} className="mr-2" /> Export PNG
                             </button> */}
+
                             <button
                               onClick={() => handleArchiveFlow(flow)}
                               className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -411,6 +441,32 @@ export default function DataMappingTable() {
               />
             </div>
           )}
+
+          {/* Pagination Controls */}
+          <div className="flex justify-between items-center mt-6 px-4 py-3 border-t border-gray-200 dark:border-gray-700">
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              Showing page <b>{currentPage}</b> of <b>{totalPages}</b> — Total:{" "}
+              <b>{totalCount}</b>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => p - 1)}
+                className="px-3 py-1 rounded-md border dark:border-gray-600 disabled:opacity-40"
+              >
+                Prev
+              </button>
+
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((p) => p + 1)}
+                className="px-3 py-1 rounded-md border dark:border-gray-600 disabled:opacity-40"
+              >
+                Next
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 

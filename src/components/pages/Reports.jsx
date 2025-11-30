@@ -140,8 +140,8 @@ export default function ReportsPage() {
       });
 
       addToast("success", "Report created");
+      await fetchReports();
       setIsScheduleReportOpen(false);
-      fetchReports();
     } catch (err) {
       addToast("error", "Failed to create report");
     }
@@ -180,8 +180,9 @@ export default function ReportsPage() {
       format: form.format,
       parameters: {},
     });
+    await fetchReports();
     setIsScheduleDownloadOpen(false);
-    setIsScheduleReportOpen(false);
+    // setIsScheduleReportOpen(false);
   };
 
   useEffect(() => {
@@ -214,20 +215,36 @@ export default function ReportsPage() {
     }
   };
 
-  const handleDownload = async (id, format) => {
+  const handleDownload = async (id, selectedFormat) => {
     try {
-      const res = await downloadReport(id, format);
+      const res = await downloadReport(id);
 
-      const blob = new Blob([res.data]);
+      // Detect MIME from server response
+      const mimeType =
+        res.headers["content-type"] || "application/octet-stream";
+
+      // Convert string → Blob
+      const blob = new Blob([res.data], { type: mimeType });
+
+      // Determine file extension (backend format wins)
+      const contentDisposition = res.headers["content-disposition"];
+      let filename = "report.json";
+
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="(.+)"/);
+        if (match) filename = match[1];
+      }
+
+      // Create download link
       const url = window.URL.createObjectURL(blob);
-
       const link = document.createElement("a");
       link.href = url;
-      link.download = `report_${id}_${Date.now()}.${format}`;
+      link.download = filename;
       link.click();
 
       addToast("success", "Report downloaded");
     } catch (err) {
+      console.error(err);
       addToast("error", "Download failed");
     }
   };
@@ -340,7 +357,10 @@ export default function ReportsPage() {
               <button
                 className="flex-1 bg-green-400 hover:bg-green-500 text-black font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-all duration-200 transform hover:scale-105 active:scale-95"
                 onClick={() =>
-                  handleDownload(report.id, selectedReportFormat[report.id])
+                  handleDownload(
+                    report.id,
+                    selectedReportFormat[report.id] || report.format
+                  )
                 }
               >
                 <Download className="w-4 h-4" />
@@ -461,7 +481,7 @@ export default function ReportsPage() {
               <X size={20} />
             </button>
 
-            <h2 className="text-xl font-semibold mb-4">Schedule New Report</h2>
+            <h2 className="text-xl font-semibold mb-4">Generate New Report</h2>
 
             <form onSubmit={handleCreateReport} className="space-y-4">
               {/* Report Name */}
@@ -472,9 +492,9 @@ export default function ReportsPage() {
                 <input
                   type="text"
                   placeholder="Enter report name"
-                  value={form.reportType}
+                  value={form.name}
                   onChange={(e) =>
-                    setForm({ ...form, reportType: e.target.value })
+                    setForm({ ...form, name: e.target.value })
                   }
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:border-green-400"
                 />

@@ -40,12 +40,31 @@ export default function ViewFlowModal({ open, onClose, flow, onViewDiagram }) {
           <InfoCard label="Created By" value={creator?.full_name || "-"} />
           <InfoCard
             label="Created At"
-            value={createdAt ? new Date(createdAt).toLocaleString() : "—"}
+            value={
+              createdAt
+                ? new Date(createdAt).toLocaleString("en-IN", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                  })
+                : "—"
+            }
           />
-          <InfoCard label="Last Modified By" value={lastModifier?.full_name || "—"} />
+          <InfoCard
+            label="Last Modified By"
+            value={lastModifier?.full_name || "—"}
+          />
           <InfoCard
             label="Last Updated"
-            value={updatedAt ? new Date(updatedAt).toLocaleString() : "—"}
+            value={
+              updatedAt
+                ? new Date(updatedAt).toLocaleString("en-IN", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                  })
+                : "—"
+            }
           />
         </section>
 

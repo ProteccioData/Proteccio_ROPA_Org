@@ -28,7 +28,7 @@ const USER_ROLES = {
 const currentUser = {
   id: "user1",
   name: "John Doe",
-  role: USER_ROLES.PRIVACY_SME, // Change this to test different roles
+  role: USER_ROLES.PROCESS_OWNER, // Change this to test different roles
   email: "john.doe@company.com",
 };
 

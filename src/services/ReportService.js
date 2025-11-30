@@ -11,7 +11,7 @@ export const scheduleReport = (data) =>
 
 export const downloadReport = (id) =>
   axiosInstance.get(`/portal/reports/${id}/download`, {
-    responseType: "blob",
+    responseType: "text",
   });
 
 export const deleteReport = (id) => {

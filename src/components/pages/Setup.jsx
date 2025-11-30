@@ -74,7 +74,7 @@ const setupOptions = [
     description: "Define data elements and their types",
     items: 7,
     icon: <Database size={32} className="text-gray-700 dark:text-gray-300" />,
-    modalKey: "data_elements",
+    modalKey: "data_element",
   },
   {
     id: 4,
@@ -90,7 +90,7 @@ const setupOptions = [
     description: "Manage data subject categories and preferences",
     items: 89,
     icon: <UserCheck size={32} className="text-gray-700 dark:text-gray-300" />,
-    modalKey: "data_subjects",
+    modalKey: "data_subject",
   },
   {
     id: 6,
@@ -551,6 +551,19 @@ const securityModules = [
   { name: "Risk Management", icon: FileText, modalKey: "risk_management" },
 ];
 
+const ActionButton = ({ onClick, icon: Icon, color = "gray", title }) => (
+  <button
+    onClick={onClick}
+    className={`
+      p-2 rounded transition-colors
+      hover:bg-${color}-100 dark:hover:bg-${color}-900
+    `}
+    title={title}
+  >
+    <Icon size={16} className={`text-${color}-600`} />
+  </button>
+);
+
 export default function Setup() {
   const [activeModal, setActiveModal] = useState(null);
   const [nestedModal, setNestedModal] = useState(null);
@@ -881,14 +894,14 @@ export default function Setup() {
         modalKey === "edit_data_element" ||
         modalKey === "new_data_element"
       )
-        frontendType = "data_elements";
+        frontendType = "data_element";
 
       if (
         modalKey === "data_subject" ||
         modalKey === "edit_data_subject" ||
         modalKey === "new_data_subject"
       )
-        frontendType = "data_subjects";
+        frontendType = "data_subject";
 
       if (modalKey === "data_transfer") frontendType = "data_transfer";
 
@@ -1004,7 +1017,13 @@ export default function Setup() {
         </motion.button>
       </div>
       <div className="space-y-3">
-        {(assets.length ? assets : sampleAssets).map((asset) => (
+        {assets.length === 0 && (
+          <div className="text-center py-6 text-gray-500">
+            No configurations found
+          </div>
+        )}
+
+        {assets.map((asset) => (
           <div
             key={asset.id}
             className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
@@ -1025,34 +1044,32 @@ export default function Setup() {
               </div>
             </div>
             <div className="flex gap-2">
-              <button
-                onClick={() => handleView(asset)}
-                className="p-2 hover:bg-blue-100 dark:hover:bg-blue-900 rounded transition-colors"
+              <ActionButton
+                onClick={() => handleView(item)}
+                icon={Eye}
+                color="blue"
                 title="View"
-              >
-                <Eye size={16} className="text-blue-600" />
-              </button>
-              <button
-                onClick={() => handleEdit(asset, "edit_asset")}
-                className="p-2 hover:bg-green-100 dark:hover:bg-green-900 rounded transition-colors"
+              />
+              <ActionButton
+                onClick={() => handleEdit(item, editKey)}
+                icon={Edit}
+                color="green"
                 title="Edit"
-              >
-                <Edit size={16} className="text-green-600" />
-              </button>
-              <button
-                onClick={() => handleArchive(asset.id, "assets_management")}
-                className="p-2 hover:bg-orange-100 dark:hover:bg-orange-900 rounded transition-colors"
+              />
+              <ActionButton
+                // onClick={() => handleArchive(item.id, moduleKey)}
+                icon={Archive}
+                color="orange"
                 title="Archive"
-              >
-                <Archive size={16} className="text-orange-600" />
-              </button>
-              <button
-                onClick={() => handleDeleteAsset(asset.id)}
-                className="p-2 hover:bg-red-100 dark:hover:bg-red-900 rounded transition-colors"
-                title="Delete"
-              >
-                <Trash2 size={16} className="text-red-600" />
-              </button>
+              />
+              {/* {moduleKey === "assets_management" && (
+                <ActionButton
+                  onClick={() => handleDeleteAsset(item.id)}
+                  icon={Trash2}
+                  color="red"
+                  title="Delete"
+                />
+              )} */}
             </div>
           </div>
         ))}
@@ -1060,474 +1077,574 @@ export default function Setup() {
     </div>
   );
 
-  const renderDataCollectionList = () => (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-semibold dark:text-white">
-          Data Collection Configuration
-        </h3>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => handleAddNew("new_data_collection")}
-          className="bg-[#5DEE92] text-black px-4 py-2 rounded-lg font-medium hover:bg-green-500 transition-colors text-sm flex items-center gap-2"
-        >
-          <Plus size={16} />
-          New Collection
-        </motion.button>
-      </div>
-      <div className="space-y-3">
-        {(configs["data_collection"]?.length
-          ? configs["data_collection"]
-          : sampleDataCollections
-        ).map((collection) => (
-          <div
-            key={collection.id}
-            className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
+  const renderDataCollectionList = () => {
+    const list = configs["data_collection"] || [];
+
+    return (
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-lg font-semibold dark:text-white">
+            Data Collection Configuration
+          </h3>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => handleAddNew("new_data_collection")}
+            className="bg-[#5DEE92] text-black px-4 py-2 rounded-lg font-medium hover:bg-green-500 transition-colors text-sm flex items-center gap-2"
           >
-            <div className="flex-1">
-              <h4 className="font-medium text-gray-900 dark:text-white">
-                {collection.name}
-              </h4>
-              <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-400 mt-1">
-                <span>ID: {collection.config_id || collection.uniqueId}</span>
-                <span>
-                  Source:{" "}
-                  {collection.metadata?.source_type ||
-                    collection.sourceType ||
-                    collection.source_type}
-                </span>
+            <Plus size={16} />
+            New Collection
+          </motion.button>
+        </div>
+
+        <div className="space-y-3">
+          {list.length === 0 && (
+            <div className="text-center py-6 text-gray-500">
+              No configurations found
+            </div>
+          )}
+
+          {list.map((collection) => (
+            <div
+              key={collection.id}
+              className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
+            >
+              <div className="flex-1">
+                <h4 className="font-medium text-gray-900 dark:text-white">
+                  {collection.name}
+                </h4>
+                <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  <span>ID: {collection.config_id || collection.uniqueId}</span>
+                  <span>
+                    Source:{" "}
+                    {collection.metadata?.source_type ||
+                      collection.sourceType ||
+                      collection.source_type}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <ActionButton
+                  onClick={() => handleView(collection)}
+                  icon={Eye}
+                  color="blue"
+                  title="View"
+                />
+                <ActionButton
+                  onClick={() => handleEdit(collection, "edit_data_collection")}
+                  icon={Edit}
+                  color="green"
+                  title="Edit"
+                />
+                <ActionButton
+                  onClick={() =>
+                    handleArchive(collection.id, "data_collection")
+                  }
+                  icon={Archive}
+                  color="orange"
+                  title="Archive"
+                />
               </div>
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleView(collection)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-              >
-                <Eye size={16} />
-              </button>
-              <button
-                onClick={() => handleEdit(collection, "edit_data_collection")}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-              >
-                <Edit size={16} />
-              </button>
-              <button
-                onClick={() => handleArchive(collection.id, "data_collection")}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-              >
-                <Archive size={16} />
-              </button>
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
-  const renderDataTransferList = () => (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-semibold dark:text-white">
-          Data Transfer Configuration
-        </h3>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => handleAddNew("new_data_transfer")}
-          className="bg-[#5DEE92] text-black px-4 py-2 rounded-lg font-medium hover:bg-green-500 transition-colors text-sm flex items-center gap-2"
-        >
-          <Plus size={16} />
-          New Element
-        </motion.button>
-      </div>
-      <div className="space-y-3">
-        {(configs["data_transfer"]?.length
-          ? configs["data_trasnsfer"]
-          : sampleDataElements
-        ).map((element) => (
-          <div
-            key={element.id}
-            className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
+  const renderDataTransferList = () => {
+    const list = configs["data_transfer"] || [];
+    return (
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-lg font-semibold dark:text-white">
+            Data Transfer Configuration
+          </h3>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => handleAddNew("new_data_transfer")}
+            className="bg-[#5DEE92] text-black px-4 py-2 rounded-lg font-medium hover:bg-green-500 transition-colors text-sm flex items-center gap-2"
           >
-            <div className="flex-1">
-              <h4 className="font-medium text-gray-900 dark:text-white">
-                {element.name}
-              </h4>
-              <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-400 mt-1">
-                <span>ID: {element.config_id || element.uniqueId}</span>
-                <span>
-                  Type: {element.metadata?.valueType || element.valueType}
-                </span>
-                <span>
-                  Sensitive: {element.metadata?.sensitive || element.sensitive}
-                </span>
+            <Plus size={16} />
+            New Element
+          </motion.button>
+        </div>
+        <div className="space-y-3">
+          {list.length === 0 && (
+            <div className="text-center py-6 text-gray-500">
+              No configurations found
+            </div>
+          )}
+          {list.map((element) => (
+            <div
+              key={element.id}
+              className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
+            >
+              <div className="flex-1">
+                <h4 className="font-medium text-gray-900 dark:text-white">
+                  {element.name}
+                </h4>
+                <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  <span>ID: {element.config_id || element.uniqueId}</span>
+                  <span>
+                    Type: {element.metadata?.valueType || element.valueType}
+                  </span>
+                  <span>
+                    Sensitive:{" "}
+                    {element.metadata?.sensitive || element.sensitive}
+                  </span>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <ActionButton
+                  onClick={() => handleView(item)}
+                  icon={Eye}
+                  color="blue"
+                  title="View"
+                />
+                <ActionButton
+                  onClick={() => handleEdit(item, editKey)}
+                  icon={Edit}
+                  color="green"
+                  title="Edit"
+                />
+                <ActionButton
+                  // onClick={() => handleArchive(item.id, moduleKey)}
+                  icon={Archive}
+                  color="orange"
+                  title="Archive"
+                />
+                {/* {moduleKey === "assets_management" && (
+                <ActionButton
+                  onClick={() => handleDeleteAsset(item.id)}
+                  icon={Trash2}
+                  color="red"
+                  title="Delete"
+                />
+              )} */}
               </div>
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleView(element)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-              >
-                <Eye size={16} />
-              </button>
-              <button
-                onClick={() => handleEdit(element, "edit_data_transfer")}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-              >
-                <Edit size={16} />
-              </button>
-              <button
-                onClick={() => handleArchive(element.id, "data_transfer")}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-              >
-                <Archive size={16} />
-              </button>
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
-  const renderDataElementsList = () => (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-semibold dark:text-white">
-          Data Element Configuration
-        </h3>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => handleAddNew("new_data_element")}
-          className="bg-[#5DEE92] text-black px-4 py-2 rounded-lg font-medium hover:bg-green-500 transition-colors text-sm flex items-center gap-2"
-        >
-          <Plus size={16} />
-          New Element
-        </motion.button>
-      </div>
-      <div className="space-y-3">
-        {(configs["data_elements"]?.length
-          ? configs["data_elements"]
-          : sampleDataElements
-        ).map((element) => (
-          <div
-            key={element.id}
-            className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
+  const renderDataElementsList = () => {
+    const list = configs["data_element"] || [];
+    return (
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-lg font-semibold dark:text-white">
+            Data Element Configuration
+          </h3>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => handleAddNew("new_data_element")}
+            className="bg-[#5DEE92] text-black px-4 py-2 rounded-lg font-medium hover:bg-green-500 transition-colors text-sm flex items-center gap-2"
           >
-            <div className="flex-1">
-              <h4 className="font-medium text-gray-900 dark:text-white">
-                {element.name}
-              </h4>
-              <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-400 mt-1">
-                <span>ID: {element.config_id || element.uniqueId}</span>
-                <span>
-                  Type: {element.metadata?.valueType || element.valueType}
-                </span>
-                <span>
-                  Sensitive: {element.metadata?.sensitive || element.sensitive}
-                </span>
+            <Plus size={16} />
+            New Element
+          </motion.button>
+        </div>
+        <div className="space-y-3">
+          {list.length === 0 && (
+            <div className="text-center py-6 text-gray-500">
+              No configurations found
+            </div>
+          )}
+          {list.map((element) => (
+            <div
+              key={element.id}
+              className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
+            >
+              <div className="flex-1">
+                <h4 className="font-medium text-gray-900 dark:text-white">
+                  {element.name}
+                </h4>
+                <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  <span>ID: {element.config_id || element.uniqueId}</span>
+                  <span>
+                    Type: {element.metadata?.valueType || element.valueType}
+                  </span>
+                  <span>
+                    Sensitive:{" "}
+                    {element.metadata?.sensitive || element.sensitive}
+                  </span>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <ActionButton
+                  onClick={() => handleView(item)}
+                  icon={Eye}
+                  color="blue"
+                  title="View"
+                />
+                <ActionButton
+                  onClick={() => handleEdit(item, editKey)}
+                  icon={Edit}
+                  color="green"
+                  title="Edit"
+                />
+                <ActionButton
+                  // onClick={() => handleArchive(item.id, moduleKey)}
+                  icon={Archive}
+                  color="orange"
+                  title="Archive"
+                />
+                {/* {moduleKey === "assets_management" && (
+                <ActionButton
+                  onClick={() => handleDeleteAsset(item.id)}
+                  icon={Trash2}
+                  color="red"
+                  title="Delete"
+                />
+              )} */}
               </div>
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleView(element)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-              >
-                <Eye size={16} />
-              </button>
-              <button
-                onClick={() => handleEdit(element, "edit_data_element")}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-              >
-                <Edit size={16} />
-              </button>
-              <button
-                onClick={() => handleArchive(element.id, "data_elements")}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-              >
-                <Archive size={16} />
-              </button>
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
-  const renderDataDeletionList = () => (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-semibold dark:text-white">
-          Data Deletion Methods
-        </h3>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => handleAddNew("new_data_deletion")}
-          className="bg-[#5DEE92] text-black px-4 py-2 rounded-lg font-medium hover:bg-green-500 transition-colors text-sm flex items-center gap-2"
-        >
-          <Plus size={16} />
-          New Method
-        </motion.button>
-      </div>
-      <div className="space-y-3">
-        {(configs["data_deletion"]?.length
-          ? configs["data_deletion"]
-          : sampleDataDeletion
-        ).map((method) => (
-          <div
-            key={method.id}
-            className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
+  const renderDataDeletionList = () => {
+    const list = configs["data_deletion"] || [];
+    return (
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-lg font-semibold dark:text-white">
+            Data Deletion Methods
+          </h3>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => handleAddNew("new_data_deletion")}
+            className="bg-[#5DEE92] text-black px-4 py-2 rounded-lg font-medium hover:bg-green-500 transition-colors text-sm flex items-center gap-2"
           >
-            <div className="flex-1">
-              <h4 className="font-medium text-gray-900 dark:text-white">
-                {method.name}
-              </h4>
-              <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-400 mt-1">
-                <span>ID: {method.config_id || method.uniqueId}</span>
-                <span>
-                  Frequency: {method.metadata?.frequency || method.frequency}
-                </span>
-                <span>
-                  Verification:{" "}
-                  {method.metadata?.verification || method.verification}
-                </span>
+            <Plus size={16} />
+            New Method
+          </motion.button>
+        </div>
+        <div className="space-y-3">
+          {list.length === 0 && (
+            <div className="text-center py-6 text-gray-500">
+              No configurations found
+            </div>
+          )}
+          {list.map((method) => (
+            <div
+              key={method.id}
+              className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
+            >
+              <div className="flex-1">
+                <h4 className="font-medium text-gray-900 dark:text-white">
+                  {method.name}
+                </h4>
+                <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  <span>ID: {method.config_id || method.uniqueId}</span>
+                  <span>
+                    Frequency: {method.metadata?.frequency || method.frequency}
+                  </span>
+                  <span>
+                    Verification:{" "}
+                    {method.metadata?.verification || method.verification}
+                  </span>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <ActionButton
+                  onClick={() => handleView(item)}
+                  icon={Eye}
+                  color="blue"
+                  title="View"
+                />
+                <ActionButton
+                  onClick={() => handleEdit(item, editKey)}
+                  icon={Edit}
+                  color="green"
+                  title="Edit"
+                />
+                <ActionButton
+                  // onClick={() => handleArchive(item.id, moduleKey)}
+                  icon={Archive}
+                  color="orange"
+                  title="Archive"
+                />
+                {/* {moduleKey === "assets_management" && (
+                <ActionButton
+                  onClick={() => handleDeleteAsset(item.id)}
+                  icon={Trash2}
+                  color="red"
+                  title="Delete"
+                />
+              )} */}
               </div>
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleView(method)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-              >
-                <Eye size={16} />
-              </button>
-              <button
-                onClick={() => handleEdit(method, "edit_data_deletion")}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-              >
-                <Edit size={16} />
-              </button>
-              <button
-                onClick={() => handleArchive(method.id, "data_deletion")}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-              >
-                <Archive size={16} />
-              </button>
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
-  const renderDepartmentList = () => (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-semibold dark:text-white">
-          Department Structure
-        </h3>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => handleAddNew("new_department")}
-          className="bg-[#5DEE92] text-black px-4 py-2 rounded-lg font-medium hover:bg-green-500 transition-colors text-sm flex items-center gap-2"
-        >
-          <Plus size={16} />
-          New Department
-        </motion.button>
-      </div>
-      <div className="space-y-3">
-        {(configs["department"]?.length
-          ? configs["department"]
-          : sampleDepartments
-        ).map((dept) => (
-          <div
-            key={dept.id}
-            className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
+  const renderDepartmentList = () => {
+    const list = configs["department"] || [];
+    return (
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-lg font-semibold dark:text-white">
+            Department Structure
+          </h3>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => handleAddNew("new_department")}
+            className="bg-[#5DEE92] text-black px-4 py-2 rounded-lg font-medium hover:bg-green-500 transition-colors text-sm flex items-center gap-2"
           >
-            <div className="flex-1">
-              <h4 className="font-medium text-gray-900 dark:text-white">
-                {dept.name}
-              </h4>
-              <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-400 mt-1">
-                <span>ID: {dept.config_id || dept.uniqueId}</span>
-                <span>Head: {dept.metadata?.headName || dept.headName}</span>
-                <span>Manager: {dept.metadata?.manager || dept.manager}</span>
+            <Plus size={16} />
+            New Department
+          </motion.button>
+        </div>
+        <div className="space-y-3">
+          {list.length === 0 && (
+            <div className="text-center py-6 text-gray-500">
+              No configurations found
+            </div>
+          )}
+          {list.map((dept) => (
+            <div
+              key={dept.id}
+              className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
+            >
+              <div className="flex-1">
+                <h4 className="font-medium text-gray-900 dark:text-white">
+                  {dept.name}
+                </h4>
+                <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  <span>ID: {dept.config_id || dept.uniqueId}</span>
+                  <span>Head: {dept.metadata?.headName || dept.headName}</span>
+                  <span>Manager: {dept.metadata?.manager || dept.manager}</span>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <ActionButton
+                  onClick={() => handleView(item)}
+                  icon={Eye}
+                  color="blue"
+                  title="View"
+                />
+                <ActionButton
+                  onClick={() => handleEdit(item, editKey)}
+                  icon={Edit}
+                  color="green"
+                  title="Edit"
+                />
+                <ActionButton
+                  // onClick={() => handleArchive(item.id, moduleKey)}
+                  icon={Archive}
+                  color="orange"
+                  title="Archive"
+                />
+                {/* {moduleKey === "assets_management" && (
+                <ActionButton
+                  onClick={() => handleDeleteAsset(item.id)}
+                  icon={Trash2}
+                  color="red"
+                  title="Delete"
+                />
+              )} */}
               </div>
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleView(dept)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-              >
-                <Eye size={16} />
-              </button>
-              <button
-                onClick={() => handleEdit(dept, "edit_department")}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-              >
-                <Edit size={16} />
-              </button>
-              <button
-                onClick={() => handleArchive(dept.id, "department")}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-              >
-                <Archive size={16} />
-              </button>
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
-  const renderOrganizationList = () => (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-semibold dark:text-white">
-          Organization Structure
-        </h3>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => handleAddNew("new_organization")}
-          className="bg-[#5DEE92] text-black px-4 py-2 rounded-lg font-medium hover:bg-green-500 transition-colors text-sm flex items-center gap-2"
-        >
-          <Plus size={16} />
-          New Organization
-        </motion.button>
-      </div>
-      <div className="space-y-3">
-        {(configs["organization"]?.length
-          ? configs["organization"]
-          : sampleOrganizations
-        ).map((org) => (
-          <div
-            key={org.id}
-            className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
+  const renderOrganizationList = () => {
+    const list = configs["organization"] || [];
+    return (
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-lg font-semibold dark:text-white">
+            Organization Structure
+          </h3>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => handleAddNew("new_organization")}
+            className="bg-[#5DEE92] text-black px-4 py-2 rounded-lg font-medium hover:bg-green-500 transition-colors text-sm flex items-center gap-2"
           >
-            <div className="flex-1">
-              <h4 className="font-medium text-gray-900 dark:text-white">
-                {org.name}
-              </h4>
-              <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-400 mt-1">
-                <span>ID: {org.config_id || org.uniqueId}</span>
-                <span>Type: {org.metadata?.type || org.type}</span>
-                <span>Industry: {org.metadata?.industry || org.industry}</span>
+            <Plus size={16} />
+            New Organization
+          </motion.button>
+        </div>
+        <div className="space-y-3">
+          {list.length === 0 && (
+            <div className="text-center py-6 text-gray-500">
+              No configurations found
+            </div>
+          )}
+          {list.map((org) => (
+            <div
+              key={org.id}
+              className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
+            >
+              <div className="flex-1">
+                <h4 className="font-medium text-gray-900 dark:text-white">
+                  {org.name}
+                </h4>
+                <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  <span>ID: {org.config_id || org.uniqueId}</span>
+                  <span>Type: {org.metadata?.type || org.type}</span>
+                  <span>
+                    Industry: {org.metadata?.industry || org.industry}
+                  </span>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <ActionButton
+                  onClick={() => handleView(item)}
+                  icon={Eye}
+                  color="blue"
+                  title="View"
+                />
+                <ActionButton
+                  onClick={() => handleEdit(item, editKey)}
+                  icon={Edit}
+                  color="green"
+                  title="Edit"
+                />
+                <ActionButton
+                  // onClick={() => handleArchive(item.id, moduleKey)}
+                  icon={Archive}
+                  color="orange"
+                  title="Archive"
+                />
+                {/* {moduleKey === "assets_management" && (
+                <ActionButton
+                  onClick={() => handleDeleteAsset(item.id)}
+                  icon={Trash2}
+                  color="red"
+                  title="Delete"
+                />
+              )} */}
               </div>
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleView(org)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-              >
-                <Eye size={16} />
-              </button>
-              <button
-                onClick={() => handleEdit(org, "edit_organization")}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-              >
-                <Edit size={16} />
-              </button>
-              <button
-                onClick={() => handleArchive(org.id, "organization")}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-              >
-                <Archive size={16} />
-              </button>
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
-  const renderDataSubjectsList = () => (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-semibold dark:text-white">
-          Data Subjects Categories
-        </h3>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => handleAddNew("new_data_subject")}
-          className="bg-[#5DEE92] text-black px-4 py-2 rounded-lg font-medium hover:bg-green-500 transition-colors text-sm flex items-center gap-2"
-        >
-          <Plus size={16} />
-          New Category
-        </motion.button>
-      </div>
-      <div className="space-y-3">
-        {(configs["data_subjects"]?.length
-          ? configs["data_subjects"]
-          : sampleDataSubjects
-        ).map((subject) => (
-          <div
-            key={subject.id}
-            className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
+  const renderDataSubjectsList = () => {
+    const list = configs["data_subject"] || [];
+    return (
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-lg font-semibold dark:text-white">
+            Data Subjects Categories
+          </h3>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => handleAddNew("new_data_subject")}
+            className="bg-[#5DEE92] text-black px-4 py-2 rounded-lg font-medium hover:bg-green-500 transition-colors text-sm flex items-center gap-2"
           >
-            <div className="flex-1">
-              <h4 className="font-medium text-gray-900 dark:text-white">
-                {subject.metadata?.categoryName || subject.categoryName}
-              </h4>
-              <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-400 mt-1">
-                <span>ID: {subject.config_id || subject.uniqueId}</span>
-                <span>
-                  Type: {subject.metadata?.categoryType || subject.categoryType}
-                </span>
-                <span>
-                  Subcategory:{" "}
-                  {subject.metadata?.subcategory || subject.subcategory}
-                </span>
+            <Plus size={16} />
+            New Category
+          </motion.button>
+        </div>
+        <div className="space-y-3">
+          {list.length === 0 && (
+            <div className="text-center py-6 text-gray-500">
+              No configurations found
+            </div>
+          )}
+          {list.map((subject) => (
+            <div
+              key={subject.id}
+              className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
+            >
+              <div className="flex-1">
+                <h4 className="font-medium text-gray-900 dark:text-white">
+                  {subject.metadata?.categoryName || subject.categoryName}
+                </h4>
+                <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  <span>ID: {subject.config_id || subject.uniqueId}</span>
+                  <span>
+                    Type:{" "}
+                    {subject.metadata?.categoryType || subject.categoryType}
+                  </span>
+                  <span>
+                    Subcategory:{" "}
+                    {subject.metadata?.subcategory || subject.subcategory}
+                  </span>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <ActionButton
+                  onClick={() => handleView(item)}
+                  icon={Eye}
+                  color="blue"
+                  title="View"
+                />
+                <ActionButton
+                  onClick={() => handleEdit(item, editKey)}
+                  icon={Edit}
+                  color="green"
+                  title="Edit"
+                />
+                <ActionButton
+                  // onClick={() => handleArchive(item.id, moduleKey)}
+                  icon={Archive}
+                  color="orange"
+                  title="Archive"
+                />
+                {/* {moduleKey === "assets_management" && (
+                <ActionButton
+                  onClick={() => handleDeleteAsset(item.id)}
+                  icon={Trash2}
+                  color="red"
+                  title="Delete"
+                />
+              )} */}
               </div>
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleView(subject)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-              >
-                <Eye size={16} />
-              </button>
-              <button
-                onClick={() => handleEdit(subject, "edit_data_subject")}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-              >
-                <Edit size={16} />
-              </button>
-              <button
-                onClick={() => handleArchive(subject.id, "data_subjects")}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-              >
-                <Archive size={16} />
-              </button>
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
-  const renderPurposeList = () => (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-semibold dark:text-white">
-          Processing Purposes
-        </h3>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => handleAddNew("new_purpose")}
-          className="bg-[#5DEE92] text-black px-4 py-2 rounded-lg font-medium hover:bg-green-500 transition-colors text-sm flex items-center gap-2"
-        >
-          <Plus size={16} />
-          New Purpose
-        </motion.button>
-      </div>
-      <div className="space-y-3">
-        {(configs["purpose"]?.length ? configs["purpose"] : samplePurposes).map(
-          (purpose) => (
+  const renderPurposeList = () => {
+    const list = configs["purpose"] || [];
+    return (
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-lg font-semibold dark:text-white">
+            Processing Purposes
+          </h3>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => handleAddNew("new_purpose")}
+            className="bg-[#5DEE92] text-black px-4 py-2 rounded-lg font-medium hover:bg-green-500 transition-colors text-sm flex items-center gap-2"
+          >
+            <Plus size={16} />
+            New Purpose
+          </motion.button>
+        </div>
+        <div className="space-y-3">
+          {list.length === 0 && (
+            <div className="text-center py-6 text-gray-500">
+              No configurations found
+            </div>
+          )}
+          {list.map((purpose) => (
             <div
               key={purpose.id}
               className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
@@ -1547,89 +1664,112 @@ export default function Setup() {
                 </div>
               </div>
               <div className="flex gap-2">
-                <button
-                  onClick={() => handleView(purpose)}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-                >
-                  <Eye size={16} />
-                </button>
-                <button
-                  onClick={() => handleEdit(purpose, "edit_purpose")}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-                >
-                  <Edit size={16} />
-                </button>
-                <button
-                  onClick={() => handleArchive(purpose.id, "purpose")}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-                >
-                  <Archive size={16} />
-                </button>
+                <ActionButton
+                  onClick={() => handleView(item)}
+                  icon={Eye}
+                  color="blue"
+                  title="View"
+                />
+                <ActionButton
+                  onClick={() => handleEdit(item, editKey)}
+                  icon={Edit}
+                  color="green"
+                  title="Edit"
+                />
+                <ActionButton
+                  // onClick={() => handleArchive(item.id, moduleKey)}
+                  icon={Archive}
+                  color="orange"
+                  title="Archive"
+                />
+                {/* {moduleKey === "assets_management" && (
+                <ActionButton
+                  onClick={() => handleDeleteAsset(item.id)}
+                  icon={Trash2}
+                  color="red"
+                  title="Delete"
+                />
+              )} */}
               </div>
             </div>
-          )
-        )}
+          ))}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
-  const renderLegalBasisList = () => (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-semibold dark:text-white">Legal Basis</h3>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => handleAddNew("new_legal_basis")}
-          className="bg-[#5DEE92] text-black px-4 py-2 rounded-lg font-medium hover:bg-green-500 transition-colors text-sm flex items-center gap-2"
-        >
-          <Plus size={16} />
-          New Legal Basis
-        </motion.button>
-      </div>
-      <div className="space-y-3">
-        {(configs["legal_basis"]?.length
-          ? configs["legal_basis"]
-          : sampleLegalBasis
-        ).map((basis) => (
-          <div
-            key={basis.id}
-            className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
+  const renderLegalBasisList = () => {
+    const list = configs["legal_basis"] || [];
+    return (
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-lg font-semibold dark:text-white">Legal Basis</h3>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => handleAddNew("new_legal_basis")}
+            className="bg-[#5DEE92] text-black px-4 py-2 rounded-lg font-medium hover:bg-green-500 transition-colors text-sm flex items-center gap-2"
           >
-            <div className="flex-1">
-              <h4 className="font-medium text-gray-900 dark:text-white">
-                {basis.name}
-              </h4>
-              <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-400 mt-1">
-                <span>ID: {basis.config_id || basis.uniqueId}</span>
-                <span>{basis.description || basis.metadata?.description}</span>
+            <Plus size={16} />
+            New Legal Basis
+          </motion.button>
+        </div>
+        <div className="space-y-3">
+          {list.length === 0 && (
+            <div className="text-center py-6 text-gray-500">
+              No configurations found
+            </div>
+          )}
+          {list.map((basis) => (
+            <div
+              key={basis.id}
+              className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
+            >
+              <div className="flex-1">
+                <h4 className="font-medium text-gray-900 dark:text-white">
+                  {basis.name}
+                </h4>
+                <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  <span>ID: {basis.config_id || basis.uniqueId}</span>
+                  <span>
+                    {basis.description || basis.metadata?.description}
+                  </span>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <ActionButton
+                  onClick={() => handleView(item)}
+                  icon={Eye}
+                  color="blue"
+                  title="View"
+                />
+                <ActionButton
+                  onClick={() => handleEdit(item, editKey)}
+                  icon={Edit}
+                  color="green"
+                  title="Edit"
+                />
+                <ActionButton
+                  // onClick={() => handleArchive(item.id, moduleKey)}
+                  icon={Archive}
+                  color="orange"
+                  title="Archive"
+                />
+                {/* {moduleKey === "assets_management" && (
+                <ActionButton
+                  onClick={() => handleDeleteAsset(item.id)}
+                  icon={Trash2}
+                  color="red"
+                  title="Delete"
+                />
+              )} */}
               </div>
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleView(basis)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-              >
-                <Eye size={16} />
-              </button>
-              <button
-                onClick={() => handleEdit(basis, "edit_legal_basis")}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-              >
-                <Edit size={16} />
-              </button>
-              <button
-                onClick={() => handleArchive(basis.id, "legal_basis")}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-              >
-                <Archive size={16} />
-              </button>
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderSecuritySafeguards = () => (
     <div className="p-6">
@@ -1688,26 +1828,32 @@ export default function Setup() {
               </div>
             </div>
             <div className="flex gap-2">
-              <button
+              <ActionButton
                 onClick={() => handleView(item)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-              >
-                <Eye size={16} />
-              </button>
-              <button
+                icon={Eye}
+                color="blue"
+                title="View"
+              />
+              <ActionButton
                 onClick={() => handleEdit(item, editKey)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-              >
-                <Edit size={16} />
-              </button>
-              <button
-                onClick={() =>
-                  handleArchive(item.id, addKey.replace("new_", ""))
-                }
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-              >
-                <Archive size={16} />
-              </button>
+                icon={Edit}
+                color="green"
+                title="Edit"
+              />
+              <ActionButton
+                // onClick={() => handleArchive(item.id, moduleKey)}
+                icon={Archive}
+                color="orange"
+                title="Archive"
+              />
+              {/* {moduleKey === "assets_management" && (
+                <ActionButton
+                  onClick={() => handleDeleteAsset(item.id)}
+                  icon={Trash2}
+                  color="red"
+                  title="Delete"
+                />
+              )} */}
             </div>
           </div>
         ))}
@@ -2349,7 +2495,7 @@ export default function Setup() {
       content: renderDataCollectionList(),
       size: "xl",
     },
-    data_elements: {
+    data_element: {
       title: "Data Element Configuration",
       content: renderDataElementsList(),
       size: "xl",
@@ -2359,7 +2505,7 @@ export default function Setup() {
       content: renderDataDeletionList(),
       size: "xl",
     },
-    data_subjects: {
+    data_subject: {
       title: "Data Subjects Configuration",
       content: renderDataSubjectsList(),
       size: "xl",
@@ -2543,6 +2689,11 @@ export default function Setup() {
       content: renderOrganizationForm(),
       size: "lg",
     },
+    // new_data_transfer: {
+    //   title: "Add New Data Transfer Category",
+    //   content: renderDataTransferForm(),
+    //   size:"lg"
+    // },
     new_data_subject: {
       title: "Add New Data Subject Category",
       content: renderDataSubjectForm(),
@@ -2735,8 +2886,8 @@ export default function Setup() {
       let frontendType = type;
 
       const normalizeTypeMap = {
-        data_element: "data_elements",
-        data_subject: "data_subjects",
+        data_element: "data_element",
+        data_subject: "data_subject",
         data_transfer: "data_transfer",
       };
 

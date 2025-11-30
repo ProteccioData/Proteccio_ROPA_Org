@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { resetPassword } from "../../services/AuthService";
 import { useToast } from "../../components/ui/ToastProvider";
 import { motion } from "framer-motion";
-import { Lock } from "lucide-react";
+import { Eye, EyeOff, Lock } from "lucide-react";
 
 export default function ResetPassword() {
   const [params] = useSearchParams();
@@ -16,6 +16,15 @@ export default function ResetPassword() {
   const [confirm, setConfirm] = useState("");
   const [success, setSuccess] = useState(false);
   const [timer, setTimer] = useState(10);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  useEffect(() => {
+    if (!token) {
+      addToast("error", "Access Denied");
+      navigate("/login");
+    }
+  }, []);
 
   const isStrongPassword = (pwd) => {
     const regex =
@@ -114,13 +123,22 @@ export default function ResetPassword() {
                   </label>
                   <div className="flex items-center border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2 bg-white dark:bg-gray-800">
                     <Lock size={18} className="text-gray-400 mr-2" />
+
                     <input
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="w-full bg-transparent outline-none text-gray-900 dark:text-gray-100"
                     />
+
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="ml-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 cursor-pointer"
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
                   </div>
                 </div>
 
@@ -131,13 +149,22 @@ export default function ResetPassword() {
                   </label>
                   <div className="flex items-center border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2 bg-white dark:bg-gray-800">
                     <Lock size={18} className="text-gray-400 mr-2" />
+
                     <input
-                      type="password"
+                      type={showConfirm ? "text" : "password"}
                       placeholder="••••••••"
                       value={confirm}
                       onChange={(e) => setConfirm(e.target.value)}
                       className="w-full bg-transparent outline-none text-gray-900 dark:text-gray-100"
                     />
+
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirm(!showConfirm)}
+                      className="ml-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 cursor-pointer"
+                    >
+                      {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
                   </div>
                 </div>
 

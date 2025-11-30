@@ -7,10 +7,10 @@ import axiosInstance from "../utils/axiosInstance";
 export const CONFIG_TYPE_MAP = {
   // core config modules
   data_collection: "data_collection",
-  data_elements: "data_element",      // UI plural → backend singular
+  data_element: "data_element",      // UI plural → backend singular
   data_deletion: "data_deletion",
-  data_subjects: "data_subject",      // UI plural → backend singular
-  data_transfer: "data_retention",    // backend DOES NOT HAVE `data_transfer`
+  data_subject: "data_subject",      // UI plural → backend singular
+  data_transfer: "data_transfer",    
   department: "department",
   organization: "organization",
   purpose: "purpose",

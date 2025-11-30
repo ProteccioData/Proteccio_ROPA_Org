@@ -50,9 +50,8 @@ const PERMISSIONS = {
     "ARCHIVE",
   ],
   MAPPING: ["CREATE_FLOW", "EDIT", "VIEW", "ARCHIVE", "DELETE"],
-  SETUP: ["CONFIGURE", "BULK_IMPORT", "SECURITY_REVIEW", "ADD_ASSET"],
-  AUDIT: ["VIEW", "USER_SPECIFIC", "ALL"],
-  REPORTS: ["GENERATE", "SCHEDULE", "DOWNLOAD", "VIEW", "EDIT"],
+  SETUP: ["VIEW" , "EDIT" , "DELETE" , "ARCHIVE"],
+  REPORTS: ["GENERATE", "SCHEDULE", "DOWNLOAD", "VIEW"],
   ROPA_VIEW_STAGES: ["InfoVoyage", "CheckSync", "Beam", "OffDoff"],
   ROPA_EDIT_STAGES: ["InfoVoyage", "CheckSync", "Beam"],
 };

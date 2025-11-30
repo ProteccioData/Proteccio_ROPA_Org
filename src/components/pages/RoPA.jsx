@@ -12,7 +12,7 @@ import {
   Legend,
 } from "chart.js";
 import RoPARecords from "../modules/RoPATable";
-import { getRopaStats } from "../../services/RopaService";
+import { getRopaRiskHeatmap, getRopaStats } from "../../services/RopaService";
 import {
   CartesianGrid,
   ComposedChart,
@@ -122,7 +122,7 @@ const RoPA = ({ initialItems = null }) => {
   const [month, setMonth] = useState("");
   const [chartData, setChartData] = useState(null);
   const [cellFilter, setCellFilter] = useState(null);
-  const [items, setItems] = useState(initialItems || mockActionItems(200));
+  const [items, setItems] = useState([]);
   const [availableYears, setAvailableYears] = useState([]);
 
   const toggleFullscreen = () => {
@@ -194,6 +194,71 @@ const RoPA = ({ initialItems = null }) => {
 
     fetchChartData();
   }, [year, month]);
+
+  useEffect(() => {
+    async function loadHeatmap() {
+      try {
+        const res = await getRopaRiskHeatmap();
+        const backendMatrix = res.data.heatmap.matrix; // 5x5
+
+        function transformBackendMatrix(matrix) {
+          const fixed = Array.from({ length: 5 }, () =>
+            Array.from({ length: 5 }, () => [])
+          );
+
+          for (let l = 0; l < 5; l++) {
+            for (let i = 0; i < 5; i++) {
+              const cell = matrix[l][i];
+
+              const likelihood = l + 1;
+              const impact = i + 1;
+
+              const row = 5 - impact; // invert impact axis
+              const col = likelihood - 1;
+
+              fixed[row][col] = cell;
+            }
+          }
+
+          return fixed;
+        }
+
+        const correctedMatrix = transformBackendMatrix(backendMatrix);
+
+        // STEP 2 — Convert corrected matrix → FE items
+        const parsedItems = [];
+
+        for (let row = 0; row < 5; row++) {
+          for (let col = 0; col < 5; col++) {
+            const cellItems = correctedMatrix[row][col];
+
+            cellItems.forEach((item) => {
+              parsedItems.push({
+                id: item.id,
+                ropa_id: item.ropa_id,
+                name: item.name,
+                category: item.category,
+                flow_stage: item.flow_stage,
+                status: item.status,
+                riskScore: item.risk_score,
+                riskCategory: item.risk_category,
+
+                // FIX: convert back to axis coords for FE grid
+                likelihood: col + 1,
+                impact: 5 - row,
+              });
+            });
+          }
+        }
+
+        setItems(parsedItems);
+      } catch (err) {
+        console.error("Failed to load heatmap", err);
+      }
+    }
+
+    loadHeatmap();
+  }, []);
 
   // const buildChartData = (stats) => {
   //   if (!month) {

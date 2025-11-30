@@ -1,3 +1,4 @@
+// ForgotPassword.jsx
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { requestPasswordReset } from "../../services/AuthService";
@@ -13,11 +14,19 @@ export default function ForgotPassword({ onClose }) {
     setLoading(true);
 
     try {
-      await requestPasswordReset(email);
-      addToast("success", "Reset link sent! Check your email.");
-      onClose();
+      const res = await requestPasswordReset(email);
+
+      addToast("success", "If the account exists, a reset link has been sent.");
+
+      // DEV MODE HELPER: Show reset token in console
+      if (res.resetToken) {
+        console.log("DEV RESET TOKEN:", res.resetToken);
+      }
+
+      // smooth close
+      setTimeout(() => onClose(), 900);
     } catch (err) {
-      addToast("error", err?.response?.data?.error || "Something went wrong");
+      addToast("error", err?.error || "Something went wrong");
     } finally {
       setLoading(false);
     }

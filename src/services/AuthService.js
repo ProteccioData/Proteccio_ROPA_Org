@@ -13,14 +13,23 @@ export const login = async (email, password, token = null, backupCode = null) =>
 };
 
 export const requestPasswordReset = async (email) => {
-  const res = await axiosInstance.post("/auth/forgot-password", { email });
-  return res.data;
+  try {
+    const res = await axiosInstance.post("/auth/forgot-password", { email });
+    return res.data;
+  } catch (err) {
+    throw err.response?.data || { error: "Request failed" };
+  }
 };
 
+
 export const resetPassword = async (token, newPassword) => {
-  const res = await axiosInstance.post("/auth/reset-password", {
-    token,
-    newPassword,
-  });
-  return res.data;
+  try {
+    const res = await axiosInstance.post("/auth/reset-password", {
+      token,
+      newPassword,
+    });
+    return res.data;
+  } catch (err) {
+    throw err.response?.data || { error: "Reset failed" };
+  }
 };

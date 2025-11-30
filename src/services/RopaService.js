@@ -57,5 +57,8 @@ export const getRopaStats = async (params = {}) => {
 export const getRopaGraphData = (params) => {
   return axiosInstance.get("/portal/ropas/graph", { params });
 }
-  
+
+export const getRopaRiskHeatmap = () => 
+  axiosInstance.get("/portal/ropas/risk-heatmap");
+
 

@@ -42,3 +42,13 @@ export const getAllDataTransfers = () => {
   return axiosInstance.get("/portal/data-transfers");
 };
 
+export const getRecentReports = () =>
+  axiosInstance.get("/portal/reports", {
+    params: {
+      page: 1,
+      limit: 5,
+      status: "completed",
+    },
+  });
+
+
