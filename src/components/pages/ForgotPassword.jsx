@@ -19,9 +19,9 @@ export default function ForgotPassword({ onClose }) {
       addToast("success", "If the account exists, a reset link has been sent.");
 
       // DEV MODE HELPER: Show reset token in console
-      if (res.resetToken) {
-        console.log("DEV RESET TOKEN:", res.resetToken);
-      }
+      // if (res.resetToken) {
+      //   console.log("DEV RESET TOKEN:", res.resetToken);
+      // }
 
       // smooth close
       setTimeout(() => onClose(), 900);
