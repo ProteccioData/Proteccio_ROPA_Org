@@ -281,7 +281,7 @@ function UserModal({ initial = null, onClose, onSave, teams = [] }) {
       id: initial?.id || uid("user_"),
       name: name.trim(),
       email: email.trim(),
-      password: password ? password : initial?.password || "••••••",
+      password: password ? password : initial?.password || "",
       department,
       teams: assigned,
       createdAt: initial?.createdAt || nowISO(),
@@ -785,7 +785,7 @@ export default function UserManagement() {
         name: u.full_name || u.name || "",
         email: u.email,
         department: u.department || "",
-        password: "•••••••",
+        password: "",
         teams: (u.teams || []).map((tm) => (tm?.id ? tm.id : tm)),
         createdAt: u.created_at || u.createdAt || nowISO(),
         role: u.role,
@@ -870,6 +870,7 @@ export default function UserManagement() {
     // userPayload shape: { id?, name, email, password, department, teams }
     try {
       if (users.some((u) => u.id === userPayload.id)) {
+        console.log(userPayload)
         // update (backend expects fullName)
         await apiUpdateUser(userPayload.id, {
           fullName: userPayload.name,

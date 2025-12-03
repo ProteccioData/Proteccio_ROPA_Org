@@ -27,7 +27,6 @@ export default function Login() {
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-
     if (!acceptTerms) {
       addToast("error", "You must accept the Terms & Conditions.");
       setLoading(false);
@@ -38,10 +37,8 @@ export default function Login() {
       setLoading(false);
       return;
     }
-
     try {
       const res = await login(email, password);
-
       if (res.user.role === "super_admin") {
         addToast("error", "Super Admin is not allowed to access this portal.");
         return;

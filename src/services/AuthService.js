@@ -9,6 +9,7 @@ export const login = async (email, password, token = null, backupCode = null) =>
   if (backupCode) payload.backupCode = backupCode;
 
   const res = await axiosInstance.post("/auth/login", payload);
+  console.log(res.data)
   return res.data;
 };
 
