@@ -25,6 +25,7 @@ import ExtensiveDiagramStudio from "./components/modules/DiagramBuilder";
 import ForgotPassword from "./components/pages/ForgotPassword";
 import ResetPassword from "./components/pages/ResetPassword";
 import { ProtectedUserSetup } from "./components/modules/ProtectedUser";
+import PermissionProtectedRoute from "./components/modules/PermissionProtectedRoute";
 
 export default function App() {
   const [collapsed, setCollapsed] = useState(false);
@@ -80,7 +81,9 @@ export default function App() {
               path="/RoPA"
               element={
                 <ProtectedRoute>
-                  <RoPA />
+                  <PermissionProtectedRoute permissionKey="view_ropa">
+                    <RoPA />
+                  </PermissionProtectedRoute>
                 </ProtectedRoute>
               }
             />
@@ -146,7 +149,9 @@ export default function App() {
               path="/settings"
               element={
                 <ProtectedRoute>
-                  <SettingsPage />
+                  <ProtectedUserSetup>
+                    <SettingsPage />
+                  </ProtectedUserSetup>
                 </ProtectedRoute>
               }
             />

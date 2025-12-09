@@ -16,25 +16,71 @@ import {
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import useTheme from "../hooks/useTheme";
-import {  useAuth } from "../../context/AuthContext"
+import { useAuth } from "../../context/AuthContext";
 
 export default function Sidebar({ collapsed, setCollapsed }) {
   const { theme, toggleTheme } = useTheme();
-  const { user } = useAuth();   // ⬅ logged-in user
+  const { user, permissions } = useAuth(); // ⬅ logged-in user
+  const { initializing } = useAuth();
+
+  if (initializing) {
+    return (
+      <div className="w-48 h-full flex items-center justify-center text-gray-500">
+        Loading...
+      </div>
+    );
+  }
 
   const isOrgAdmin = user?.role === "org_admin";
   const isSuperAdmin = user?.role === "super_admin";
 
+  const hasViewPermission = (moduleKey) => {
+    if (!permissions || typeof permissions !== "object") return true; // IMPORTANT: allow render
+
+    const perms = permissions[moduleKey];
+
+    if (!Array.isArray(perms)) return false;
+
+    return perms.includes("view");
+  };
+
+  if (!permissions) {
+    return (
+      <div className="w-48 h-full flex items-center justify-center text-gray-500">
+        Loading...
+      </div>
+    );
+  }
+
   const menuItems = [
     { name: "Home", icon: LayoutGrid, path: "/" },
-    { name: "RoPA", icon: FileText, path: "/RoPA" },
-    { name: "Assessments", icon: FileCheck, path: "/assessments" },
-    { name: "Data Mapping", icon: Database, path: "/data-mapping" },
-    { name: "Setup", icon: FilePlus2, path: "/setup" },
-    { name: "Audit Logs", icon: Clock, path: "/audit-logs" },
-    { name: "Reports", icon: FileChartLine, path: "/reports" },
+    { name: "RoPA", icon: FileText, path: "/RoPA", permission: "ropa" },
+    {
+      name: "Assessments",
+      icon: FileCheck,
+      path: "/assessments",
+      permission: "assessment",
+    },
+    {
+      name: "Data Mapping",
+      icon: Database,
+      path: "/data-mapping",
+      permission: "data_mapping",
+    },
+    { name: "Setup", icon: FilePlus2, path: "/setup", permission: "setup" },
+    {
+      name: "Audit Logs",
+      icon: Clock,
+      path: "/audit-logs",
+      permission: "audit_logs",
+    },
+    {
+      name: "Reports",
+      icon: FileChartLine,
+      path: "/reports",
+      permission: "report",
+    },
 
-    // ⛔ Only org_admin OR super_admin can see this item
     ...(isOrgAdmin || isSuperAdmin
       ? [
           {
@@ -106,25 +152,28 @@ export default function Sidebar({ collapsed, setCollapsed }) {
             : "px-4 flex flex-col gap-2"
         } space-y-2`}
       >
-        {menuItems.map(({ name, icon: Icon, path }) => (
-          <NavLink key={name} to={path}>
-            {({ isActive }) => (
-              <div
-                className={`flex items-center gap-3 w-full rounded-md px-3 py-2 text-sm transition
+        {menuItems
+          .filter((item) => {
+            if (!item.permission) return true; // no permission required
+            return hasViewPermission(item.permission); // user must have view permission
+          })
+          .map(({ name, icon: Icon, path }) => (
+            <NavLink key={name} to={path}>
+              {({ isActive }) => (
+                <div
+                  className={`flex items-center gap-3 w-full rounded-md px-3 py-2 text-sm transition
                   ${
                     isActive
                       ? "bg-[#5DEE92] text-black"
                       : "hover:bg-gray-200 dark:hover:bg-gray-700"
                   }`}
-              >
-                <Icon size={`${collapsed ? 24 : 20}`} />
-                {!collapsed && (
-                  <span className="font-medium">{name}</span>
-                )}
-              </div>
-            )}
-          </NavLink>
-        ))}
+                >
+                  <Icon size={`${collapsed ? 24 : 20}`} />
+                  {!collapsed && <span className="font-medium">{name}</span>}
+                </div>
+              )}
+            </NavLink>
+          ))}
       </nav>
 
       {/* Bottom section */}
@@ -135,7 +184,7 @@ export default function Sidebar({ collapsed, setCollapsed }) {
             : "justify-between items-center gap-2 px-4"
         }`}
       >
-        <NavLink
+        { isOrgAdmin && (<NavLink
           to="/settings"
           className={({ isActive }) =>
             `flex items-center justify-center rounded-full w-10 h-10 text-sm transition gap-2
@@ -147,7 +196,7 @@ export default function Sidebar({ collapsed, setCollapsed }) {
           }
         >
           <Settings size={20} />
-        </NavLink>
+        </NavLink>)}
 
         {!collapsed && (
           <span className="text-sm text-gray-800 dark:text-gray-400 font-mono border border-[#828282] dark:border-gray-600 px-2 py-1 rounded">

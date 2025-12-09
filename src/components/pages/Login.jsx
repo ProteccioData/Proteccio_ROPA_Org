@@ -6,6 +6,8 @@ import { motion } from "framer-motion";
 import { useToast } from "../ui/ToastProvider";
 import axiosInstance from "../../utils/axiosInstance";
 import ForgotPassword from "./ForgotPassword";
+import TwoFactorVerification from "../modules/TwoFactorVerification";
+import { useNavigate } from "react-router-dom";
 
 export default function Login() {
   const { loginUser } = useAuth();
@@ -20,7 +22,11 @@ export default function Login() {
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [acceptPrivacy, setAcceptPrivacy] = useState(false);
 
+  const [show2FAModal, setShow2FAModal] = useState(false);
+  const [pendingUser, setPendingUser] = useState(null);
+
   const { addToast } = useToast();
+  const navigate = useNavigate();
 
   const isFormValid = email && password && acceptTerms && acceptPrivacy;
 
@@ -39,7 +45,6 @@ export default function Login() {
     }
     try {
       const res = await login(email, password);
-      
 
       if (res.user.role === "super_admin") {
         addToast("error", "Super Admin is not allowed to access this portal.");
@@ -47,7 +52,8 @@ export default function Login() {
       }
 
       if (res.requires2FA) {
-        addToast("warning", "2FA required (we will add UI soon)");
+        setPendingUser({ email }); // store email + user info
+        setShow2FAModal(true); // open 2FA UI
         return;
       }
 
@@ -56,7 +62,7 @@ export default function Login() {
       const verifyRes = await axiosInstance.get("/auth/verify");
 
       loginUser(verifyRes.data.user, res.token, verifyRes.data.permissions);
-      window.location.href = "/";
+      navigate("/");
     } catch (err) {
       addToast("error", err?.response?.data?.error || "Login failed");
     } finally {
@@ -192,6 +198,20 @@ export default function Login() {
 
       {showForgotModal && (
         <ForgotPassword onClose={() => setShowForgotModal(false)} />
+      )}
+
+      {show2FAModal && pendingUser && (
+        <TwoFactorVerification
+          pendingUser={pendingUser}
+          onBack={() => {
+            setShow2FAModal(false);
+            setPendingUser(null);
+          }}
+          onSuccess={() => {
+            setShow2FAModal(false);
+            setPendingUser(null);
+          }}
+        />
       )}
     </div>
   );

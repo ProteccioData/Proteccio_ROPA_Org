@@ -7,23 +7,8 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [permissions, setPermissions] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const cachedUser = sessionStorage.getItem("user");
-    const cachedPermissions = sessionStorage.getItem("permissions");
-
-    if (cachedUser) setUser(JSON.parse(cachedUser));
-    if (cachedPermissions) setPermissions(JSON.parse(cachedPermissions));
-
-    const token = sessionStorage.getItem("portal_token");
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-
-    verifyUser();
-  }, []);
-
+  const [initializing, setInitializing] = useState(true); // ✅ important
+  
   const verifyUser = async () => {
     try {
       const res = await axiosInstance.get("/auth/verify");
@@ -40,16 +25,35 @@ export const AuthProvider = ({ children }) => {
       setPermissions(null);
     } finally {
       setLoading(false);
+      setInitializing(false); // 🔥 ensure UI waits until auth is restored
     }
   };
+
+  useEffect(() => {
+    const cachedUser = sessionStorage.getItem("user");
+    const cachedPermissions = sessionStorage.getItem("permissions");
+    const token = sessionStorage.getItem("portal_token");
+
+    if (cachedUser) setUser(JSON.parse(cachedUser));
+    if (cachedPermissions) setPermissions(JSON.parse(cachedPermissions));
+
+    if (!token) {
+      setLoading(false);
+      setInitializing(false); // 🔥 required
+      return;
+    }
+
+    verifyUser();
+  }, []);
+
 
   const loginUser = (user, token, permissions = null) => {
     sessionStorage.setItem("portal_token", token);
     sessionStorage.setItem("user", JSON.stringify(user));
 
     if (permissions) {
-      setPermissions(permissions);
       sessionStorage.setItem("permissions", JSON.stringify(permissions));
+      setPermissions(permissions);
     }
 
     setUser(user);
@@ -68,6 +72,7 @@ export const AuthProvider = ({ children }) => {
         user,
         permissions,
         loading,
+        initializing, // 🔥 expose this so UI waits until auth is ready
         loginUser,
         logout,
       }}

@@ -77,6 +77,11 @@ export default function Home() {
 
   const navigate = useNavigate();
 
+  const { initializing } = useAuth();
+
+  if (initializing) return <div>Loading Dashboard...</div>;
+  const isAdmin = user?.role === "org_admin";
+
   const [ropaPieData, setRopaPieData] = useState([]);
 
   const [animateNumbers, setAnimateNumbers] = useState({
@@ -355,6 +360,7 @@ export default function Home() {
   // }, []);
 
   useEffect(() => {
+    if (!isAdmin) return;
     const loadInitialData = async () => {
       const res = await getAssessments();
 
@@ -376,6 +382,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    if (!isAdmin) return;
     setMounted(true);
 
     const fetchData = async () => {
@@ -467,6 +474,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    if (!isAdmin) return;
     if (!selectedYear) return;
 
     const loadTrend = async () => {
@@ -568,6 +576,10 @@ export default function Home() {
     `${Math.max(0, Math.min(100, percent))} ${
       100 - Math.max(0, Math.min(100, percent))
     }`;
+
+  if (!isAdmin) {
+    return <div className="p-6 text-center">Only accessible to Org Admins</div>;
+  }
 
   if (!summary) {
     return <div className="p-6 text-center">Loading Dashboard...</div>;

@@ -6,7 +6,7 @@ export function ProtectedUserSetup({ children }) {
 
   if (!user) return <Navigate to="/login" />;
   if (user.role !== "org_admin" && user.role !== "super_admin")
-    return <Navigate to="/unauthorized" />;
+    return <Navigate to="/" />;
 
   return children;
 }

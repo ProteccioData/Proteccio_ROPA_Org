@@ -36,10 +36,13 @@ export default function RoPARecords() {
     flow_stage: "",
     department: "",
   });
-  const { user } = useAuth();
-  const currentUser = user
+  const { user, permissions } = useAuth();
 
-  const {addToast} = useToast();
+  console.log("USER =", user);
+  console.log("PERMISSIONS =", permissions);
+  const currentUser = user;
+
+  const { addToast } = useToast();
 
   const toggleMenu = (id) => {
     setOpenMenu(openMenu === id ? null : id);
@@ -99,7 +102,7 @@ export default function RoPARecords() {
 
   const handleEditClick = (ropa) => {
     if (!canUserEditRopa(ropa, currentUser)) {
-      addToast("error" ,"You don’t have permission to edit this RoPA.");
+      addToast("error", "You don’t have permission to edit this RoPA.");
       return;
     }
 
