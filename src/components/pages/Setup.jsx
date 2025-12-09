@@ -50,13 +50,13 @@ import {
 } from "../../services/SetupService";
 
 import { useToast } from "../ui/ToastProvider";
+import UserSearchSelect from "../ui/UserSearchSelect";
 
 const setupOptions = [
   {
     id: 1,
     title: "Assets Management",
     description: "Manage and organize your digital assets",
-    items: 247,
     icon: <HardDrive size={32} className="text-gray-700 dark:text-gray-300" />,
     modalKey: "assets_management",
   },
@@ -64,7 +64,6 @@ const setupOptions = [
     id: 2,
     title: "Data Collection Configuration",
     description: "Configure data collection sources and methods",
-    items: 47,
     icon: <Server size={32} className="text-gray-700 dark:text-gray-300" />,
     modalKey: "data_collection",
   },
@@ -72,7 +71,6 @@ const setupOptions = [
     id: 3,
     title: "Data Element Configuration",
     description: "Define data elements and their types",
-    items: 7,
     icon: <Database size={32} className="text-gray-700 dark:text-gray-300" />,
     modalKey: "data_element",
   },
@@ -80,7 +78,6 @@ const setupOptions = [
     id: 4,
     title: "Data Deletion Configuration",
     description: "Configure deletion policies",
-    items: 12,
     icon: <Calendar size={32} className="text-gray-700 dark:text-gray-300" />,
     modalKey: "data_deletion",
   },
@@ -88,7 +85,6 @@ const setupOptions = [
     id: 5,
     title: "Data Subjects Configuration",
     description: "Manage data subject categories and preferences",
-    items: 89,
     icon: <UserCheck size={32} className="text-gray-700 dark:text-gray-300" />,
     modalKey: "data_subject",
   },
@@ -96,7 +92,6 @@ const setupOptions = [
     id: 6,
     title: "Data Transfer Configurations",
     description: "Configure cross-border data transfer settings",
-    items: 23,
     icon: <Globe size={32} className="text-gray-700 dark:text-gray-300" />,
     modalKey: "data_transfer",
   },
@@ -104,7 +99,6 @@ const setupOptions = [
     id: 7,
     title: "Department Configuration",
     description: "Set up and manage organizational departments",
-    items: 15,
     icon: <Building size={32} className="text-gray-700 dark:text-gray-300" />,
     modalKey: "department",
   },
@@ -112,7 +106,6 @@ const setupOptions = [
     id: 8,
     title: "Organization Configuration",
     description: "Configure organization settings and structure",
-    items: 8,
     icon: <Users size={32} className="text-gray-700 dark:text-gray-300" />,
     modalKey: "organization",
   },
@@ -120,7 +113,6 @@ const setupOptions = [
     id: 9,
     title: "Purpose Configuration",
     description: "Define purposes for data processing",
-    items: 34,
     icon: <Target size={32} className="text-gray-700 dark:text-gray-300" />,
     modalKey: "purpose",
   },
@@ -128,7 +120,6 @@ const setupOptions = [
     id: 10,
     title: "Legal Basis Configuration",
     description: "Configure legal basis for data processing",
-    items: 18,
     icon: <Gavel size={32} className="text-gray-700 dark:text-gray-300" />,
     modalKey: "legal_basis",
   },
@@ -136,7 +127,6 @@ const setupOptions = [
     id: 11,
     title: "Security Safeguards Configuration",
     description: "Configure security measures and safeguards",
-    items: 56,
     icon: <Shield size={32} className="text-gray-700 dark:text-gray-300" />,
     modalKey: "security_safeguards",
   },
@@ -570,6 +560,7 @@ export default function Setup() {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [bulkImportModal, setBulkImportModal] = useState(null);
+  const [formValues, setFormValues] = useState({});
 
   const { addToast } = useToast();
 
@@ -582,6 +573,54 @@ export default function Setup() {
 
   // formRef for nested modal form extraction
   const formRef = useRef(null);
+
+  useEffect(() => {
+    preloadAllCounts();
+  }, []);
+
+  const preloadAllCounts = async () => {
+    try {
+      // Load assets
+      const resAssets = await getAssets();
+      setAssets(resAssets.data.assets || []);
+
+      // Load all config modules
+      const modulesToLoad = [
+        "data_collection",
+        "data_element",
+        "data_deletion",
+        "data_subject",
+        "data_transfer",
+        "department",
+        "organization",
+        "purpose",
+        "legal_basis",
+        "compliance_measures",
+        "operational_measures",
+        "ethical_measures",
+        "technical_measures",
+        "access_measures",
+        "data_governance",
+        "transparency_measures",
+        "physical_security",
+        "risk_management",
+      ];
+
+      for (const m of modulesToLoad) {
+        try {
+          const res = await getConfigs(m);
+          setConfigs((prev) => ({
+            ...prev,
+            [m]: res.data.configs || [],
+          }));
+        } catch (e) {
+          console.warn("Failed to preload", m);
+        }
+      }
+    } catch (err) {
+      console.error("Preload error:", err);
+    }
+  };
 
   const generateId = () =>
     `ID_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -828,8 +867,8 @@ export default function Setup() {
         condition_status: "condition_status",
         condition: "condition_status",
         status: "status",
-        owner_assigned_to: "owner_assigned_to",
-        owner: "owner_assigned_to",
+        // owner_assigned_to: "owner_assigned_to",
+        // owner: formValues.owner_assigned_to || null || "owner_assigned_to",
         warranty_info: "warranty_info",
         is_supplier_vendor_managed: "is_supplier_vendor_managed",
         supplier_vendor_name: "supplier_vendor_name",
@@ -846,6 +885,10 @@ export default function Setup() {
         payload.is_supplier_vendor_managed =
           payload.is_supplier_vendor_managed === "yes" ||
           payload.is_supplier_vendor_managed === "true";
+      }
+
+      if (formValues.owner_assigned_to) {
+        payload.owner_assigned_to = formValues.owner_assigned_to;
       }
 
       return payload;
@@ -905,6 +948,15 @@ export default function Setup() {
 
       if (modalKey === "data_transfer") frontendType = "data_transfer";
 
+      if (frontendType === "security_safeguards") {
+        return; // no backend call for parent module
+      }
+
+      // Fix for security submodules
+      if (securityModules.find((m) => m.modalKey === modalKey)) {
+        frontendType = modalKey;
+      }
+
       // Security modules
       if (modalKey === "compliance_measures")
         frontendType = "compliance_measures";
@@ -951,6 +1003,12 @@ export default function Setup() {
     setNestedModal(null);
     setSelectedItem(null);
     setFieldErrors({});
+    // Security Safeguards is a "parent container", not a config type
+    if (modalKey === "security_safeguards") {
+      setActiveModal("security_safeguards");
+      return;
+    }
+
     await loadModuleData(modalKey);
   };
 
@@ -1199,13 +1257,13 @@ export default function Setup() {
               </div>
               <div className="flex gap-2">
                 <ActionButton
-                  onClick={() => handleView(item)}
+                  onClick={() => handleView(element)}
                   icon={Eye}
                   color="blue"
                   title="View"
                 />
                 <ActionButton
-                  onClick={() => handleEdit(item, editKey)}
+                  onClick={() => handleEdit(element, "edit_data_transfer")}
                   icon={Edit}
                   color="green"
                   title="Edit"
@@ -1278,13 +1336,13 @@ export default function Setup() {
               </div>
               <div className="flex gap-2">
                 <ActionButton
-                  onClick={() => handleView(item)}
+                  onClick={() => handleView(element)}
                   icon={Eye}
                   color="blue"
                   title="View"
                 />
                 <ActionButton
-                  onClick={() => handleEdit(item, editKey)}
+                  onClick={() => handleEdit(element, "edit_data_element")}
                   icon={Edit}
                   color="green"
                   title="Edit"
@@ -1783,7 +1841,7 @@ export default function Setup() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:border-[#5DEE92] transition-colors"
-            onClick={() => setActiveModal(module.modalKey)}
+            onClick={(e) => handleConfigureClick(module.modalKey, e)}
           >
             <div className="flex items-center gap-3">
               <module.icon size={24} className="text-[#5DEE92]" />
@@ -1795,58 +1853,68 @@ export default function Setup() {
     </div>
   );
 
-  const renderSecurityModuleList = (title, sampleData, addKey, editKey) => (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-semibold dark:text-white">{title}</h3>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => handleAddNew(addKey)}
-          className="bg-[#5DEE92] text-black px-4 py-2 rounded-lg font-medium hover:bg-green-500 transition-colors text-sm flex items-center gap-2"
-        >
-          <Plus size={16} />
-          New {title.split(" ")[0]}
-        </motion.button>
-      </div>
-      <div className="space-y-3">
-        {(configs[addKey.replace("new_", "")]?.length
-          ? configs[addKey.replace("new_", "")]
-          : sampleData
-        ).map((item) => (
-          <div
-            key={item.id}
-            className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
+  const renderSecurityModuleList = (
+    title,
+    sampleData,
+    addKey,
+    editKey,
+    moduleKey
+  ) => {
+    const list = configs[moduleKey] || [];
+    return (
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-lg font-semibold dark:text-white">{title}</h3>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => handleAddNew(addKey)}
+            className="bg-[#5DEE92] text-black px-4 py-2 rounded-lg font-medium hover:bg-green-500 transition-colors text-sm flex items-center gap-2"
           >
-            <div className="flex-1">
-              <h4 className="font-medium text-gray-900 dark:text-white">
-                {item.name}
-              </h4>
-              <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-400 mt-1">
-                <span>ID: {item.config_id || item.uniqueId}</span>
-                <span>{item.description || item.metadata?.description}</span>
-              </div>
+            <Plus size={16} />
+            New {title.split(" ")[0]}
+          </motion.button>
+        </div>
+        <div className="space-y-3">
+          {list.length === 0 && (
+            <div className="text-center py-6 text-gray-500">
+              No configurations found
             </div>
-            <div className="flex gap-2">
-              <ActionButton
-                onClick={() => handleView(item)}
-                icon={Eye}
-                color="blue"
-                title="View"
-              />
-              <ActionButton
-                onClick={() => handleEdit(item, editKey)}
-                icon={Edit}
-                color="green"
-                title="Edit"
-              />
-              <ActionButton
-                // onClick={() => handleArchive(item.id, moduleKey)}
-                icon={Archive}
-                color="orange"
-                title="Archive"
-              />
-              {/* {moduleKey === "assets_management" && (
+          )}
+          {list.map((item) => (
+            <div
+              key={item.id}
+              className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
+            >
+              <div className="flex-1">
+                <h4 className="font-medium text-gray-900 dark:text-white">
+                  {item.name}
+                </h4>
+                <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  <span>ID: {item.config_id || item.uniqueId}</span>
+                  <span>{item.description || item.metadata?.description}</span>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <ActionButton
+                  onClick={() => handleView(item)}
+                  icon={Eye}
+                  color="blue"
+                  title="View"
+                />
+                <ActionButton
+                  onClick={() => handleEdit(item, editKey)}
+                  icon={Edit}
+                  color="green"
+                  title="Edit"
+                />
+                <ActionButton
+                  // onClick={() => handleArchive(item.id, moduleKey)}
+                  icon={Archive}
+                  color="orange"
+                  title="Archive"
+                />
+                {/* {moduleKey === "assets_management" && (
                 <ActionButton
                   onClick={() => handleDeleteAsset(item.id)}
                   icon={Trash2}
@@ -1854,13 +1922,13 @@ export default function Setup() {
                   title="Delete"
                 />
               )} */}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
-  );
-
+    );
+  };
   // ===== FORM COMPONENTS (with name attributes for integration) =====
 
   const renderAssetForm = () => (
@@ -1920,13 +1988,35 @@ export default function Setup() {
             .toLowerCase()
             .replace(" ", "_")}
         />
-        <FormSelect
-          label="Owner/Assigned to"
-          name="owner_assigned_to"
-          options={[]}
-          required
-          defaultValue={selectedItem?.owner_assigned_to || ""}
-        />
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-1">
+            Owner / Assigned To
+          </label>
+
+          <UserSearchSelect
+            value={
+              formValues.owner_assigned_to
+                ? {
+                    label: formValues.owner_assigned_to_label,
+                    value: formValues.owner_assigned_to,
+                  }
+                : selectedItem?.owner
+                ? {
+                    label: `${selectedItem.owner.full_name} (${selectedItem.owner.email})`,
+                    value: selectedItem.owner.id,
+                  }
+                : null
+            }
+            onChange={(opt) => {
+              setFormValues((prev) => ({
+                ...prev,
+                owner_assigned_to: opt?.value || null,
+                owner_assigned_to_label: opt?.label || "",
+              }));
+            }}
+          />
+        </div>
+
         <FormInput
           label="Warranty Information"
           name="warranty_info"
@@ -2018,6 +2108,49 @@ export default function Setup() {
     </div>
   );
 
+  const renderDataTransferForm = () => (
+    <div className="p-6 space-y-6">
+      <h3 className="text-lg font-semibold dark:text-white">
+        {selectedItem ? "Edit Data Transfer" : "Add New Data Transfer"}
+      </h3>
+
+      <div className="grid grid-cols-1 gap-4">
+        <FormInput
+          label="Name"
+          name="name"
+          required
+          defaultValue={selectedItem?.name || ""}
+        />
+        <FormInput
+          label="Description"
+          name="description"
+          required
+          defaultValue={selectedItem?.description || ""}
+        />
+        <FormSelect
+          label="Value Type"
+          name="valueType"
+          options={valueTypes}
+          defaultValue={String(
+            selectedItem?.metadata?.valueType ?? selectedItem?.valueType ?? ""
+          ).toLowerCase()}
+        />
+        <FormSelect
+          label="Sensitive"
+          name="sensitive"
+          options={yesNoOptions}
+          defaultValue={String(
+            selectedItem?.metadata?.valueType ?? selectedItem?.valueType ?? ""
+          ).toLowerCase()}
+        />
+      </div>
+
+      {fieldErrors["name"] && (
+        <div className="text-sm text-red-600">{fieldErrors["name"]}</div>
+      )}
+    </div>
+  );
+
   const renderDataElementForm = () => (
     <div className="p-6 space-y-6">
       <h3 className="text-lg font-semibold dark:text-white">
@@ -2041,10 +2174,8 @@ export default function Setup() {
           name="valueType"
           options={valueTypes}
           required
-          defaultValue={(
-            selectedItem?.metadata?.valueType ||
-            selectedItem?.valueType ||
-            ""
+          defaultValue={String(
+            selectedItem?.metadata?.valueType ?? selectedItem?.valueType ?? ""
           ).toLowerCase()}
         />
         <FormSelect
@@ -2053,8 +2184,8 @@ export default function Setup() {
           options={yesNoOptions}
           required
           defaultValue={(
-            selectedItem?.metadata?.sensitive ||
-            selectedItem?.sensitive ||
+            selectedItem?.metadata?.valueType ??
+            selectedItem?.valueType ??
             ""
           ).toLowerCase()}
         />
@@ -2546,7 +2677,8 @@ export default function Setup() {
         "Compliance Measures",
         sampleComplianceMeasures,
         "new_compliance",
-        "edit_compliance"
+        "edit_compliance",
+        "compliance_measures"
       ),
       size: "xl",
     },
@@ -2556,7 +2688,8 @@ export default function Setup() {
         "Operational Measures",
         sampleOperationalMeasures,
         "new_operational",
-        "edit_operational"
+        "edit_operational",
+        "operational_measures"
       ),
       size: "xl",
     },
@@ -2566,7 +2699,8 @@ export default function Setup() {
         "Ethical Measures",
         sampleEthicalMeasures,
         "new_ethical",
-        "edit_ethical"
+        "edit_ethical",
+        "ethical_measures"
       ),
       size: "xl",
     },
@@ -2576,7 +2710,8 @@ export default function Setup() {
         "Technical Measures",
         sampleTechnicalMeasures,
         "new_technical",
-        "edit_technical"
+        "edit_technical",
+        "technical_measures"
       ),
       size: "xl",
     },
@@ -2586,7 +2721,8 @@ export default function Setup() {
         "Access Measures",
         sampleAccessMeasures,
         "new_access",
-        "edit_access"
+        "edit_access",
+        "access_measures"
       ),
       size: "xl",
     },
@@ -2596,7 +2732,8 @@ export default function Setup() {
         "Data Governance Measures",
         sampleDataGovernance,
         "new_data_gov",
-        "edit_data_gov"
+        "edit_data_gov",
+        "data_governance"
       ),
       size: "xl",
     },
@@ -2606,7 +2743,8 @@ export default function Setup() {
         "Transparency Measures",
         sampleTransparencyMeasures,
         "new_transparency",
-        "edit_transparency"
+        "edit_transparency",
+        "transparency_measures"
       ),
       size: "xl",
     },
@@ -2616,7 +2754,8 @@ export default function Setup() {
         "Physical Security Measures",
         samplePhysicalSecurity,
         "new_physical",
-        "edit_physical"
+        "edit_physical",
+        "physical_security"
       ),
       size: "xl",
     },
@@ -2626,7 +2765,8 @@ export default function Setup() {
         "Risk Management Measures",
         sampleRiskManagement,
         "new_risk",
-        "edit_risk"
+        "edit_risk",
+        "risk_management"
       ),
       size: "xl",
     },
@@ -2657,6 +2797,16 @@ export default function Setup() {
     edit_data_element: {
       title: "Edit Data Element",
       content: renderDataElementForm(),
+      size: "lg",
+    },
+    new_data_transfer: {
+      title: "Add New Data Transfer",
+      content: renderDataTransferForm(),
+      size: "lg",
+    },
+    edit_data_transfer: {
+      title: "Edit Data Transfer",
+      content: renderDataTransferForm(),
       size: "lg",
     },
     new_data_deletion: {
@@ -2820,6 +2970,7 @@ export default function Setup() {
   const handleSave = async () => {
     // wrapper to call saveNestedForm
     await saveNestedForm();
+    setFormValues({});
   };
 
   const uploadFilesForAsset = async (assetId, files) => {
@@ -2929,7 +3080,7 @@ export default function Setup() {
               payload
             );
           } else {
-            await updateConfig(backendType, selectedItem.id, payload);
+            await updateConfig(frontendType, selectedItem.id, payload);
           }
           addToast("success", "Updated successfully");
         } catch (err) {
@@ -2941,7 +3092,7 @@ export default function Setup() {
         // create
         try {
           if (backendType) {
-            await createConfig(backendType, payload);
+            await createConfig(frontendType, payload);
           } else {
             await createSecuritySafeguard(frontendType, payload);
           }
@@ -2971,6 +3122,7 @@ export default function Setup() {
       setActiveModal(null);
     }
     setSelectedItem(null);
+    setFormValues({});
   };
 
   // when nested modal opens with selectedItem (edit), prefill fields by setting values on inputs
@@ -3057,41 +3209,47 @@ export default function Setup() {
 
       {/* Setup Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {setupOptions.map((option, idx) => (
-          <motion.div
-            key={option.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.1 }}
-            whileHover={{ scale: 1.02 }}
-            className="border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg shadow-sm p-5 flex flex-col justify-between"
-          >
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0">{option.icon}</div>
-              <div>
-                <h3 className="font-semibold text-gray-900 dark:text-white">
-                  {option.title}
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {option.description}
-                </p>
+        {setupOptions.map((option, idx) => {
+          const count =
+            option.modalKey === "assets_management"
+              ? assets.length
+              : configs[option.modalKey]?.length || 0;
+          return (
+            <motion.div
+              key={option.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.1 }}
+              whileHover={{ scale: 1.02 }}
+              className="border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg shadow-sm p-5 flex flex-col justify-between"
+            >
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0">{option.icon}</div>
+                <div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white">
+                    {option.title}
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {option.description}
+                  </p>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center justify-between mt-6">
-              <span className="font-semibold text-gray-900 dark:text-white">
-                {option.items} items
-              </span>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.97 }}
-                className="bg-[#5DEE92] text-black text-sm font-medium px-4 py-2 rounded-lg hover:bg-green-500 transition"
-                onClick={(e) => handleConfigureClick(option.modalKey, e)}
-              >
-                Configure
-              </motion.button>
-            </div>
-          </motion.div>
-        ))}
+              <div className="flex items-center justify-between mt-6">
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {count} items
+                </span>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.97 }}
+                  className="bg-[#5DEE92] text-black text-sm font-medium px-4 py-2 rounded-lg hover:bg-green-500 transition"
+                  onClick={(e) => handleConfigureClick(option.modalKey, e)}
+                >
+                  Configure
+                </motion.button>
+              </div>
+            </motion.div>
+          );
+        })}
       </div>
 
       {/* Main Modals (List Views) */}
