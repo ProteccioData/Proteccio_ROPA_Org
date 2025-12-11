@@ -1,0 +1,20 @@
+{
+  "quick_actions": "Quick Actions",
+  "date_range": "Date Range",
+  "select_range": "Select Range",
+  "last_7_days": "Last 7 Days",
+  "last_30_days": "Last 30 Days",
+  "type": "Type",
+  "all": "All",
+  "login": "Login",
+  "logout": "Logout",
+  "create": "Create",
+  "update": "Update",
+  "delete": "Delete",
+  "view": "View",
+  "user": "User",
+  "date_range_2": "Date range",
+  "log_type": "Log type",
+  "search_logs": "Search Logs",
+  "expot_logs": "Expot Logs"
+}

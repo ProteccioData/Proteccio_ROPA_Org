@@ -1,0 +1,20 @@
+{
+  "click_to_upload_documents": "Click to upload documents",
+  "pdf_word_excel_images_email": "PDF, Word, Excel, Images, ईमेल",
+  "purpose_scope": "Purpose & Scope",
+  "add_action_item": "+ योजयतु Action Item",
+  "select": "चिनोतु",
+  "assess_necessity_proportionality": "Assess Necessity & Proportionality",
+  "select_legal_basis": "कानूनी आधारं चिनोतु",
+  "identify_risks_to_individuals": "Identify Risks to Individuals",
+  "select_likelihood": "संभावनां चिनोतु",
+  "select_impact": "प्रभावं चिनोतु",
+  "evaluate_and_mitigate_risks": "Evaluate and Mitigate Risks",
+  "who_is_responsible_for_implementing_each_mitigatio": "Who is responsible for implementing each mitigation? *",
+  "sign_off_review_consultation": "Sign-off, Review & Consultation",
+  "saving": "सञ्चय...",
+  "previous": "पूर्व",
+  "skip": "Skip",
+  "link_complete": "Link & Complete",
+  "save_next": "सञ्चय & अग्रिम"
+}

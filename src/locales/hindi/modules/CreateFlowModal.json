@@ -1,0 +1,16 @@
+{
+  "title": "शीर्षक",
+  "description": "विवरण",
+  "category": "Category",
+  "select_category": "चुनें Category",
+  "specify_category": "Specify Category",
+  "status": "स्थिति",
+  "active": "सक्रिय",
+  "archived": "Archived",
+  "view_diagram": "देखें Diagram",
+  "close": "बंद करें",
+  "open_diagram": "Open Diagram",
+  "cancel": "रद्द करें",
+  "enter_title": "Enter शीर्षक",
+  "enter_custom_category": "Enter custom category"
+}

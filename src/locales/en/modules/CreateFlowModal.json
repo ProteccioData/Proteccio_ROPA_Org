@@ -1,0 +1,16 @@
+{
+  "title": "Title",
+  "description": "Description",
+  "category": "Category",
+  "select_category": "Select Category",
+  "specify_category": "Specify Category",
+  "status": "Status",
+  "active": "Active",
+  "archived": "Archived",
+  "view_diagram": "View Diagram",
+  "close": "Close",
+  "open_diagram": "Open Diagram",
+  "cancel": "Cancel",
+  "enter_title": "Enter title",
+  "enter_custom_category": "Enter custom category"
+}

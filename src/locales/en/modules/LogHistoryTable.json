@@ -1,0 +1,11 @@
+{
+  "log_history": "Log History",
+  "system_activity_logs_and_security_events": "System activity logs and security events",
+  "user": "User",
+  "time": "Time",
+  "ip_address": "IP Address",
+  "type": "Type",
+  "message": "Message",
+  "prev": "Prev",
+  "next": "Next"
+}

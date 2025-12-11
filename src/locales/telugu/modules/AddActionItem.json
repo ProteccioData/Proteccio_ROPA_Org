@@ -1,0 +1,20 @@
+{
+  "add_action_item": "చర్య అంశాన్ని జోడించండి",
+  "action_item_id": "చర్య అంశం ID",
+  "title": "శీర్షిక *",
+  "description": "వివరణ *",
+  "created_date": "Created తేదీ",
+  "due_date": "గడువు తేదీ *",
+  "status": "స్థితి *",
+  "likelihood": "Likelihood *",
+  "select": "ఎంచుకోండి",
+  "impact": "Impact *",
+  "risk_score": "రిస్క్ స్కోర్",
+  "risk_category": "రిస్క్ వర్గం",
+  "assigned_to": "కేటాయించబడింది *",
+  "documents": "Documents",
+  "comments": "Comments",
+  "linked_ropa_id": "Linked RoPA ID",
+  "linked_assessment_id": "Linked Assessment ID",
+  "linked_data_mapping_id": "Linked Data Mapping ID"
+}

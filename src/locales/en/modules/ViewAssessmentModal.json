@@ -1,0 +1,12 @@
+{
+  "no_stages_found": "No stages found.",
+  "no_fields_added_in_this_stage_yet": "No fields added in this stage yet.",
+  "title": "Title",
+  "description": "Description",
+  "impact": "Impact",
+  "likelihood": "Likelihood",
+  "risk_score": "Risk Score",
+  "risk_category": "Risk Category",
+  "created_by": "Created By",
+  "created_at": "Created At"
+}

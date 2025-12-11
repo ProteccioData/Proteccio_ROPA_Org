@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShieldCheck, Globe } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import {
   apiGetProfile,
   apiUpdateProfile,
@@ -15,6 +16,7 @@ import {
 import { useToast } from "../ui/ToastProvider";
 import TwoFactorDisable from "../modules/TwoFactorDisable";
 import TwoFactorSetup from "../modules/TwoFactorSetup";
+import { changeLanguage } from "../../i18n/config";
 
 /* ---------------------- Main component ---------------------- */
 
@@ -29,10 +31,19 @@ export default function ProfileSettings({
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [profileError, setProfileError] = useState(null);
 
+  // i18n
+  const { t, i18n } = useTranslation('pages', { keyPrefix: 'ProfileSettings' });
+  
   // UI states
-  const [lang, setLang] = useState("en");
+  const [lang, setLang] = useState(i18n.language || "en");
   const [fontSize, setFontSize] = useState("md");
   const [keyboardNav, setKeyboardNav] = useState(true);
+  
+  // Handle language change
+  const handleLanguageChange = (newLang) => {
+    setLang(newLang);
+    changeLanguage(newLang);
+  };
   // 2FA state
   const [twoFAEnabled, setTwoFAEnabled] = useState(false);
   const [showSetup2FA, setShowSetup2FA] = useState(false);
@@ -160,11 +171,11 @@ export default function ProfileSettings({
     const errors = [];
 
     if (!currentPwd || !newPwd || !confirmPwd)
-      errors.push(t["pwd_all_required"]);
-    if (newPwd !== confirmPwd) errors.push(t["pwd_mismatch"]);
-    if (newPwd.length < 8) errors.push(t["pwd_min_len"]);
-    if (!/[A-Z]/.test(newPwd)) errors.push(t["pwd_uppercase"]);
-    if (!/[0-9]/.test(newPwd)) errors.push(t["pwd_number"]);
+      errors.push(t('pwd_all_required'));
+    if (newPwd !== confirmPwd) errors.push(t('pwd_mismatch'));
+    if (newPwd.length < 8) errors.push(t('pwd_min_len'));
+    if (!/[A-Z]/.test(newPwd)) errors.push(t('pwd_uppercase'));
+    if (!/[0-9]/.test(newPwd)) errors.push(t('pwd_number'));
 
     setPasswordErrors(errors);
 
@@ -178,7 +189,7 @@ export default function ProfileSettings({
       });
 
       setShowChangePassword(false);
-      addToast("success", t["pwd_changed"]);
+      addToast("success", t('pwd_changed'));
     } catch (err) {
       const message =
         err.response?.data?.error || "Failed to change password. Try again.";
@@ -186,8 +197,6 @@ export default function ProfileSettings({
       setPasswordErrors([message]);
     }
   }
-
-  const t = translations[lang];
 
   return (
     <div
@@ -202,14 +211,14 @@ export default function ProfileSettings({
         >
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              {t["profile_settings"]}
+              {t('profile_settings')}
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              {t["profile_subtitle"]}
+              {t('profile_subtitle')}
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <LanguageSelector lang={lang} setLang={setLang} />
+            <LanguageSelector lang={lang} setLang={handleLanguageChange} />
           </div>
         </motion.header>
 
@@ -243,7 +252,7 @@ export default function ProfileSettings({
                       {user.jobTitle} • {user.department}
                     </p>
                     <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                      {t["role"]}:{" "}
+                      {t('role')}:{" "}
                       <span className="font-medium text-gray-700 dark:text-gray-200">
                         {user.role}
                       </span>
@@ -253,7 +262,7 @@ export default function ProfileSettings({
 
                 <div className="mt-4 space-y-2">
                   <small className="text-xs text-gray-500 dark:text-gray-400">
-                    {t["status"]}
+                    {t('status')}
                   </small>
                   <div className="flex items-center gap-2">
                     <span
@@ -271,15 +280,15 @@ export default function ProfileSettings({
                         className="text-sm px-3 py-1 rounded-md border hover:opacity-90 transition bg-gray-50 dark:bg-gray-700/60 dark:text-white "
                       >
                         {user.status === "Locked"
-                          ? t["unlock"]
-                          : t["lock_account"]}
+                          ? t('unlock')
+                          : t('lock_account')}
                       </button>
                     </div> */}
                   </div>
 
                   <div className="pt-2 border-t border-gray-100 dark:border-gray-700/40 mt-2">
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {t["last_login"]}
+                      {t('last_login')}
                     </p>
                     <p className="text-sm text-gray-700 dark:text-gray-200">
                       {formatDate(user.lastLogin.time)} • {user.lastLogin.ip}
@@ -289,21 +298,21 @@ export default function ProfileSettings({
 
                 <div className="mt-4 border-t border-gray-100 dark:border-gray-700/40 pt-3">
                   <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-                    {t["accessibility"]}
+                    {t('accessibility')}
                   </h3>
                   <div className="mt-3 space-y-2">
                     <Select
-                      label={t["font_size"]}
+                      label={t('font_size')}
                       value={fontSize}
                       onChange={setFontSize}
                       options={[
-                        { value: "sm", label: t["small"] },
-                        { value: "md", label: t["medium"] },
-                        { value: "lg", label: t["large"] },
+                        { value: "sm", label: t('small') },
+                        { value: "md", label: t('medium') },
+                        { value: "lg", label: t('large') },
                       ]}
                     />
                     {/* <Toggle
-                      label={t["keyboard_nav"]}
+                      label={t('keyboard_nav')}
                       checked={keyboardNav}
                       setChecked={setKeyboardNav}
                     /> */}
@@ -312,7 +321,7 @@ export default function ProfileSettings({
 
                 {user.role === "org_admin" && (<aside className="col-span-1 mt-8 rounded-2xl  ">
                   <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-                    {t["active_sessions"] || "Active Users Sessions"}
+                    {t('active_sessions') || "Active Users Sessions"}
                   </h3>
                   <div className="mt-3 space-y-2">
                     {sessions.map((s) => (
@@ -333,7 +342,7 @@ export default function ProfileSettings({
                             onClick={() => handleEndSession(s.id)}
                             className="px-2 py-1 text-xs rounded-md border text-red-500"
                           >
-                            {t["end"]}
+                            {t('end')}
                           </button>
                         </div>
                       </div>
@@ -344,33 +353,33 @@ export default function ProfileSettings({
                         onClick={handleEndAllSessions}
                         className="px-3 py-2 rounded-md border dark:text-white"
                       >
-                        {t["end_all"]}
+                        {t('end_all')}
                       </button>
                       <button
-                        onClick={() => alert(t["session_warn_modal"])}
+                        onClick={() => alert(t('session_warn_modal'))}
                         className="px-3 py-2 bg-[#5DEE92] text-black rounded-md"
                       >
-                        {t["warn_users"]}
+                        {t('warn_users')}
                       </button>
                     </div>
 
                     {isAdmin && (
                       <div className="mt-4 border-t border-gray-100 dark:border-gray-700/40 pt-3">
                         <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
-                          {t["admin_tools"]}
+                          {t('admin_tools')}
                         </h4>
                         <div className="mt-2 flex flex-col gap-2">
                           <button
-                            onClick={() => alert(t["view_role_assignments"])}
+                            onClick={() => alert(t('view_role_assignments'))}
                             className="px-3 py-2 rounded-md border"
                           >
-                            {t["view_role_assignments"]}
+                            {t('view_role_assignments')}
                           </button>
                           <button
-                            onClick={() => alert(t["force_lock"])}
+                            onClick={() => alert(t('force_lock'))}
                             className="px-3 py-2 rounded-md border"
                           >
-                            {t["force_lock"]}
+                            {t('force_lock')}
                           </button>
                         </div>
                       </div>
@@ -385,35 +394,35 @@ export default function ProfileSettings({
           <section className="col-span-2 bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700 shadow">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                {t["personal_information"]}
+                {t('personal_information')}
               </h2>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setEditOpen(true)}
                   className="px-3 py-2 bg-[#5DEE92] hover:opacity-95 text-black rounded-md"
                 >
-                  {t["edit"]}
+                  {t('edit')}
                 </button>
               </div>
             </div>
 
             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <InfoRow label={t["first_name"]} value={user?.firstName || "-"} />
-              <InfoRow label={t["last_name"]} value={user?.lastName || "-"} />
-              {/* <InfoRow label={t["job_title"]} value={user?.jobTitle || "-"} /> */}
+              <InfoRow label={t('first_name')} value={user?.firstName || "-"} />
+              <InfoRow label={t('last_name')} value={user?.lastName || "-"} />
+              {/* <InfoRow label={t('job_title')} value={user?.jobTitle || "-"} /> */}
               <InfoRow
-                label={t["department"]}
+                label={t('department')}
                 value={user?.department || "-"}
               />
-              <InfoRow label={t["timezone"]} value={user?.timezone || "-"} />
-              <InfoRow label={t["email"]} value={user?.email || "-"} />
-              <InfoRow label={t["role"]} value={user?.role || "-"} />
-              {/* <InfoRow label={t["access_level"]} value={t["access_desc"]} /> */}
+              <InfoRow label={t('timezone')} value={user?.timezone || "-"} />
+              <InfoRow label={t('email')} value={user?.email || "-"} />
+              <InfoRow label={t('role')} value={user?.role || "-"} />
+              {/* <InfoRow label={t('access_level')} value={t('access_desc')} /> */}
             </div>
 
             <div className="mt-6 border-t border-gray-100 dark:border-gray-700/40 pt-4">
               <h3 className="font-semibold text-gray-900 dark:text-white">
-                {t["security"]}
+                {t('security')}
               </h3>
 
               <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -426,7 +435,7 @@ export default function ProfileSettings({
                           Two-Factor Authentication
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {twoFAEnabled ? t["2fa_enabled"] : t["2fa_disabled"]}
+                          {twoFAEnabled ? t('2fa_enabled') : t('2fa_disabled')}
                         </p>
                       </div>
                     </div>
@@ -448,27 +457,27 @@ export default function ProfileSettings({
                   <div className="flex items-center gap-3 justify-between">
                     <div>
                       <p className="font-medium text-gray-900 dark:text-white">
-                        {t["change_password"]}
+                        {t('change_password')}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {t["pwd_rules_preview"]}
+                        {t('pwd_rules_preview')}
                       </p>
                     </div>
                     <button
                       onClick={() => setShowChangePassword(true)}
                       className="px-3 py-2 rounded-md border dark:text-white"
                     >
-                      {t["change"]}
+                      {t('change')}
                     </button>
                   </div>
 
                   <div className="flex items-center gap-3 justify-between">
                     <div>
                       <p className="font-medium text-gray-900 dark:text-white">
-                        {t["session_timeout"]}
+                        {t('session_timeout')}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {t["session_timeout_desc"]}
+                        {t('session_timeout_desc')}
                       </p>
                     </div>
                     <Select
@@ -488,10 +497,10 @@ export default function ProfileSettings({
                   <div className="flex items-center gap-3 justify-between">
                     <div>
                       <p className="font-medium text-gray-900 dark:text-white">
-                        {t["recent_activity"]}
+                        {t('recent_activity')}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {t["recent_activity_desc"]}
+                        {t('recent_activity_desc')}
                       </p>
                     </div>
                     <div>
@@ -499,7 +508,7 @@ export default function ProfileSettings({
                         onClick={() => {}}
                         className="px-3 py-2 rounded-md border dark:text-white"
                       >
-                        {t["view_all"]}
+                        {t('view_all')}
                       </button>
                     </div>
                   </div>
@@ -523,7 +532,7 @@ export default function ProfileSettings({
                             onClick={() => handleEndSession(s.id)}
                             className="px-2 py-1 text-xs rounded-md border text-red-500"
                           >
-                            {t["end_session"]}
+                            {t('end_session')}
                           </button>
                         </div>
                       </div>
@@ -534,13 +543,13 @@ export default function ProfileSettings({
                         onClick={handleEndAllSessions}
                         className="px-3 py-2 rounded-md border dark:text-white"
                       >
-                        {t["end_all_sessions"]}
+                        {t('end_all_sessions')}
                       </button>
                       <button
                         onClick={handleSignOutAll}
                         className="px-3 py-2 bg-[#5DEE92] text-black rounded-md"
                       >
-                        {t["sign_out_all"]}
+                        {t('sign_out_all')}
                       </button>
                     </div>
                   </div>
@@ -551,19 +560,19 @@ export default function ProfileSettings({
             <div className="mt-6 flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-300">
-                  {t["support_langs"]}
+                  {t('support_langs')}
                 </p>
               </div>
               <div>
                 <select
                   value={lang}
-                  onChange={(e) => setLang(e.target.value)}
+                  onChange={(e) => handleLanguageChange(e.target.value)}
                   className="rounded-md border px-3 py-2 bg-white dark:bg-gray-800 dark:text-white"
                 >
-                  <option value="en">English</option>
-                  <option value="fr">Français</option>
-                  <option value="de">Deutsch</option>
-                  <option value="es">Español</option>
+                  <option value="en">{t('english')}</option>
+                  <option value="hindi">{t('hindi')}</option>
+                  <option value="sanskrit">{t('sanskrit')}</option>
+                  <option value="telugu">{t('telugu')}</option>
                 </select>
               </div>
             </div>
@@ -571,17 +580,17 @@ export default function ProfileSettings({
             <div className="mt-6 border-t border-gray-100 dark:border-gray-700/40 pt-4 flex flex-col md:flex-row gap-3">
               <button
                 onClick={() => {
-                  alert(t["access_requested"]);
+                  alert(t('access_requested'));
                 }}
                 className="px-4 py-2 rounded-md border hover:bg-gray-50 dark:hover:bg-gray-700/50 dark:text-white"
               >
-                {t["request_access"]}
+                {t('request_access')}
               </button>
               <button
-                onClick={() => alert(t["download_user_data"])}
+                onClick={() => alert(t('download_user_data'))}
                 className="px-4 py-2 bg-[#5DEE92] text-black rounded-md"
               >
-                {t["download_data"]}
+                {t('download_data')}
               </button>
             </div>
           </section>
@@ -700,6 +709,8 @@ function Toggle({ label, checked, setChecked }) {
 }
 
 function LanguageSelector({ lang, setLang }) {
+  const { t } = useTranslation('pages', { keyPrefix: 'ProfileSettings' });
+  
   return (
     <div className="flex items-center gap-2">
       <Globe className="h-4 w-4 text-gray-500 dark:text-gray-300" />
@@ -708,10 +719,10 @@ function LanguageSelector({ lang, setLang }) {
         onChange={(e) => setLang(e.target.value)}
         className="rounded-md border dark:text-white px-2 py-1 bg-white dark:bg-gray-800 text-sm"
       >
-        <option value="en">EN</option>
-        <option value="fr">FR</option>
-        <option value="de">DE</option>
-        <option value="es">ES</option>
+        <option value="en">{t('en')}</option>
+        <option value="hindi">{t('hi')}</option>
+        <option value="sanskrit">{t('sa')}</option>
+        <option value="telugu">{t('te')}</option>
       </select>
     </div>
   );
@@ -744,6 +755,7 @@ function Modal({ children, onClose }) {
 /* ---------------------- Edit Profile Form (modal) ---------------------- */
 
 function EditProfileForm({ initial = {}, onCancel, onSave, busy }) {
+  const { t } = useTranslation('pages', { keyPrefix: 'ProfileSettings' });
   const [full_name, setFullName] = useState(initial.full_name || "");
   const [department, setDepartment] = useState(initial.department || "");
   const [userName, setUserName] = useState(initial.userName || "");
@@ -821,6 +833,7 @@ function EditProfileForm({ initial = {}, onCancel, onSave, busy }) {
 /* ---------------------- Change Password Form ---------------------- */
 
 function ChangePasswordForm({ onSubmit, errors = [], busy }) {
+  const { t } = useTranslation('pages', { keyPrefix: 'ProfileSettings' });
   const [currentPwd, setCurrentPwd] = useState("");
   const [newPwd, setNewPwd] = useState("");
   const [confirmPwd, setConfirmPwd] = useState("");
@@ -995,267 +1008,3 @@ function sampleAuditLogs() {
   ];
 }
 
-const translations = {
-  en: {
-    profile_settings: "Profile settings",
-    profile_subtitle:
-      "Manage your account, security and accessibility settings.",
-    dark_mode: "Dark mode",
-    role: "Role",
-    status: "Status",
-    last_login: "Last login",
-    accessibility: "Accessibility",
-    font_size: "Font size",
-    small: "Small",
-    medium: "Medium",
-    large: "Large",
-    high_contrast: "High contrast",
-    keyboard_nav: "Keyboard navigation",
-    screen_reader: "Screen reader mode",
-    personal_information: "Personal information",
-    view_logs: "View logs",
-    edit: "Edit",
-    first_name: "First name",
-    last_name: "Last name",
-    job_title: "Job title",
-    department: "Department / Business unit",
-    timezone: "Time zone",
-    email: "Email address",
-    access_level: "Access level",
-    access_desc:
-      "Can create and edit content, but cannot manage users or billing.",
-    security: "Security",
-    change_password: "Change password",
-    pwd_rules_preview: "Minimum 8 chars, uppercase & number required",
-    change: "Change",
-    session_timeout: "Session timeout",
-    session_timeout_desc: "Signed out after inactivity.",
-    recent_activity: "Recent activity",
-    recent_activity_desc: "Last 5 sessions",
-    view_all: "View all",
-    end_session: "End session",
-    end_all_sessions: "End all sessions",
-    sign_out_all: "Sign out of all devices",
-    support_langs: "Supported languages: English, French, German, Spanish",
-    request_access: "Request access change",
-    download_data: "Download user data",
-    access_requested: "Access request submitted — workflow triggered.",
-    admin_only: "Action allowed for admins only.",
-    pwd_all_required: "All password fields are required.",
-    pwd_mismatch: "Passwords do not match.",
-    pwd_min_len: "Password must be at least 8 characters.",
-    pwd_uppercase: "Password must include an uppercase letter.",
-    pwd_number: "Password must include a number.",
-    pwd_changed: "Password changed successfully.",
-    signed_out_all: "Signed out from all devices.",
-    audit_logs: "Audit logs",
-    edit_profile_placeholder: "Edit profile flow — coming soon",
-    session_warn_modal: "Show session timeout warning — placeholder",
-    view_role_assignments: "View role assignments",
-    force_lock: "Force account lock",
-    admin_tools: "Admin tools",
-    end: "End",
-    end_all: "End all",
-    warn_users: "Warn users",
-    download_user_data: "Download user data",
-    lock_account: "Lock account",
-    unlock: "Unlock",
-  },
-  fr: {
-    profile_settings: "Paramètres du profil",
-    profile_subtitle:
-      "Gérez votre compte, la sécurité et les préférences d'accessibilité.",
-    dark_mode: "Mode sombre",
-    role: "Rôle",
-    status: "Statut",
-    last_login: "Dernière connexion",
-    accessibility: "Accessibilité",
-    font_size: "Taille de police",
-    small: "Petit",
-    medium: "Moyen",
-    large: "Grand",
-    high_contrast: "Haut contraste",
-    keyboard_nav: "Navigation clavier",
-    screen_reader: "Mode lecteur d'écran",
-    personal_information: "Informations personnelles",
-    view_logs: "Voir les journaux",
-    edit: "Modifier",
-    first_name: "Prénom",
-    last_name: "Nom",
-    job_title: "Poste",
-    department: "Département / Unité",
-    timezone: "Fuseau horaire",
-    email: "E-mail",
-    access_level: "Niveau d'accès",
-    access_desc:
-      "Peut créer et modifier du contenu, mais ne peut pas gérer les utilisateurs ou la facturation.",
-    security: "Sécurité",
-    change_password: "Changer le mot de passe",
-    pwd_rules_preview: "Min 8 caractères, majuscule & chiffre requis",
-    change: "Changer",
-    session_timeout: "Expiration de session",
-    session_timeout_desc: "Déconnecté après inactivité.",
-    recent_activity: "Activité récente",
-    recent_activity_desc: "5 dernières sessions",
-    view_all: "Voir tout",
-    end_session: "Terminer la session",
-    end_all_sessions: "Terminer toutes les sessions",
-    sign_out_all: "Déconnecter tous les appareils",
-    support_langs:
-      "Langues prises en charge : anglais, français, allemand, espagnol",
-    request_access: "Demander un changement d'accès",
-    download_data: "Télécharger les données utilisateur",
-    access_requested: "Demande d'accès soumise — flux déclenché.",
-    admin_only: "Action réservée aux administrateurs.",
-    pwd_all_required: "Tous les champs de mot de passe sont requis.",
-    pwd_mismatch: "Les mots de passe ne correspondent pas.",
-    pwd_min_len: "Le mot de passe doit contenir au moins 8 caractères.",
-    pwd_uppercase: "Le mot de passe doit contenir une majuscule.",
-    pwd_number: "Le mot de passe doit contenir un chiffre.",
-    pwd_changed: "Mot de passe modifié avec succès.",
-    signed_out_all: "Déconnecté de tous les appareils.",
-    audit_logs: "Journaux d'audit",
-    edit_profile_placeholder:
-      "Flux de modification du profil — bientôt disponible",
-    session_warn_modal: "Afficher l'avertissement d'expiration — placeholder",
-    view_role_assignments: "Voir les affectations de rôle",
-    force_lock: "Forcer le verrouillage du compte",
-    admin_tools: "Outils admin",
-    end: "Terminer",
-    end_all: "Tout terminer",
-    warn_users: "Avertir les utilisateurs",
-    download_user_data: "Télécharger les données utilisateur",
-    lock_account: "Verrouiller le compte",
-    unlock: "Déverrouiller",
-  },
-  de: {
-    profile_settings: "Profil-Einstellungen",
-    profile_subtitle:
-      "Verwalten Sie Ihr Konto, Sicherheit und Barrierefreiheitseinstellungen.",
-    dark_mode: "Dunkler Modus",
-    role: "Rolle",
-    status: "Status",
-    last_login: "Letzte Anmeldung",
-    accessibility: "Barrierefreiheit",
-    font_size: "Schriftgröße",
-    small: "Klein",
-    medium: "Mittel",
-    large: "Groß",
-    high_contrast: "Hoher Kontrast",
-    keyboard_nav: "Tastaturnavigation",
-    screen_reader: "Screenreader-Modus",
-    personal_information: "Persönliche Informationen",
-    view_logs: "Protokolle ansehen",
-    edit: "Bearbeiten",
-    first_name: "Vorname",
-    last_name: "Nachname",
-    job_title: "Jobtitel",
-    department: "Abteilung / Geschäftseinheit",
-    timezone: "Zeitzone",
-    email: "E-Mail-Adresse",
-    access_level: "Zugriffsebene",
-    access_desc:
-      "Kann Inhalte erstellen und bearbeiten, aber keine Benutzer oder Abrechnung verwalten.",
-    security: "Sicherheit",
-    change_password: "Passwort ändern",
-    pwd_rules_preview: "Mind. 8 Zeichen, Großbuchstabe & Zahl erforderlich",
-    change: "Ändern",
-    session_timeout: "Sitzungszeitüberschreitung",
-    session_timeout_desc: "Nach Inaktivität abgemeldet.",
-    recent_activity: "Kürzliche Aktivitäten",
-    recent_activity_desc: "Letzte 5 Sitzungen",
-    view_all: "Alle ansehen",
-    end_session: "Sitzung beenden",
-    end_all_sessions: "Alle Sitzungen beenden",
-    sign_out_all: "Von allen Geräten abmelden",
-    support_langs:
-      "Unterstützte Sprachen: Englisch, Französisch, Deutsch, Spanisch",
-    request_access: "Zugriffsänderung anfordern",
-    download_data: "Benutzerdaten herunterladen",
-    access_requested: "Zugriffsanforderung gesendet — Workflow ausgelöst.",
-    admin_only: "Aktion nur für Administratoren.",
-    pwd_all_required: "Alle Passwortfelder sind erforderlich.",
-    pwd_mismatch: "Passwörter stimmen nicht überein.",
-    pwd_min_len: "Passwort muss mindestens 8 Zeichen enthalten.",
-    pwd_uppercase: "Passwort muss einen Großbuchstaben enthalten.",
-    pwd_number: "Passwort muss eine Zahl enthalten.",
-    pwd_changed: "Passwort erfolgreich geändert.",
-    signed_out_all: "Von allen Geräten abgemeldet.",
-    audit_logs: "Audit-Protokolle",
-    edit_profile_placeholder: "Profilbearbeitungsfluss — demnächst",
-    session_warn_modal: "Sitzungswarnung anzeigen — Platzhalter",
-    view_role_assignments: "Rollen-Zuweisungen anzeigen",
-    force_lock: "Konto sperren erzwingen",
-    admin_tools: "Admin-Tools",
-    end: "Beenden",
-    end_all: "Alle beenden",
-    warn_users: "Benutzer warnen",
-    download_user_data: "Benutzerdaten herunterladen",
-    lock_account: "Konto sperren",
-    unlock: "Entsperren",
-  },
-  es: {
-    profile_settings: "Ajustes de perfil",
-    profile_subtitle: "Administra tu cuenta, seguridad y accesibilidad.",
-    dark_mode: "Modo oscuro",
-    role: "Rol",
-    status: "Estado",
-    last_login: "Último inicio de sesión",
-    accessibility: "Accesibilidad",
-    font_size: "Tamaño de fuente",
-    small: "Pequeño",
-    medium: "Medio",
-    large: "Grande",
-    high_contrast: "Alto contraste",
-    keyboard_nav: "Navegación por teclado",
-    screen_reader: "Modo lector de pantalla",
-    personal_information: "Información personal",
-    view_logs: "Ver registros",
-    edit: "Editar",
-    first_name: "Nombre",
-    last_name: "Apellido",
-    job_title: "Cargo",
-    department: "Departamento / Unidad",
-    timezone: "Zona horaria",
-    email: "Correo electrónico",
-    access_level: "Nivel de acceso",
-    access_desc:
-      "Puede crear y editar contenido, pero no administrar usuarios ni facturación.",
-    security: "Seguridad",
-    change_password: "Cambiar contraseña",
-    pwd_rules_preview: "Mín 8 caracteres, mayúscula y número requeridos",
-    change: "Cambiar",
-    session_timeout: "Tiempo de espera de sesión",
-    session_timeout_desc: "Cierre de sesión tras inactividad.",
-    recent_activity: "Actividad reciente",
-    recent_activity_desc: "Últimas 5 sesiones",
-    view_all: "Ver todo",
-    end_session: "Finalizar sesión",
-    end_all_sessions: "Finalizar todas las sesiones",
-    sign_out_all: "Cerrar sesión en todos los dispositivos",
-    support_langs: "Idiomas compatibles: Inglés, Francés, Alemán, Español",
-    request_access: "Solicitar cambio de acceso",
-    download_data: "Descargar datos de usuario",
-    access_requested: "Solicitud de acceso enviada — flujo activado.",
-    admin_only: "Acción permitida solo para administradores.",
-    pwd_all_required: "Todos los campos de contraseña son obligatorios.",
-    pwd_mismatch: "Las contraseñas no coinciden.",
-    pwd_min_len: "La contraseña debe tener al menos 8 caracteres.",
-    pwd_uppercase: "La contraseña debe incluir una letra mayúscula.",
-    pwd_number: "La contraseña debe incluir un número.",
-    pwd_changed: "Contraseña cambiada con éxito.",
-    signed_out_all: "Cerró sesión en todos los dispositivos.",
-    audit_logs: "Registros de auditoría",
-    edit_profile_placeholder: "Flujo de edición de perfil — próximamente",
-    session_warn_modal: "Mostrar advertencia de tiempo de espera — placeholder",
-    view_role_assignments: "Ver asignaciones de roles",
-    force_lock: "Forzar bloqueo de cuenta",
-    admin_tools: "Herramientas de administrador",
-    end: "Finalizar",
-    end_all: "Finalizar todo",
-    warn_users: "Advertir a los usuarios",
-    download_user_data: "Descargar datos de usuario",
-    lock_account: "Bloquear cuenta",
-    unlock: "Desbloquear",
-  },
-};

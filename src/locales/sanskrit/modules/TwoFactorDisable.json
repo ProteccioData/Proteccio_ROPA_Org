@@ -1,0 +1,9 @@
+{
+  "disable_two_factor_authentication": "Disable Two-Factor Authentication",
+  "for_security_reasons_please_enter_your_password_an": "For security reasons, please enter your पासवर्ड and a verification code to disable 2FA.",
+  "password": "पासवर्ड",
+  "verification_code": "Verification Code",
+  "cancel": "रद्द",
+  "enter_your_password": "Enter your पासवर्ड",
+  "enter_6_digit_code": "Enter 6-digit code"
+}

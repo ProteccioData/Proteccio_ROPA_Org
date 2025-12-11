@@ -1,0 +1,20 @@
+{
+  "quick_actions": "Quick Actions",
+  "date_range": "तिथिः Range",
+  "select_range": "सीमां चिनोतु",
+  "last_7_days": "Last 7 Days",
+  "last_30_days": "Last 30 Days",
+  "type": "प्रकार",
+  "all": "सर्व",
+  "login": "Login",
+  "logout": "Logout",
+  "create": "निर्माण",
+  "update": "Update",
+  "delete": "हटयतु",
+  "view": "दृश्य",
+  "user": "उपयोगकर्ता",
+  "date_range_2": "तिथिः range",
+  "log_type": "Log type",
+  "search_logs": "अन्वेषण Logs",
+  "expot_logs": "Expot Logs"
+}

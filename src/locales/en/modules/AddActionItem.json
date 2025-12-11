@@ -1,0 +1,20 @@
+{
+  "add_action_item": "Add Action Item",
+  "action_item_id": "Action Item ID",
+  "title": "Title *",
+  "description": "Description *",
+  "created_date": "Created Date",
+  "due_date": "Due Date *",
+  "status": "Status *",
+  "likelihood": "Likelihood *",
+  "select": "Select",
+  "impact": "Impact *",
+  "risk_score": "Risk Score",
+  "risk_category": "Risk Category",
+  "assigned_to": "Assigned To *",
+  "documents": "Documents",
+  "comments": "Comments",
+  "linked_ropa_id": "Linked RoPA ID",
+  "linked_assessment_id": "Linked Assessment ID",
+  "linked_data_mapping_id": "Linked Data Mapping ID"
+}

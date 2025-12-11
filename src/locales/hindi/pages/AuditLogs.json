@@ -1,0 +1,20 @@
+{
+  "quick_actions": "Quick कार्रवाई",
+  "date_range": "तारीख Range",
+  "select_range": "सीमा चुनें",
+  "last_7_days": "Last 7 Days",
+  "last_30_days": "Last 30 Days",
+  "type": "प्रकार",
+  "all": "सभी",
+  "login": "Login",
+  "logout": "Logout",
+  "create": "बनाएं",
+  "update": "Update",
+  "delete": "हटाएं",
+  "view": "देखें",
+  "user": "उपयोगकर्ता",
+  "date_range_2": "तारीख range",
+  "log_type": "Log type",
+  "search_logs": "खोजें Logs",
+  "expot_logs": "Expot Logs"
+}

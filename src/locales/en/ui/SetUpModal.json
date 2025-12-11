@@ -1,0 +1,17 @@
+{
+  "click_to_upload_or_drag_and_drop": "Click to upload or drag and drop",
+  "download_template": "Download Template",
+  "download_our_template_file_to_ensure_proper_format": "Download our template file to ensure proper formatting for bulk import.",
+  "download_csv_template": "Download CSV Template",
+  "drag_and_drop_your_file_here": "Drag and drop your file here",
+  "or": "or",
+  "browse_files": "browse files",
+  "upload_successful": "✓ Upload successful!",
+  "supported_fields": "Supported Fields",
+  "asset_name_asset_type_asset_id": "• Asset Name, Asset Type, Asset ID",
+  "description_location_status": "• Description, Location, Status",
+  "purchase_date_warranty_information": "• Purchase Date, Warranty Information",
+  "and_all_other_configuration_fields": "• And all other configuration fields",
+  "cancel": "Cancel",
+  "change_file": "Change File"
+}

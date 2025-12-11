@@ -1,0 +1,10 @@
+{
+  "two_factor_authentication": "Two-Factor Authentication",
+  "6_digit_code": "6-digit Code",
+  "backup_code": "Backup Code",
+  "back": "Back",
+  "verifying": "Verifying...",
+  "backup_codes_are_8_character_alphanumeric_codes": "Backup codes are 8-character alphanumeric codes",
+  "each_code_can_only_be_used_once": "Each code can only be used once",
+  "a1b2c3d4": "A1B2C3D4"
+}

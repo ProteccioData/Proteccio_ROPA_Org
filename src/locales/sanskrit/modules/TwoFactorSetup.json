@@ -1,0 +1,22 @@
+{
+  "enable_two_factor_authentication": "Enable Two-Factor Authentication",
+  "add_an_extra_layer_of_security_to_your_account": "योजयतु an extra layer of security to your account",
+  "download_an_authenticator_app": "Download an Authenticator App",
+  "install_google_authenticator_authy_or_microsoft_au": "Install Google Authenticator, Authy, or Microsoft Authenticator on your phone",
+  "scan_qr_code": "Scan QR Code",
+  "scan_the_qr_code_with_your_authenticator_app": "Scan the QR code with your authenticator app",
+  "verify_setup": "Verify Setup",
+  "enter_the_6_digit_code_from_your_app_to_verify": "Enter the 6-digit code from your app to verify",
+  "cancel": "रद्द",
+  "setup_authenticator_app": "Setup Authenticator App",
+  "can_t_scan_the_qr_code": "Can't scan the QR code?",
+  "copy_secret_key": "Copy secret key",
+  "enter_6_digit_code_from_app": "Enter 6-digit code from app",
+  "2fa_enabled_successfully": "2FA Enabled Successfully!",
+  "two_factor_authentication_is_now_enabled_for_your_": "Two-factor authentication is now enabled for your account",
+  "save_your_backup_codes": "सञ्चय Your Backup Codes",
+  "these_codes_can_be_used_to_access_your_account_if_": "These codes can be used to access your account if you lose your authenticator app. Each code can only be used once.",
+  "download": "Download",
+  "done": "Done",
+  "qr_code": "QR Code"
+}

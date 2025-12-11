@@ -1,0 +1,16 @@
+{
+  "title": "శీర్షిక",
+  "description": "వివరణ",
+  "category": "Category",
+  "select_category": "ఎంచుకోండి Category",
+  "specify_category": "Specify Category",
+  "status": "స్థితి",
+  "active": "క్రియాశీల",
+  "archived": "Archived",
+  "view_diagram": "వీక్షించండి Diagram",
+  "close": "మూసివేయండి",
+  "open_diagram": "Open Diagram",
+  "cancel": "రద్దు చేయండి",
+  "enter_title": "Enter శీర్షిక",
+  "enter_custom_category": "Enter custom category"
+}

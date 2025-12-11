@@ -1,0 +1,12 @@
+{
+  "no_stages_found": "కాదు stages found.",
+  "no_fields_added_in_this_stage_yet": "కాదు fields added in this stage yet.",
+  "title": "శీర్షిక",
+  "description": "వివరణ",
+  "impact": "ప్రభావం",
+  "likelihood": "సంభావ్యత",
+  "risk_score": "రిస్క్ స్కోర్",
+  "risk_category": "రిస్క్ వర్గం",
+  "created_by": "Created By",
+  "created_at": "Created At"
+}

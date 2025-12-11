@@ -1,0 +1,20 @@
+{
+  "quick_actions": "Quick Actions",
+  "date_range": "తేదీ Range",
+  "select_range": "పరిధిని ఎంచుకోండి",
+  "last_7_days": "Last 7 Days",
+  "last_30_days": "Last 30 Days",
+  "type": "రకం",
+  "all": "అన్నీ",
+  "login": "Login",
+  "logout": "Logout",
+  "create": "సృష్టించండి",
+  "update": "Update",
+  "delete": "తొలగించండి",
+  "view": "వీక్షించండి",
+  "user": "వినియోగదారు",
+  "date_range_2": "తేదీ range",
+  "log_type": "Log type",
+  "search_logs": "శోధించండి Logs",
+  "expot_logs": "Expot Logs"
+}

@@ -1,0 +1,17 @@
+{
+  "click_to_upload_or_drag_and_drop": "अपलोड करने के लिए क्लिक करें या खींचें और छोड़ें",
+  "download_template": "टेम्पलेट डाउनलोड करें",
+  "download_our_template_file_to_ensure_proper_format": "बल्क आयात के लिए उचित फॉर्मेटिंग सुनिश्चित करने के लिए हमारी टेम्पलेट फ़ाइल डाउनलोड करें।",
+  "download_csv_template": "CSV टेम्पलेट डाउनलोड करें",
+  "drag_and_drop_your_file_here": "अपनी फ़ाइल यहाँ खींचें और छोड़ें",
+  "or": "या",
+  "browse_files": "फ़ाइलें ब्राउज़ करें",
+  "upload_successful": "✓ अपलोड सफल!",
+  "supported_fields": "समर्थित फ़ील्ड",
+  "asset_name_asset_type_asset_id": "• परिसंपत्ति नाम, परिसंपत्ति प्रकार, परिसंपत्ति ID",
+  "description_location_status": "• विवरण, स्थान, स्थिति",
+  "purchase_date_warranty_information": "• खरीद तारीख, वारंटी जानकारी",
+  "and_all_other_configuration_fields": "• और अन्य सभी कॉन्फ़िगरेशन फ़ील्ड",
+  "cancel": "रद्द करें",
+  "change_file": "फ़ाइल बदलें"
+}

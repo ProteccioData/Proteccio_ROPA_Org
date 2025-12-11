@@ -1,0 +1,17 @@
+{
+  "click_to_upload_or_drag_and_drop": "అప్‌లోడ్ చేయడానికి క్లిక్ చేయండి లేదా లాగండి మరియు వదలండి",
+  "download_template": "టెంప్లేట్‌ను డౌన్‌లోడ్ చేయండి",
+  "download_our_template_file_to_ensure_proper_format": "బల్క్ ఇంపోర్ట్ కోసం సరైన ఫార్మాటింగ్ నిర్ధారించడానికి మా టెంప్లేట్ ఫైల్‌ను డౌన్‌లోడ్ చేయండి।",
+  "download_csv_template": "CSV టెంప్లేట్‌ను డౌన్‌లోడ్ చేయండి",
+  "drag_and_drop_your_file_here": "మీ ఫైల్‌ను ఇక్కడ లాగండి మరియు వదలండి",
+  "or": "లేదా",
+  "browse_files": "ఫైళ్ళను బ్రౌజ్ చేయండి",
+  "upload_successful": "✓ అప్‌లోడ్ విజయవంతమైంది!",
+  "supported_fields": "సమర్థించబడిన ఫీల్డ్‌లు",
+  "asset_name_asset_type_asset_id": "• ఆస్తి పేరు, ఆస్తి రకం, ఆస్తి ID",
+  "description_location_status": "• వివరణ, స్థానం, స్థితి",
+  "purchase_date_warranty_information": "• కొనుగోలు తేదీ, వారంటీ సమాచారం",
+  "and_all_other_configuration_fields": "• మరియు అన్ని ఇతర కాన్ఫిగరేషన్ ఫీల్డ్‌లు",
+  "cancel": "రద్దు చేయండి",
+  "change_file": "ఫైల్‌ను మార్చండి"
+}

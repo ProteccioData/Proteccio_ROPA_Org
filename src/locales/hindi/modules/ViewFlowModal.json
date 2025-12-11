@@ -1,0 +1,14 @@
+{
+  "view_data_mapping": "देखें Data Mapping",
+  "view_the_complete_data_flow_diagram_for_this_mappi": "देखें the complete data flow diagram for this mapping.",
+  "view_diagram": "देखें Diagram",
+  "close": "बंद करें",
+  "title": "शीर्षक",
+  "description": "विवरण",
+  "category": "Category",
+  "status": "स्थिति",
+  "created_by": "Created By",
+  "created_at": "Created At",
+  "last_modified_by": "Last Modified By",
+  "last_updated": "Last Updated"
+}

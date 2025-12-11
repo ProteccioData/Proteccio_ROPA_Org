@@ -1,0 +1,14 @@
+{
+  "view_data_mapping": "View Data Mapping",
+  "view_the_complete_data_flow_diagram_for_this_mappi": "View the complete data flow diagram for this mapping.",
+  "view_diagram": "View Diagram",
+  "close": "Close",
+  "title": "Title",
+  "description": "Description",
+  "category": "Category",
+  "status": "Status",
+  "created_by": "Created By",
+  "created_at": "Created At",
+  "last_modified_by": "Last Modified By",
+  "last_updated": "Last Updated"
+}

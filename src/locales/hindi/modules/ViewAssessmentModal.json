@@ -1,0 +1,12 @@
+{
+  "no_stages_found": "नहीं stages found.",
+  "no_fields_added_in_this_stage_yet": "नहीं fields added in this stage yet.",
+  "title": "शीर्षक",
+  "description": "विवरण",
+  "impact": "Impact",
+  "likelihood": "Likelihood",
+  "risk_score": "जोखिम स्कोर",
+  "risk_category": "जोखिम श्रेणी",
+  "created_by": "Created By",
+  "created_at": "Created At"
+}
