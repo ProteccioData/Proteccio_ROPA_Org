@@ -1,21 +1,14 @@
 import { useNavigate } from "react-router-dom";
 
-export default function TandCPage() {
+export default function TermsofService() {
   const navigate = useNavigate();
 
   return (
     <main className="flex-1">
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
+      {/* <div className=""> */}
         {/* HERO */}
-        <div className="bg-gradient-to-r from-[#1cd35c] to-[#19b850] text-white py-16">
+        <div className="bg-gradient-to-r from-[#1cd35c] to-[#19b850] text-white py-16 rounded-xl">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <button
-              onClick={() => navigate("/login")}
-              className="mb-6 px-4 py-2 rounded-md bg-[#5DEE92] text-black font-medium hover:opacity-90 transition"
-            >
-              ← Go Back
-            </button>
-
             <div className="text-center">
               <i className="lucide lucide-file-text mx-auto text-6xl mb-6 opacity-90" />
               <h1 className="text-4xl md:text-5xl font-bold mb-4">Terms of Service</h1>
@@ -572,7 +565,7 @@ export default function TandCPage() {
             </a>
           </div>
         </div>
-      </div>
+      {/* </div> */}
     </main>
   );
 }

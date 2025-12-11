@@ -26,6 +26,7 @@ import ForgotPassword from "./components/pages/ForgotPassword";
 import ResetPassword from "./components/pages/ResetPassword";
 import { ProtectedUserSetup } from "./components/modules/ProtectedUser";
 import PermissionProtectedRoute from "./components/modules/PermissionProtectedRoute";
+import TermsofService from "./components/pages/TermsofService";
 
 export default function App() {
   const [collapsed, setCollapsed] = useState(false);
@@ -195,6 +196,11 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+            <Route path="/terms-of-service" element={
+              <ProtectedRoute>
+                <TermsofService />
+              </ProtectedRoute>
+            } />
           </Routes>
         </main>
       </div>

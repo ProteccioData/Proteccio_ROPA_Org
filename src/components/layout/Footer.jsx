@@ -13,17 +13,17 @@ export default function Footer({ collapsed }) {
       {/* Right */}
       <div className="flex gap-8">
         <a
-          href="/terms"
+          href="/terms-of-service"
           className="text-black dark:text-gray-400 hover:text-gray-500 transition"
         >
           Terms of Service
         </a>
-        <a
+        {/* <a
           href="/support"
           className="text-black dark:text-gray-400 hover:text-gray-500 transition"
         >
           Support
-        </a>
+        </a> */}
       </div>
     </footer>
   )
