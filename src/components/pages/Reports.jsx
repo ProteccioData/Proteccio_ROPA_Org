@@ -10,6 +10,27 @@ import {
   PlusCircle,
 } from "lucide-react";
 import {
+  Document,
+  Page,
+  Text,
+  View,
+  StyleSheet,
+  pdf,
+} from "@react-pdf/renderer";
+import * as XLSX from "xlsx";
+import {
+  Document as DocxDocument,
+  Packer,
+  Paragraph,
+  TextRun,
+  HeadingLevel,
+  Table,
+  TableRow,
+  TableCell,
+  WidthType,
+  AlignmentType,
+} from "docx";
+import {
   getReports,
   generateReport,
   scheduleReport,
@@ -18,6 +39,593 @@ import {
 } from "../../services/ReportService";
 import { useToast } from "../ui/ToastProvider";
 import ConfirmationModal from "../ui/ConfirmationModal";
+
+const formatDate = (value) =>
+  value ? new Date(value).toLocaleDateString() : "—";
+
+const safeArray = (value) => (Array.isArray(value) ? value : []);
+
+const getFilenameFromDisposition = (contentDisposition, fallback) => {
+  if (!contentDisposition) return fallback;
+  const match = contentDisposition.match(/filename="(.+)"/);
+  return match ? match[1] : fallback;
+};
+
+const toFilename = (value = "report") =>
+  value.toLowerCase().replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "") ||
+  "report";
+
+const reportPdfStyles = StyleSheet.create({
+  page: {
+    padding: 32,
+    fontSize: 10,
+    fontFamily: "Helvetica",
+    backgroundColor: "#f8fafc",
+  },
+  header: {
+    marginBottom: 16,
+  },
+  title: {
+    fontSize: 20,
+    color: "#0f172a",
+    fontWeight: 700,
+  },
+  subtitle: {
+    fontSize: 10,
+    color: "#475569",
+    marginTop: 4,
+  },
+  metaRow: {
+    flexDirection: "row",
+    marginBottom: 14,
+  },
+  metaCard: {
+    flex: 1,
+    backgroundColor: "#eef2ff",
+    padding: 10,
+    borderRadius: 8,
+    borderColor: "#e2e8f0",
+    borderWidth: 1,
+  },
+  metaCardSpacer: {
+    marginRight: 10,
+  },
+  metaLabel: {
+    fontSize: 9,
+    color: "#475569",
+  },
+  metaValue: {
+    fontSize: 12,
+    color: "#111827",
+    fontWeight: 700,
+    marginTop: 2,
+  },
+  section: {
+    marginTop: 6,
+    marginBottom: 8,
+  },
+  sectionTitle: {
+    fontSize: 12,
+    color: "#0f172a",
+    fontWeight: 700,
+  },
+  sectionHint: {
+    fontSize: 9,
+    color: "#64748b",
+    marginTop: 2,
+  },
+  card: {
+    backgroundColor: "#ffffff",
+    borderRadius: 8,
+    borderColor: "#e2e8f0",
+    borderWidth: 1,
+    padding: 12,
+    marginBottom: 10,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+  cardTitle: {
+    fontSize: 12,
+    fontWeight: 700,
+    color: "#0f172a",
+  },
+  cardSub: {
+    fontSize: 9,
+    color: "#475569",
+    marginTop: 2,
+  },
+  pill: {
+    backgroundColor: "#e2e8f0",
+    color: "#0f172a",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    fontSize: 8,
+    fontWeight: 700,
+  },
+  fieldRow: {
+    flexDirection: "row",
+    marginBottom: 4,
+  },
+  fieldLabel: {
+    width: 110,
+    color: "#475569",
+    fontWeight: 600,
+  },
+  fieldValue: {
+    flex: 1,
+    color: "#0f172a",
+  },
+  tagList: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginTop: 4,
+  },
+  tag: {
+    backgroundColor: "#dcfce7",
+    color: "#166534",
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 999,
+    fontSize: 8,
+    fontWeight: 600,
+    marginRight: 4,
+    marginBottom: 4,
+  },
+  smallPill: {
+    backgroundColor: "#fee2e2",
+    color: "#991b1b",
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 999,
+    fontSize: 8,
+    fontWeight: 600,
+    marginRight: 4,
+    marginBottom: 4,
+  },
+});
+
+const buildReportPdf = async (payload = {}) => {
+  const records = safeArray(payload.records);
+
+  const doc = (
+    <Document>
+      <Page size="A4" style={reportPdfStyles.page} wrap>
+        <View style={reportPdfStyles.header}>
+          <Text style={reportPdfStyles.title}>
+            {payload.title || "Report"}
+          </Text>
+          <Text style={reportPdfStyles.subtitle}>
+            Generated {formatDate(payload.generated_at)} ·{" "}
+            {records.length} records
+          </Text>
+        </View>
+
+        <View style={reportPdfStyles.metaRow}>
+          <View style={[reportPdfStyles.metaCard, reportPdfStyles.metaCardSpacer]}>
+            <Text style={reportPdfStyles.metaLabel}>Total Records</Text>
+            <Text style={reportPdfStyles.metaValue}>
+              {payload.total_records ?? records.length}
+            </Text>
+          </View>
+          <View style={reportPdfStyles.metaCard}>
+            <Text style={reportPdfStyles.metaLabel}>Report ID</Text>
+            <Text style={reportPdfStyles.metaValue}>
+              {payload.id || "—"}
+            </Text>
+          </View>
+        </View>
+
+        <View style={reportPdfStyles.section}>
+          <Text style={reportPdfStyles.sectionTitle}>Overview</Text>
+          <Text style={reportPdfStyles.sectionHint}>
+            Snapshot of processing activities and their risk profile.
+          </Text>
+        </View>
+
+        {records.map((record, idx) => (
+          <View key={record.id || idx} style={reportPdfStyles.card} wrap={false}>
+            <View style={reportPdfStyles.cardHeader}>
+              <View>
+                <Text style={reportPdfStyles.cardTitle}>
+                  {record.name || "Untitled Activity"}
+                </Text>
+                <Text style={reportPdfStyles.cardSub}>
+                  {record.description || "No description provided"}
+                </Text>
+              </View>
+              <Text style={reportPdfStyles.pill}>
+                {record.status ? record.status.toUpperCase() : "N/A"}
+              </Text>
+            </View>
+
+            <View style={reportPdfStyles.fieldRow}>
+              <Text style={reportPdfStyles.fieldLabel}>ROPA ID</Text>
+              <Text style={reportPdfStyles.fieldValue}>
+                {record.ropa_id || "—"}
+              </Text>
+            </View>
+
+            <View style={reportPdfStyles.fieldRow}>
+              <Text style={reportPdfStyles.fieldLabel}>Category</Text>
+              <Text style={reportPdfStyles.fieldValue}>
+                {record.category || "—"}
+              </Text>
+            </View>
+
+            <View style={reportPdfStyles.fieldRow}>
+              <Text style={reportPdfStyles.fieldLabel}>Flow Stage</Text>
+              <Text style={reportPdfStyles.fieldValue}>
+                {record.flow_stage || "—"}
+              </Text>
+            </View>
+
+            <View style={reportPdfStyles.fieldRow}>
+              <Text style={reportPdfStyles.fieldLabel}>Completion</Text>
+              <Text style={reportPdfStyles.fieldValue}>
+                {record.completion_percentage != null
+                  ? `${record.completion_percentage}%`
+                  : "—"}
+              </Text>
+            </View>
+
+            <View style={reportPdfStyles.fieldRow}>
+              <Text style={reportPdfStyles.fieldLabel}>Risk</Text>
+              <Text style={reportPdfStyles.fieldValue}>
+                {record.risk_category
+                  ? `${record.risk_category} (${record.risk_score ?? "—"})`
+                  : record.risk_score ?? "—"}
+              </Text>
+            </View>
+
+            <View style={reportPdfStyles.fieldRow}>
+              <Text style={reportPdfStyles.fieldLabel}>Retention</Text>
+              <Text style={reportPdfStyles.fieldValue}>
+                {record.retention_period || "—"}
+              </Text>
+            </View>
+
+            <View style={reportPdfStyles.fieldRow}>
+              <Text style={reportPdfStyles.fieldLabel}>Legal Basis</Text>
+              <View style={reportPdfStyles.fieldValue}>
+                <View style={reportPdfStyles.tagList}>
+                  {safeArray(record.legal_basis).length ? (
+                    safeArray(record.legal_basis).map((item, i) => (
+                      <Text key={`legal-${i}`} style={reportPdfStyles.tag}>
+                        {item}
+                      </Text>
+                    ))
+                  ) : (
+                    <Text style={reportPdfStyles.fieldValue}>—</Text>
+                  )}
+                </View>
+              </View>
+            </View>
+
+            <View style={reportPdfStyles.fieldRow}>
+              <Text style={reportPdfStyles.fieldLabel}>Purposes</Text>
+              <View style={reportPdfStyles.fieldValue}>
+                <View style={reportPdfStyles.tagList}>
+                  {safeArray(record.processing_purposes).length ? (
+                    safeArray(record.processing_purposes).map((item, i) => (
+                      <Text key={`purpose-${i}`} style={reportPdfStyles.tag}>
+                        {item}
+                      </Text>
+                    ))
+                  ) : (
+                    <Text style={reportPdfStyles.fieldValue}>—</Text>
+                  )}
+                </View>
+              </View>
+            </View>
+
+            <View style={reportPdfStyles.fieldRow}>
+              <Text style={reportPdfStyles.fieldLabel}>Data Categories</Text>
+              <View style={reportPdfStyles.fieldValue}>
+                <View style={reportPdfStyles.tagList}>
+                  {safeArray(record.data_categories).length ? (
+                    safeArray(record.data_categories).map((item, i) => (
+                      <Text key={`data-${i}`} style={reportPdfStyles.tag}>
+                        {item}
+                      </Text>
+                    ))
+                  ) : (
+                    <Text style={reportPdfStyles.fieldValue}>—</Text>
+                  )}
+                </View>
+              </View>
+            </View>
+
+            <View style={reportPdfStyles.fieldRow}>
+              <Text style={reportPdfStyles.fieldLabel}>Data Subjects</Text>
+              <View style={reportPdfStyles.fieldValue}>
+                <View style={reportPdfStyles.tagList}>
+                  {safeArray(record.data_subjects).length ? (
+                    safeArray(record.data_subjects).map((item, i) => (
+                      <Text key={`subject-${i}`} style={reportPdfStyles.tag}>
+                        {item}
+                      </Text>
+                    ))
+                  ) : (
+                    <Text style={reportPdfStyles.fieldValue}>—</Text>
+                  )}
+                </View>
+              </View>
+            </View>
+
+            <View style={reportPdfStyles.fieldRow}>
+              <Text style={reportPdfStyles.fieldLabel}>Security Measures</Text>
+              <View style={reportPdfStyles.fieldValue}>
+                <View style={reportPdfStyles.tagList}>
+                  {safeArray(record.security_measures).length ? (
+                    safeArray(record.security_measures).map((item, i) => (
+                      <Text key={`sec-${i}`} style={reportPdfStyles.smallPill}>
+                        {item}
+                      </Text>
+                    ))
+                  ) : (
+                    <Text style={reportPdfStyles.fieldValue}>—</Text>
+                  )}
+                </View>
+              </View>
+            </View>
+          </View>
+        ))}
+      </Page>
+    </Document>
+  );
+
+  const blob = await pdf(doc).toBlob();
+  return {
+    blob,
+    filename: `${toFilename(payload.title || "report")}.pdf`,
+  };
+};
+
+// Flatten record for spreadsheet formats (CSV/XLSX)
+const flattenRecord = (record) => {
+  const flatten = (obj, prefix = "") => {
+    const result = {};
+    for (const [key, value] of Object.entries(obj)) {
+      const newKey = prefix ? `${prefix}_${key}` : key;
+      if (value === null || value === undefined) {
+        result[newKey] = "";
+      } else if (Array.isArray(value)) {
+        result[newKey] = value.length > 0 ? value.join("; ") : "";
+      } else if (typeof value === "object" && value !== null) {
+        // Handle nested objects (e.g., creator)
+        if (value.full_name || value.email) {
+          result[`${newKey}_name`] = value.full_name || "";
+          result[`${newKey}_email`] = value.email || "";
+        } else {
+          Object.assign(result, flatten(value, newKey));
+        }
+      } else {
+        result[newKey] = String(value);
+      }
+    }
+    return result;
+  };
+  return flatten(record);
+};
+
+// Build CSV from JSON payload
+const buildReportCsv = (payload = {}) => {
+  const records = safeArray(payload.records);
+  if (records.length === 0) {
+    const csv = `Report: ${payload.title || "Report"}\nGenerated: ${formatDate(payload.generated_at)}\nTotal Records: ${payload.total_records || 0}\n\nNo records found.`;
+    return {
+      blob: new Blob([csv], { type: "text/csv;charset=utf-8;" }),
+      filename: `${toFilename(payload.title || "report")}.csv`,
+    };
+  }
+
+  const flattened = records.map(flattenRecord);
+  const headers = Object.keys(flattened[0]);
+  
+  const csvRows = [
+    `Report: ${payload.title || "Report"}`,
+    `Generated: ${formatDate(payload.generated_at)}`,
+    `Total Records: ${payload.total_records || records.length}`,
+    "",
+    headers.join(","),
+    ...flattened.map((row) =>
+      headers
+        .map((h) => {
+          const val = row[h] || "";
+          // Escape quotes and wrap in quotes if contains comma, quote, or newline
+          if (val.includes(",") || val.includes('"') || val.includes("\n")) {
+            return `"${String(val).replace(/"/g, '""')}"`;
+          }
+          return val;
+        })
+        .join(",")
+    ),
+  ];
+
+  const csv = csvRows.join("\n");
+  return {
+    blob: new Blob([csv], { type: "text/csv;charset=utf-8;" }),
+    filename: `${toFilename(payload.title || "report")}.csv`,
+  };
+};
+
+// Build XLSX from JSON payload
+const buildReportXlsx = (payload = {}) => {
+  const records = safeArray(payload.records);
+  
+  // Create workbook
+  const wb = XLSX.utils.book_new();
+  
+  // Summary sheet
+  const summaryData = [
+    ["Report", payload.title || "Report"],
+    ["Generated", formatDate(payload.generated_at)],
+    ["Total Records", payload.total_records || records.length],
+  ];
+  const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+  XLSX.utils.book_append_sheet(wb, wsSummary, "Summary");
+  
+  // Data sheet
+  if (records.length > 0) {
+    const flattened = records.map(flattenRecord);
+    const wsData = XLSX.utils.json_to_sheet(flattened);
+    XLSX.utils.book_append_sheet(wb, wsData, "Records");
+  }
+  
+  // Generate buffer
+  const buffer = XLSX.write(wb, { type: "array", bookType: "xlsx" });
+  return {
+    blob: new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    }),
+    filename: `${toFilename(payload.title || "report")}.xlsx`,
+  };
+};
+
+// Build DOCX from JSON payload
+const buildReportDocx = async (payload = {}) => {
+  const records = safeArray(payload.records);
+  
+  const children = [
+    new Paragraph({
+      text: payload.title || "Report",
+      heading: HeadingLevel.TITLE,
+      spacing: { after: 200 },
+    }),
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: `Generated: ${formatDate(payload.generated_at)}`,
+          size: 22,
+        }),
+      ],
+      spacing: { after: 100 },
+    }),
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: `Total Records: ${payload.total_records || records.length}`,
+          size: 22,
+        }),
+      ],
+      spacing: { after: 400 },
+    }),
+  ];
+
+  if (records.length === 0) {
+    children.push(
+      new Paragraph({
+        text: "No records found.",
+        spacing: { after: 200 },
+      })
+    );
+  } else {
+    records.forEach((record, idx) => {
+      // Record header
+      children.push(
+        new Paragraph({
+          text: `${idx + 1}. ${record.name || "Untitled Activity"}`,
+          heading: HeadingLevel.HEADING_2,
+          spacing: { before: 300, after: 100 },
+        })
+      );
+
+      if (record.description) {
+        children.push(
+          new Paragraph({
+            text: record.description,
+            spacing: { after: 200 },
+          })
+        );
+      }
+
+      // Create table for record data
+      const tableRows = [
+        new TableRow({
+          children: [
+            new TableCell({
+              children: [new Paragraph("Field")],
+              width: { size: 30, type: WidthType.PERCENTAGE },
+            }),
+            new TableCell({
+              children: [new Paragraph("Value")],
+              width: { size: 70, type: WidthType.PERCENTAGE },
+            }),
+          ],
+        }),
+      ];
+
+      const addRow = (label, value) => {
+        if (value !== null && value !== undefined && value !== "") {
+          const displayValue = Array.isArray(value)
+            ? value.join(", ")
+            : String(value);
+          tableRows.push(
+            new TableRow({
+              children: [
+                new TableCell({
+                  children: [new Paragraph(label)],
+                }),
+                new TableCell({
+                  children: [new Paragraph(displayValue)],
+                }),
+              ],
+            })
+          );
+        }
+      };
+
+      addRow("ROPA ID", record.ropa_id);
+      addRow("Status", record.status);
+      addRow("Category", record.category);
+      addRow("Flow Stage", record.flow_stage);
+      addRow("Completion", record.completion_percentage ? `${record.completion_percentage}%` : null);
+      addRow("Risk Category", record.risk_category);
+      addRow("Risk Score", record.risk_score);
+      addRow("Retention Period", record.retention_period);
+      addRow("Legal Basis", record.legal_basis);
+      addRow("Processing Purposes", record.processing_purposes);
+      addRow("Data Categories", record.data_categories);
+      addRow("Data Subjects", record.data_subjects);
+      addRow("Security Measures", record.security_measures);
+      if (record.creator) {
+        addRow("Created By", `${record.creator.full_name || ""} (${record.creator.email || ""})`);
+      }
+
+      children.push(
+        new Table({
+          rows: tableRows,
+          width: { size: 100, type: WidthType.PERCENTAGE },
+        })
+      );
+
+      children.push(
+        new Paragraph({
+          spacing: { after: 400 },
+        })
+      );
+    });
+  }
+
+  const doc = new DocxDocument({
+    sections: [
+      {
+        children,
+      },
+    ],
+  });
+
+  const buffer = await Packer.toBlob(doc);
+  return {
+    blob: buffer,
+    filename: `${toFilename(payload.title || "report")}.docx`,
+  };
+};
 
 const reportsData = [
   {
@@ -215,34 +823,65 @@ export default function ReportsPage() {
     }
   };
 
+  const triggerDownload = (blob, filename) => {
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.click();
+    window.URL.revokeObjectURL(url);
+  };
+
   const handleDownload = async (id, selectedFormat) => {
     try {
-      const res = await downloadReport(id);
+      // Backend returns JSON for all formats, so we fetch JSON and convert client-side
+      const res = await downloadReport(id, {
+        format: selectedFormat,
+        responseType: "json",
+      });
 
-      // Detect MIME from server response
-      const mimeType =
-        res.headers["content-type"] || "application/octet-stream";
+      const payload = res.data;
+      let blob, filename;
 
-      // Convert string → Blob
-      const blob = new Blob([res.data], { type: mimeType });
-
-      // Determine file extension (backend format wins)
-      const contentDisposition = res.headers["content-disposition"];
-      let filename = "report.json";
-
-      if (contentDisposition) {
-        const match = contentDisposition.match(/filename="(.+)"/);
-        if (match) filename = match[1];
+      switch (selectedFormat) {
+        case "pdf":
+          const pdfResult = await buildReportPdf(payload);
+          blob = pdfResult.blob;
+          filename = pdfResult.filename;
+          break;
+        case "csv":
+          const csvResult = buildReportCsv(payload);
+          blob = csvResult.blob;
+          filename = csvResult.filename;
+          break;
+        case "xlsx":
+          const xlsxResult = buildReportXlsx(payload);
+          blob = xlsxResult.blob;
+          filename = xlsxResult.filename;
+          break;
+        case "docx":
+          const docxResult = await buildReportDocx(payload);
+          blob = docxResult.blob;
+          filename = docxResult.filename;
+          break;
+        default:
+          // Fallback: try to download as blob if format not recognized
+          const fallbackRes = await downloadReport(id, {
+            format: selectedFormat,
+            responseType: "blob",
+          });
+          const mimeType =
+            fallbackRes.headers["content-type"] || "application/octet-stream";
+          blob = new Blob([fallbackRes.data], { type: mimeType });
+          filename =
+            getFilenameFromDisposition(
+              fallbackRes.headers["content-disposition"],
+              `report.${selectedFormat || "bin"}`
+            ) || `report.${selectedFormat || "bin"}`;
       }
 
-      // Create download link
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = filename;
-      link.click();
-
-      addToast("success", "Report downloaded");
+      triggerDownload(blob, filename);
+      addToast("success", `${selectedFormat.toUpperCase()} report downloaded`);
     } catch (err) {
       console.error(err);
       addToast("error", "Download failed");

@@ -9,10 +9,17 @@ export const generateReport = (data) =>
 export const scheduleReport = (data) =>
   axiosInstance.post("/portal/reports/schedule", data);
 
-export const downloadReport = (id) =>
-  axiosInstance.get(`/portal/reports/${id}/download`, {
-    responseType: "text",
+export const downloadReport = (
+  id,
+  { format, responseType = "blob" } = {}
+) => {
+  const params = format ? { format } : undefined;
+
+  return axiosInstance.get(`/portal/reports/${id}/download`, {
+    params,
+    responseType,
   });
+};
 
 export const deleteReport = (id) => {
   return axiosInstance.delete(`/portal/reports/${id}`);
