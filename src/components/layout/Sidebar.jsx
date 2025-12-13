@@ -17,16 +17,27 @@ import {
 import { NavLink } from "react-router-dom";
 import useTheme from "../hooks/useTheme";
 import { useAuth } from "../../context/AuthContext";
+import { useTranslation } from "react-i18next";
+import { addTranslationNamespace } from "../../i18n/config";
+import { useEffect } from "react";
 
 export default function Sidebar({ collapsed, setCollapsed }) {
   const { theme, toggleTheme } = useTheme();
   const { user, permissions } = useAuth(); // ⬅ logged-in user
   const { initializing } = useAuth();
+  const {t} = useTranslation("layout" , {keyPrefix: "Sidebar"})
+
+  useEffect(() => {
+    addTranslationNamespace("en", "layout", "Sidebar");
+    addTranslationNamespace("hindi", "layout", "Sidebar");
+    addTranslationNamespace("sanskrit", "layout", "Sidebar");
+    addTranslationNamespace("telugu", "layout", "Sidebar");
+  }, []);
 
   if (initializing) {
     return (
       <div className="w-48 h-full flex items-center justify-center text-gray-500">
-        Loading...
+        {t("loading")}
       </div>
     );
   }
@@ -53,29 +64,29 @@ export default function Sidebar({ collapsed, setCollapsed }) {
   }
 
   const menuItems = [
-    { name: "Home", icon: LayoutGrid, path: "/" },
-    { name: "RoPA", icon: FileText, path: "/RoPA", permission: "ropa" },
+    { name: t("home"), icon: LayoutGrid, path: "/" },
+    { name: t("ropa"), icon: FileText, path: "/RoPA", permission: "ropa" },
     {
-      name: "Assessments",
+      name: t("assessments"),
       icon: FileCheck,
       path: "/assessments",
       permission: "assessment",
     },
     {
-      name: "Data Mapping",
+      name: t("data_mapping"),
       icon: Database,
       path: "/data-mapping",
       permission: "data_mapping",
     },
-    { name: "Setup", icon: FilePlus2, path: "/setup", permission: "setup" },
+    { name: t("setup"), icon: FilePlus2, path: "/setup", permission: "setup" },
     {
-      name: "Audit Logs",
+      name: t("audit_logs"),
       icon: Clock,
       path: "/audit-logs",
       permission: "audit_logs",
     },
     {
-      name: "Reports",
+      name: t("reports"),
       icon: FileChartLine,
       path: "/reports",
       permission: "report",
@@ -84,14 +95,14 @@ export default function Sidebar({ collapsed, setCollapsed }) {
     ...(isOrgAdmin || isSuperAdmin
       ? [
           {
-            name: "User Setup",
+            name: t("user_setup"),
             icon: User2,
             path: "/user-setup",
           },
         ]
       : []),
 
-    { name: "Action Items", icon: ListCheck, path: "/action-item" },
+    { name: t("action_items"), icon: ListCheck, path: "/action-item" },
   ];
 
   return (
@@ -200,7 +211,7 @@ export default function Sidebar({ collapsed, setCollapsed }) {
 
         {!collapsed && (
           <span className="text-sm text-gray-800 dark:text-gray-400 font-mono border border-[#828282] dark:border-gray-600 px-2 py-1 rounded">
-            V:2.0
+            {t("v_2_0")}
           </span>
         )}
       </div>

@@ -1,13 +1,28 @@
+import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { addTranslationNamespace } from "../../i18n/config";
+
 export default function Footer({ collapsed }) {
+  useEffect(() => {
+    addTranslationNamespace("en", "layout", "Footer");
+    addTranslationNamespace("hindi", "layout", "Footer");
+    addTranslationNamespace("sanskrit", "layout", "Footer");
+    addTranslationNamespace("telugu", "layout", "Footer");
+  }, []);
+
+  const { t } = useTranslation("layout", { keyPrefix: "Footer" });
+  
   return (
     <footer
       className={`h-12 bg-[#FAFAFA] dark:bg-gray-800 dark:text-gray-400 border-t dark:border-gray-600 flex items-center justify-between px-8 py-4 text-sm z-40
         transition-all duration-300
-        ${collapsed ? "ml-24 w-[calc(100%-6rem)]" : "ml-48 w-[calc(100%-12rem)]"}`}
+        ${
+          collapsed ? "ml-24 w-[calc(100%-6rem)]" : "ml-48 w-[calc(100%-12rem)]"
+        }`}
     >
       {/* Left */}
       <span className="text-black dark:text-gray-400">
-        © 2025 Proteccio Data
+        {t("2025_proteccio_data")}
       </span>
 
       {/* Right */}
@@ -16,15 +31,15 @@ export default function Footer({ collapsed }) {
           href="/terms-of-service"
           className="text-black dark:text-gray-400 hover:text-gray-500 transition"
         >
-          Terms of Service
+          {t("terms_of_service")}
         </a>
         {/* <a
           href="/support"
           className="text-black dark:text-gray-400 hover:text-gray-500 transition"
         >
-          Support
+          {t("support")}
         </a> */}
       </div>
     </footer>
-  )
+  );
 }

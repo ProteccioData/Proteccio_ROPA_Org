@@ -8,6 +8,8 @@ import NotificationSidebar from "../modules/NotificationsSidebar";
 import NotificationService from "../../services/NotificationService";
 import Portal from "../../utils/portal";
 import GlobalSearchBar from "../modules/GlobalSearchBar";
+import { useTranslation } from "react-i18next";
+import { addTranslationNamespace } from "../../i18n/config";
 
 export default function Topbar() {
   const navigate = useNavigate();
@@ -18,7 +20,15 @@ export default function Topbar() {
   const [unreadCount, setUnreadCount] = useState(0);
 
   const { logout, user } = useAuth();
+  const { t } = useTranslation("layout", { keyPrefix: "Topbar" });
 
+  useEffect(() => {
+    addTranslationNamespace("en", "layout", "Topbar");
+    addTranslationNamespace("hindi", "layout", "Topbar");
+    addTranslationNamespace("sanskrit", "layout", "Topbar");
+    addTranslationNamespace("telugu", "layout", "Topbar");
+  }, []);
+  
   const fullName = user?.full_name || "User";
   const email = user?.email || "email@example.com";
   const initial = fullName?.charAt(0).toUpperCase();
@@ -85,7 +95,7 @@ export default function Topbar() {
         >
           <img
             src="/assets/logo.svg"
-            alt="Proteccio"
+            alt={t("proteccio")}
             className="w-28 sm:w-32 md:w-40 hover:cursor-pointer"
             onClick={() => navigate("/")}
           />
@@ -116,7 +126,7 @@ export default function Topbar() {
         >
           <FileText className="h-5 w-5 text-[#1a7f4d] dark:text-[#5DEE92]" />
           <span className="text-sm font-medium text-gray-700 dark:text-gray-100">
-            Articles
+            {t("articles")}
           </span>
         </motion.button>
 
@@ -185,7 +195,7 @@ export default function Topbar() {
                     className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-[#5DEE92]/20 dark:hover:bg-[#5DEE92]/10 transition-all duration-150 cursor-pointer"
                   >
                     <Settings className="h-4 w-4 text-[#38b36c] dark:text-[#5DEE92]" />
-                    Profile Settings
+                    {t("profile_settings")}
                   </button>
 
                   <button
@@ -196,7 +206,7 @@ export default function Topbar() {
                     className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-700/30 transition-all duration-150 cursor-pointer"
                   >
                     <LogOut className="h-4 w-4" />
-                    Logout
+                    {t("logout")}
                   </button>
                 </div>
               </motion.div>

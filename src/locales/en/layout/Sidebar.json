@@ -1,4 +1,13 @@
 {
   "loading": "Loading...",
+  "home": "Home",
+  "reports": "Reports",
+  "ropa": "RoPA",
+  "assessments": "Assessments",
+  "data_mapping": "Data Mapping",
+  "setup": "Setup",
+  "audit_logs": "Audit Logs",
+  "user_setup": "User Setup",
+  "action_items": "Action Items",
   "v_2_0": "V:2.0"
 }
