@@ -59,6 +59,31 @@ export default function ArticleDetail() {
     loadArticle();
   }, [id]);
 
+  const handleShare = async () => {
+    const shareUrl = `${window.location.origin}/article/${article.id}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: article.title,
+          text: article.excerpt,
+          url: shareUrl,
+        });
+        return;
+      } catch (err) {
+        console.error("Failed to share article", err);
+        return;
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      addToast("success", "Link copied to clipboard");
+    } catch (err) {
+      addToast("error", "Failed to copy link");
+    }
+  }
+
   if (error || !article) {
     return (
       <div className="min-h-screen pt-24 flex items-center justify-center bg-white dark:bg-gray-900">
@@ -125,7 +150,7 @@ export default function ArticleDetail() {
                 Back
               </button>
               <button
-                onClick={() => alert("Share action (placeholder)")}
+                onClick={handleShare}
                 className="px-3 py-2 bg-[#5DEE92] text-white dark:text-black cursor-pointer rounded-md"
               >
                 Share

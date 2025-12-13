@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "./components/layout/Sidebar";
 import Topbar from "./components/layout/Topbar";
 import Footer from "./components/layout/Footer";
@@ -37,6 +37,55 @@ export default function App() {
     location.pathname === "/terms" ||
     location.pathname === "/privacy-notice" ||
     location.pathname === "/reset-password";
+
+  // Global keyboard navigation disabling effect
+  // useEffect(() => {
+  //   function applyKeyboardNavGlobal() {
+  //     if (localStorage.getItem("keyboardNav") === "false") {
+  //       document.documentElement.classList.add("keyboard-nav-disabled");
+  //     } else {
+  //       document.documentElement.classList.remove("keyboard-nav-disabled");
+  //     }
+  //   }
+  //   applyKeyboardNavGlobal();
+  //   window.addEventListener("storage", applyKeyboardNavGlobal);
+  //   return () => window.removeEventListener("storage", applyKeyboardNavGlobal);
+  // }, []);
+
+  useEffect(() => {
+    function isTextInput(el) {
+      if (!el) return false;
+      const tag = el.tagName;
+      return (
+        tag === "INPUT" || tag === "TEXTAREA" || el.isContentEditable
+      );
+    }
+    function shouldBlock(e) {
+      // Only block if nav is globally off
+      if (!document.documentElement.classList.contains("keyboard-nav-disabled")) return false;
+      // Allow typing/navigating in inputs/textareas/contenteditable
+      if (isTextInput(document.activeElement)) return false;
+      // List of keys to block globally
+      const blocked = [
+        "Tab", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "PageUp", "PageDown", "Home", "End",
+        "Escape", "Enter", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12"
+      ];
+      if (blocked.includes(e.key)) return true;
+      // Block Ctrl+ shortcuts
+      if (e.ctrlKey || e.metaKey) return true;
+      return false;
+    }
+    const handler = (e) => {
+      if (shouldBlock(e)) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+      return true;
+    };
+    document.addEventListener("keydown", handler, true);
+    return () => document.removeEventListener("keydown", handler, true);
+  }, []);
 
   return (
     <div className="flex flex-col min-h-screen bg-white dark:bg-gray-900 text-black transition-colors duration-300">

@@ -17,6 +17,7 @@ import { useToast } from "../ui/ToastProvider";
 import TwoFactorDisable from "../modules/TwoFactorDisable";
 import TwoFactorSetup from "../modules/TwoFactorSetup";
 import { changeLanguage } from "../../i18n/config";
+import { useKeyboardNav } from "../../context/KeyboardNavContext";
 
 /* ---------------------- Main component ---------------------- */
 
@@ -37,7 +38,12 @@ export default function ProfileSettings({
   // UI states
   const [lang, setLang] = useState(i18n.language || "en");
   const [fontSize, setFontSize] = useState("md");
-  const [keyboardNav, setKeyboardNav] = useState(true);
+  // Initialize keyboardNav from localStorage (string 'false' disables)
+  // const [keyboardNav, setKeyboardNav] = useState(() =>
+  //   localStorage.getItem("keyboardNav") === "false" ? false : true
+  // );
+
+  const { keyboardNavEnabled, setKeyboardNavEnabled } = useKeyboardNav();
   
   // Handle language change
   const handleLanguageChange = (newLang) => {
@@ -125,6 +131,18 @@ export default function ProfileSettings({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+
+  // Sync .keyboard-nav-disabled class and persist preference
+  // useEffect(() => {
+  //   const node = document.documentElement;
+  //   if (!keyboardNav) {
+  //     node.classList.add("keyboard-nav-disabled");
+  //   } else {
+  //     node.classList.remove("keyboard-nav-disabled");
+  //   }
+  //   localStorage.setItem("keyboardNav", keyboardNav ? "true" : "false");
+  //   return () => node.classList.remove("keyboard-nav-disabled");
+  // }, [keyboardNav]);
 
   // handlers for mock sessions (still UI-only)
   function handleEndSession(sessionId) {
@@ -311,11 +329,11 @@ export default function ProfileSettings({
                         { value: "lg", label: t('large') },
                       ]}
                     />
-                    {/* <Toggle
+                    <Toggle
                       label={t('keyboard_nav')}
-                      checked={keyboardNav}
-                      setChecked={setKeyboardNav}
-                    /> */}
+                      checked={keyboardNavEnabled}
+                      setChecked={setKeyboardNavEnabled}
+                    />
                   </div>
                 </div>
 

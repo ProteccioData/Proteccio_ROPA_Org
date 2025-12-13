@@ -6,13 +6,16 @@ import { BrowserRouter } from "react-router-dom";
 import { ToastProvider } from "./components/ui/ToastProvider.jsx";
 import { AuthProvider } from "./context/AuthContext.jsx";
 import "./i18n/config.js"; // Initialize i18n
+import { KeyboardNavProvider } from "./context/KeyboardNavContext.jsx";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <BrowserRouter>
       <ToastProvider>
         <AuthProvider>
-          <App />
+          <KeyboardNavProvider>
+            <App />
+          </KeyboardNavProvider>
         </AuthProvider>
       </ToastProvider>
     </BrowserRouter>

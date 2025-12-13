@@ -36,6 +36,20 @@
   background-color: #6b7280; 
 }
 
+.keyboard-nav-disabled a,
+.keyboard-nav-disabled button,
+.keyboard-nav-disabled input,
+.keyboard-nav-disabled select,
+.keyboard-nav-disabled textarea,
+.keyboard-nav-disabled [tabindex] {
+  outline: none !important;
+  box-shadow: none !important;
+}
+.keyboard-nav-disabled *:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);

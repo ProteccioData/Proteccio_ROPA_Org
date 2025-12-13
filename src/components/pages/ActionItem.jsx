@@ -216,6 +216,9 @@ function RechartsHeatmap({ heatmapMatrix, onCellClick }) {
   // tooltip state
   const [tooltip, setTooltip] = useState(null);
 
+  // Hoisted onLeave handler
+  const onLeave = () => setTooltip(null);
+
   // Customized renderer uses chart width/height to compute cell positions
   const CustomizedGrid = (props) => {
     const { width, height } = props;
@@ -255,8 +258,6 @@ function RechartsHeatmap({ heatmapMatrix, onCellClick }) {
       });
     };
 
-    const onLeave = () => setTooltip(null);
-
     const handleKeyDown = (e, rIdx, cIdx, cell) => {
       if (e.key === "Enter") {
         const trueLikelihood = cIdx + 1;
@@ -270,7 +271,9 @@ function RechartsHeatmap({ heatmapMatrix, onCellClick }) {
     };
 
     return (
-      <g>
+      <g
+        onMouseLeave={onLeave}
+      >
         {/* Likelihood axis (X-axis bottom) */}
         {[1, 2, 3, 4, 5].map((i) => (
           <text
@@ -379,7 +382,7 @@ function RechartsHeatmap({ heatmapMatrix, onCellClick }) {
         Click a cell to filter the task table. Likelihood (X) × Impact (Y)
       </p>
 
-      <div className="mt-4" style={{ height: 320 }}>
+      <div className="mt-4" style={{ height: 320 }} onMouseLeave={onLeave}>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
             data={[]}
@@ -412,8 +415,7 @@ function RechartsHeatmap({ heatmapMatrix, onCellClick }) {
             </div>
             {tooltip.count > 0 && (
               <div className="text-xs text-gray-500 mt-1">
-                Avg L: {tooltip.avgLikelihood ?? "-"} • Avg I:{" "}
-                {tooltip.avgImpact ?? "-"}
+                Avg L: {tooltip.avgLikelihood ?? "-"} • Avg I: {tooltip.avgImpact ?? "-"}
               </div>
             )}
           </div>
@@ -1104,7 +1106,7 @@ export default function ActionDashboard({
         {/* Middle: Recharts heatmap + risk distribution */}
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-2">
-            <div className="flex justify-end mb-3">
+            {/* <div className="flex justify-end mb-3">
               {cellFilter ? (
                 <div className="flex items-center gap-2">
                   <div className="text-xs text-gray-500 dark:text-gray-300">
@@ -1119,9 +1121,34 @@ export default function ActionDashboard({
                   </button>
                 </div>
               ) : null}
-            </div>
+            </div> */}
 
-            <RechartsHeatmap heatmapMatrix={heatmapMatrix} />
+            <RechartsHeatmap 
+              heatmapMatrix={heatmapMatrix} 
+              onCellClick={({ likelihood, impact }) => {
+                // Calculate risk score and get category
+                const score = impact * likelihood;
+                let category = "Low";
+                if (score <= 5) category = "Low";
+                else if (score <= 10) category = "Medium";
+                else if (score <= 15) category = "High";
+                else if (score <= 20) category = "Very High";
+                else category = "Critical";
+                setRiskFilter(category);
+                setPage(1); // Reset pagination optionally
+              }}
+            />
+            {riskFilter !== "All" && (
+              <div className="flex items-center gap-2 my-2">
+                <span className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">Filtered by risk: <strong>{riskFilter}</strong></span>
+                <button
+                  onClick={() => setRiskFilter("All")}
+                  className="ml-2 px-2 py-1 rounded-md border border-[#828282] dark:text-white cursor-pointer text-xs"
+                >
+                  Clear Risk Filter
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="lg:col-span-1">
