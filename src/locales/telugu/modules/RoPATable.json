@@ -1,14 +1,14 @@
 {
-  "ropa_records": "RoPA Records",
-  "manage_ropa_s_and_view_details": "Manage RoPA’s and వీక్షించండి details",
+  "ropa_records": "రోపా రికార్డులు",
+  "manage_ropa_s_and_view_details": "రోపా లను నిర్వహించి వివరాలు చూడండి",
   "filter": "ఫిల్టర్",
-  "ropa_id": "RoPA ID",
+  "ropa_id": "రోపా ఐడి",
   "title": "శీర్షిక",
-  "stage": "Stage",
-  "process_owner": "Process Owner",
+  "stage": "దశ",
+  "process_owner": "ప్రక్రియ యజమాని",
   "department": "విభాగం",
-  "actions": "Actions",
-  "archive": "Archive",
-  "link_ropa": "Link RoPA",
-  "new_ropa": "New RoPA"
+  "actions": "చర్యలు",
+  "archive": "ఆర్కైవ్ చేయండి",
+  "link_ropa": "రోపా లింక్ చేయండి",
+  "new_ropa": "కొత్త రోపా"
 }

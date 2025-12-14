@@ -27,10 +27,12 @@ import ResetPassword from "./components/pages/ResetPassword";
 import { ProtectedUserSetup } from "./components/modules/ProtectedUser";
 import PermissionProtectedRoute from "./components/modules/PermissionProtectedRoute";
 import TermsofService from "./components/pages/TermsofService";
+import { addTranslationNamespace, changeLanguage } from "./i18n/config";
 
 export default function App() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const [layoutI18nReady, setLayoutI18nReady] = useState(false);
 
   const hideLayout =
     location.pathname === "/login" ||
@@ -53,22 +55,69 @@ export default function App() {
   // }, []);
 
   useEffect(() => {
+    const savedLang = localStorage.getItem("app_language");
+    if (savedLang) {
+      changeLanguage(savedLang);
+    }
+  }, []);
+
+  useEffect(() => {
+    const loadLayoutNamespaces = async () => {
+      await Promise.all([
+        addTranslationNamespace("en", "layout", "Sidebar"),
+        addTranslationNamespace("hindi", "layout", "Sidebar"),
+        addTranslationNamespace("sanskrit", "layout", "Sidebar"),
+        addTranslationNamespace("telugu", "layout", "Sidebar"),
+
+        addTranslationNamespace("en", "layout", "Footer"),
+        addTranslationNamespace("hindi", "layout", "Footer"),
+        addTranslationNamespace("sanskrit", "layout", "Footer"),
+        addTranslationNamespace("telugu", "layout", "Footer"),
+      ]);
+
+      setLayoutI18nReady(true)
+    };
+
+    loadLayoutNamespaces();
+  }, []);
+
+  useEffect(() => {
     function isTextInput(el) {
       if (!el) return false;
       const tag = el.tagName;
-      return (
-        tag === "INPUT" || tag === "TEXTAREA" || el.isContentEditable
-      );
+      return tag === "INPUT" || tag === "TEXTAREA" || el.isContentEditable;
     }
     function shouldBlock(e) {
       // Only block if nav is globally off
-      if (!document.documentElement.classList.contains("keyboard-nav-disabled")) return false;
+      if (!document.documentElement.classList.contains("keyboard-nav-disabled"))
+        return false;
       // Allow typing/navigating in inputs/textareas/contenteditable
       if (isTextInput(document.activeElement)) return false;
       // List of keys to block globally
       const blocked = [
-        "Tab", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "PageUp", "PageDown", "Home", "End",
-        "Escape", "Enter", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12"
+        "Tab",
+        "ArrowUp",
+        "ArrowDown",
+        "ArrowLeft",
+        "ArrowRight",
+        "PageUp",
+        "PageDown",
+        "Home",
+        "End",
+        "Escape",
+        "Enter",
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6",
+        "F7",
+        "F8",
+        "F9",
+        "F10",
+        "F11",
+        "F12",
       ];
       if (blocked.includes(e.key)) return true;
       // Block Ctrl+ shortcuts
@@ -245,16 +294,19 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
-            <Route path="/terms-of-service" element={
-              <ProtectedRoute>
-                <TermsofService />
-              </ProtectedRoute>
-            } />
+            <Route
+              path="/terms-of-service"
+              element={
+                <ProtectedRoute>
+                  <TermsofService />
+                </ProtectedRoute>
+              }
+            />
           </Routes>
         </main>
       </div>
 
-      {!hideLayout && <Footer collapsed={collapsed} />}
+      {layoutI18nReady && !hideLayout && <Footer collapsed={collapsed} />}
     </div>
   );
 }

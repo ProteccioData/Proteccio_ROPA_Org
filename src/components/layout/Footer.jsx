@@ -3,15 +3,19 @@ import { useTranslation } from "react-i18next";
 import { addTranslationNamespace } from "../../i18n/config";
 
 export default function Footer({ collapsed }) {
-  useEffect(() => {
-    addTranslationNamespace("en", "layout", "Footer");
-    addTranslationNamespace("hindi", "layout", "Footer");
-    addTranslationNamespace("sanskrit", "layout", "Footer");
-    addTranslationNamespace("telugu", "layout", "Footer");
-  }, []);
-
-  const { t } = useTranslation("layout", { keyPrefix: "Footer" });
+  const { t , ready } = useTranslation("layout", { keyPrefix: "Footer" });
   
+  // useEffect(() => {
+  //   addTranslationNamespace("en", "layout", "Footer");
+  //   addTranslationNamespace("hindi", "layout", "Footer");
+  //   addTranslationNamespace("sanskrit", "layout", "Footer");
+  //   addTranslationNamespace("telugu", "layout", "Footer");
+  // }, []);
+
+  if (!ready) {
+    return null;
+  }
+
   return (
     <footer
       className={`h-12 bg-[#FAFAFA] dark:bg-gray-800 dark:text-gray-400 border-t dark:border-gray-600 flex items-center justify-between px-8 py-4 text-sm z-40

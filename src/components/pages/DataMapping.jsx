@@ -27,6 +27,8 @@ import {
 } from "../../services/DataMappingService";
 import ViewFlowModal from "../modules/ViewFlowModal";
 import ConfirmationModal from "../ui/ConfirmationModal";
+import { useTranslation } from "react-i18next";
+import { addTranslationNamespace } from "../../i18n/config";
 
 export default function DataMappingTable() {
   const [mappings, setMappings] = useState([]);
@@ -49,6 +51,15 @@ export default function DataMappingTable() {
   const ITEMS_PER_PAGE = 25;
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+
+  useEffect(() => {
+    addTranslationNamespace("en" , "pages" , "DataMapping");
+    addTranslationNamespace("hindi" , "pages" , "DataMapping");
+    addTranslationNamespace("sanskrit" , "pages" , "DataMapping");
+    addTranslationNamespace("telugu" , "pages" , "DataMapping");
+  }, [])
+  
+  const { t } = useTranslation("pages" , {keyPrefix:"DataMapping"})
 
   const toggleMenu = (id) => {
     setOpenMenu(openMenu === id ? null : id);
@@ -260,9 +271,9 @@ export default function DataMappingTable() {
         {/* Header */}
         <div className="px-6 py-4 border-b border-[#828282] dark:border-gray-700 flex justify-between items-start">
           <div>
-            <h2 className="text-lg font-semibold">Data Mapping</h2>
+            <h2 className="text-lg font-semibold">{t("data_mapping")}</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Create and manage data flow diagrams
+              {t("create_and_manage_data_flow_diagrams")}
             </p>
           </div>
           <div className="flex justify-center gap-4">
@@ -272,14 +283,14 @@ export default function DataMappingTable() {
               onChange={(e) => setFilterStatus(e.target.value)}
               className="flex items-center gap-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-black dark:text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-600 transition cursor-pointer"
             >
-              <option value="all">All Flows</option>
-              <option value="active">Active</option>
-              <option value="archived">Archived</option>
+              <option value="all">{t("all_flows")}</option>
+              <option value="active">{t("active")}</option>
+              <option value="archived">{t("archived")}</option>
             </select>
 
             <Button
               onClick={() => setShowCreateModal(true)}
-              text="Create New Flow"
+              text={`${t("create_new_flow")}`}
               icon={CirclePlus}
             />
           </div>
@@ -289,18 +300,18 @@ export default function DataMappingTable() {
         <div className="p-4">
           {/* Column headers */}
           <div className="grid grid-cols-7 gap-4 px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400">
-            <div>Title</div>
-            <div>Description</div>
-            <div>Created By</div>
-            <div>Created At</div>
-            <div>Last Updated</div>
-            <div>Status</div>
-            <div className="text-right">Actions</div>
+            <div>{t("title")}</div>
+            <div>{t("description")}</div>
+            <div>{t("created_by")}</div>
+            <div>{t("created_at")}</div>
+            <div>{t("last_updated")}</div>
+            <div>{t("status")}</div>
+            <div className="text-right">{t("actions")}</div>
           </div>
 
           {/* Rows */}
           <div className="space-y-4 mt-2 relative">
-            {loading && <div className="p-4">Loading...</div>}
+            {loading && <div className="p-4">{t("loading")}...</div>}
 
             {!loading &&
               mappings.map((flow, index) => {
@@ -410,14 +421,14 @@ export default function DataMappingTable() {
                             >
                               <Archive size={14} className="mr-2" />
                               {flow.status === "archived"
-                                ? "Unarchive"
-                                : "Archive"}
+                                ? `${t("unarchive")}`
+                                : `${t("archive")}`}
                             </button>
                             <button
                               onClick={() => handleDeleteFlow(flow.id, title)}
                               className="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                             >
-                              <Trash2 size={14} className="mr-2" /> Delete
+                              <Trash2 size={14} className="mr-2" /> {t("delete")}
                             </button>
                           </div>
                         )}
@@ -432,11 +443,11 @@ export default function DataMappingTable() {
           {!loading && filteredMappings.length === 0 && (
             <div className="text-center py-12">
               <div className="text-gray-400 dark:text-gray-500 mb-4">
-                No flows found
+                {t("no_flows_found")}
               </div>
               <Button
                 onClick={() => setShowCreateModal(true)}
-                text="Create Your First Flow"
+                text={`${t("create_your_first_flow")}`}
                 icon={CirclePlus}
               />
             </div>
@@ -445,7 +456,7 @@ export default function DataMappingTable() {
           {/* Pagination Controls */}
           <div className="flex justify-between items-center mt-6 px-4 py-3 border-t border-gray-200 dark:border-gray-700">
             <div className="text-sm text-gray-500 dark:text-gray-400">
-              Showing page <b>{currentPage}</b> of <b>{totalPages}</b> — Total:{" "}
+              {t("showing_page")} <b>{currentPage}</b> {t("of")} <b>{totalPages}</b> — {t("total")}:{" "}
               <b>{totalCount}</b>
             </div>
 
@@ -455,7 +466,7 @@ export default function DataMappingTable() {
                 onClick={() => setCurrentPage((p) => p - 1)}
                 className="px-3 py-1 rounded-md border dark:border-gray-600 disabled:opacity-40"
               >
-                Prev
+                {t("prev")}
               </button>
 
               <button
@@ -463,7 +474,7 @@ export default function DataMappingTable() {
                 onClick={() => setCurrentPage((p) => p + 1)}
                 className="px-3 py-1 rounded-md border dark:border-gray-600 disabled:opacity-40"
               >
-                Next
+                {t("next")}
               </button>
             </div>
           </div>

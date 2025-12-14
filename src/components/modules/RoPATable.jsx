@@ -19,6 +19,8 @@ import RopaFilterModal from "./RopaFilterModel";
 import { motion } from "framer-motion";
 import { useToast } from "../ui/ToastProvider";
 import { useAuth } from "../../context/AuthContext";
+import { useTranslation } from "react-i18next";
+import { addTranslationNamespace } from "../../i18n/config";
 
 export default function RoPARecords() {
   const [ropas, setRopas] = useState([]);
@@ -37,6 +39,15 @@ export default function RoPARecords() {
     department: "",
   });
   const { user, permissions } = useAuth();
+
+  useEffect(() => {
+    addTranslationNamespace("en" , "modules" , "RoPATable");
+    addTranslationNamespace("hindi" , "modules" , "RoPATable");
+    addTranslationNamespace("sanskrit" , "modules" , "RoPATable");
+    addTranslationNamespace("telugu" , "modules" , "RoPATable");
+  }, [])
+
+  const { t } = useTranslation("modules" , {keyPrefix:"RoPATable"})
 
   console.log("USER =", user);
   console.log("PERMISSIONS =", permissions);
@@ -157,9 +168,9 @@ export default function RoPARecords() {
       {/* Header */}
       <div className="px-6 py-4 border-b border-[#828282] dark:border-gray-700 flex justify-between items-start">
         <div>
-          <h2 className="text-lg font-semibold">RoPA Records</h2>
+          <h2 className="text-lg font-semibold">{t("ropa_records")}</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Manage RoPA’s and view details
+            {t("manage_ropa_s_and_view_details")}
           </p>
         </div>
         <div className="flex justify-center gap-4">
@@ -168,9 +179,9 @@ export default function RoPARecords() {
             className="flex items-center gap-2 bg-[#5DEE92] text-black px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition hover:cursor-pointer "
           >
             <Filter size={16} />
-            Filter
+            {t("filter")}
           </button>
-          <Button onClick={handleOpen} text="New RoPA" />
+          <Button onClick={handleOpen} text={`${t("new_ropa")}`} />
           {/* {isModalOpen && <AddROPAModal isOpen={handleOpen} onClose={handleClose} />} */}
         </div>
       </div>
@@ -224,12 +235,12 @@ export default function RoPARecords() {
       <div className="p-4">
         {/* Column headers */}
         <div className="grid grid-cols-6 gap-4 px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400">
-          <div>RoPA ID</div>
-          <div>Title</div>
-          <div>Stage</div>
-          <div>Process Owner</div>
-          <div>Department</div>
-          <div className="text-right">Actions</div>
+          <div>{t("ropa_id")}</div>
+          <div>{t("title")}</div>
+          <div>{t("stage")}</div>
+          <div>{t("process_owner")}</div>
+          <div>{t("department")}</div>
+          <div className="text-right">{t("actions")}</div>
         </div>
 
         {/* Rows */}
@@ -292,10 +303,10 @@ export default function RoPARecords() {
                         }`}
                       >
                         <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
-                          <Archive size={14} className="mr-2" /> Archive
+                          <Archive size={14} className="mr-2" /> {t("archive")}
                         </button>
                         <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
-                          <Link size={14} className="mr-2" /> Link RoPA
+                          <Link size={14} className="mr-2" /> {t("link_ropa")}
                         </button>
                       </div>
                     )}

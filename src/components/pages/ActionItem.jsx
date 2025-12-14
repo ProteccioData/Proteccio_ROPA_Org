@@ -33,6 +33,8 @@ import {
 } from "../../services/ActionItemsSercvice";
 import ViewActionItemModal from "../modules/ViewActionItem";
 import EditActionItemModal from "../modules/EditActionItem";
+import { addTranslationNamespace } from "../../i18n/config";
+import { useTranslation } from "react-i18next";
 
 const BRAND = "#5DEE92";
 
@@ -164,358 +166,7 @@ function getCategoryColor(k) {
   }
 }
 
-function RechartsHeatmap({ heatmapMatrix, onCellClick }) {
-  // const aggregated = useMemo(() => {
-  //   const grid = Array.from({ length: 5 }, () =>
-  //     Array.from({ length: 5 }, () => ({
-  //       count: 0,
-  //       sumLikelihood: 0,
-  //       sumImpact: 0,
-  //       items: [],
-  //     }))
-  //   );
-  //   items.forEach((it) => {
-  //     const col = Math.max(1, Math.min(5, it.likelihood)) - 1;
-  //     const row = 5 - Math.max(1, Math.min(5, it.impact)); // invert Y so 5 is top
 
-  //     grid[row][col].count += 1;
-  //     grid[row][col].sumLikelihood += it.likelihood;
-  //     grid[row][col].sumImpact += it.impact;
-  //     grid[row][col].items.push(it);
-  //   });
-  //   return grid;
-  // }, [items]);
-
-  const aggregated = useMemo(() => {
-    // Backend matrix is [likelihood][impact]
-    // But your UI expects matrix[row][col] where row=impact, col=likelihood
-    // So transpose + invert rows
-    const transposed = Array(5)
-      .fill(0)
-      .map(() => Array(5).fill(0));
-
-    heatmapMatrix.forEach((likelihoodRow, lIdx) => {
-      likelihoodRow.forEach((count, iIdx) => {
-        const uiRow = 5 - (iIdx + 1); // invert impact
-        const uiCol = lIdx; // likelihood stays same
-        transposed[uiRow][uiCol] = { count };
-      });
-    });
-
-    return transposed;
-  }, [heatmapMatrix]);
-
-  const maxCount = useMemo(() => {
-    let m = 1;
-    aggregated.forEach((row) =>
-      row.forEach((cell) => (m = Math.max(m, cell.count)))
-    );
-    return m;
-  }, [aggregated]);
-
-  // tooltip state
-  const [tooltip, setTooltip] = useState(null);
-
-  // Hoisted onLeave handler
-  const onLeave = () => setTooltip(null);
-
-  // Customized renderer uses chart width/height to compute cell positions
-  const CustomizedGrid = (props) => {
-    const { width, height } = props;
-    const margin = { top: 32, right: 12, bottom: 28, left: 36 };
-    const chartWidth = Math.max(200, width);
-    const chartHeight = Math.max(180, height);
-    const gridWidth = chartWidth - margin.left - margin.right;
-    const gridHeight = chartHeight - margin.top - margin.bottom;
-    const cols = 5;
-    const rows = 5;
-    const cellW = gridWidth / cols;
-    const cellH = gridHeight / rows;
-    const pad = 8;
-
-    const onHover = (evt, rIdx, cIdx, cell) => {
-      // compute true axis values
-      const trueLikelihood = cIdx + 1; // left -> right
-      const trueImpact = 5 - rIdx; // bottom -> top
-
-      const rect = evt.currentTarget.getBoundingClientRect();
-      setTooltip({
-        x: rect.left + rect.width / 2,
-        y: rect.top - 8,
-        likelihood: trueLikelihood,
-        impact: trueImpact,
-        count: cell.count,
-
-        // Backend matrix DOES NOT provide sums → replace with null or "-"
-        sumLikelihood: null,
-        sumImpact: null,
-
-        // Add fallback values
-        avgLikelihood: trueLikelihood,
-        avgImpact: trueImpact,
-
-        items: cell.items,
-      });
-    };
-
-    const handleKeyDown = (e, rIdx, cIdx, cell) => {
-      if (e.key === "Enter") {
-        const trueLikelihood = cIdx + 1;
-        const trueImpact = 5 - rIdx;
-        onCellClick({
-          likelihood: trueLikelihood,
-          impact: trueImpact,
-          items: cell.items,
-        });
-      }
-    };
-
-    return (
-      <g
-        onMouseLeave={onLeave}
-      >
-        {/* Likelihood axis (X-axis bottom) */}
-        {[1, 2, 3, 4, 5].map((i) => (
-          <text
-            key={`x-${i}`}
-            x={margin.left + (i - 0.5) * cellW}
-            y={chartHeight - 4}
-            textAnchor="middle"
-            fill="#6B7280"
-            style={{ fontSize: 12 }}
-          >
-            {i}
-          </text>
-        ))}
-
-        {/* Impact axis (Y-axis left), bottom → top */}
-        {[1, 2, 3, 4, 5].map((i) => (
-          <text
-            key={`y-${i}`}
-            x={margin.left - 12}
-            y={margin.top + (5 - i + 0.5) * cellH}
-            textAnchor="end"
-            fill="#6B7280"
-            style={{ fontSize: 12 }}
-          >
-            {i}
-          </text>
-        ))}
-
-        {/* Cells */}
-        {aggregated.map((row, rIdx) =>
-          row.map((cell, cIdx) => {
-            const x = margin.left + cIdx * cellW + pad / 2;
-            const y = margin.top + rIdx * cellH + pad / 2;
-            const w = cellW - pad;
-            const h = cellH - pad;
-            const norm = maxCount <= 1 ? 1 : Math.min(1, cell.count / maxCount);
-
-            // true axis mapping
-            const trueLikelihood = cIdx + 1; // left → right
-            const trueImpact = 5 - rIdx; // bottom → top
-
-            // color based on true coords
-            const color = chooseHeatColor(trueLikelihood, trueImpact);
-            const scale = 0.9 + 0.1 * norm;
-
-            return (
-              <g
-                key={`cell-${rIdx}-${cIdx}`}
-                transform={`translate(${x + (w * (1 - scale)) / 2}, ${
-                  y + (h * (1 - scale)) / 2
-                }) scale(${scale})`}
-              >
-                <rect
-                  x={0}
-                  y={0}
-                  rx={10}
-                  width={w}
-                  height={h}
-                  fill={cell.count === 0 ? "#F3F4F6" : color}
-                  stroke={cell.count === 0 ? "transparent" : "#ffffff22"}
-                  style={{
-                    cursor: "pointer",
-                    transition: "transform 0.12s ease",
-                  }}
-                  onMouseEnter={(e) => onHover(e, rIdx, cIdx, cell)}
-                  onMouseLeave={onLeave}
-                  onClick={() =>
-                    onCellClick({
-                      likelihood: trueLikelihood,
-                      impact: trueImpact,
-                      items: cell.items,
-                    })
-                  }
-                  tabIndex={0}
-                  role="button"
-                  aria-label={`Likelihood ${trueLikelihood} Impact ${trueImpact}, ${cell.count} items`}
-                  onKeyDown={(e) => handleKeyDown(e, rIdx, cIdx, cell)}
-                />
-                <text
-                  x={w / 2}
-                  y={h / 2 + 4}
-                  textAnchor="middle"
-                  fill={cell.count === 0 ? "#9CA3AF" : "#111827"}
-                  style={{ fontSize: 12, fontWeight: 700 }}
-                >
-                  {cell.count}
-                </text>
-              </g>
-            );
-          })
-        )}
-      </g>
-    );
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-4 shadow"
-    >
-      <h4 className="font-semibold text-gray-900 dark:text-white">
-        Risk Heatmap
-      </h4>
-      <p className="text-xs text-gray-500 dark:text-gray-400">
-        Click a cell to filter the task table. Likelihood (X) × Impact (Y)
-      </p>
-
-      <div className="mt-4" style={{ height: 320 }} onMouseLeave={onLeave}>
-        <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart
-            data={[]}
-            margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
-          >
-            <CartesianGrid horizontal={false} vertical={false} />
-            <XAxis dataKey="likelihood" type="number" domain={[1, 5]} hide />
-            <YAxis dataKey="impact" type="number" domain={[1, 5]} hide />
-            <Customized component={<CustomizedGrid />} />
-          </ComposedChart>
-        </ResponsiveContainer>
-
-        {/* Tooltip DOM */}
-        {tooltip && (
-          <div
-            className="pointer-events-none fixed z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md p-2 text-xs shadow"
-            style={{
-              left: tooltip.x + 12,
-              top: tooltip.y - 6,
-              transform: "translate(-50%, -100%)",
-              minWidth: 160,
-              maxWidth: 320,
-            }}
-          >
-            <div className="text-xs text-gray-500 dark:text-gray-300">
-              L {tooltip.likelihood} • I {tooltip.impact}
-            </div>
-            <div className="font-semibold text-sm text-gray-900 dark:text-white mt-1">
-              {tooltip.count} item{tooltip.count !== 1 ? "s" : ""}
-            </div>
-            {tooltip.count > 0 && (
-              <div className="text-xs text-gray-500 mt-1">
-                Avg L: {tooltip.avgLikelihood ?? "-"} • Avg I: {tooltip.avgImpact ?? "-"}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </motion.div>
-  );
-}
-
-function RiskDistribution({ backendData }) {
-  const counts = backendData;
-  const total = Object.values(counts).reduce((a, b) => a + b, 0) || 1;
-
-  return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-4 shadow">
-      <h4 className="font-semibold text-gray-900 dark:text-white">
-        Risk Distribution
-      </h4>
-      <div className="mt-3 space-y-3">
-        {Object.entries(counts).map(([k, v]) => {
-          const pct = Math.round((v / total) * 100);
-          return (
-            <div key={k} className="flex items-center gap-3">
-              <div className="w-20 text-sm text-gray-600 dark:text-gray-300">
-                {k}
-              </div>
-              <div className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
-                <div
-                  className="h-3 rounded-full"
-                  style={{ width: `${pct}%`, background: getCategoryColor(k) }}
-                />
-              </div>
-              <div className="w-10 text-right text-sm text-gray-600 dark:text-gray-300">
-                {v}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ---------- Table row ----------
-function TaskRow({ item, onOpen, onEdit }) {
-  const riskColor = chooseHeatColor(item.impact, item.likelihood);
-  return (
-    <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition">
-      <td className="px-3 py-2 text-sm font-mono">{item.action_id}</td>
-      <td className="px-3 py-2 text-sm">{item.title}</td>
-      <td className="px-3 py-2 text-sm">{item.assignee.full_name}</td>
-      <td className="px-3 py-2 text-sm">{formatDate(item.due_date)}</td>
-      <td className="px-3 py-2 text-sm">{item.status}</td>
-      <td className="px-3 py-2 text-sm">
-        <span
-          className="px-2 py-1 rounded-full text-xs"
-          style={{ background: riskColor, color: "#000" }}
-        >
-          {item.risk_category} ({item.risk_score})
-        </span>
-      </td>
-      <td className="px-3 py-2 text-sm">
-        <div className="flex items-center gap-2">
-          <button
-            title="View"
-            onClick={() => onOpen(item)}
-            className={` hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer`}
-          >
-            <Eye className="w-4 h-4" />
-          </button>
-          <button
-            title="Edit"
-            onClick={() => onEdit(item)}
-            className={`} hover:text-blue-500 cursor-pointer`}
-          >
-            <Pencil className="w-4 h-4" />
-          </button>
-          <button
-            title="Linked Items"
-            className={` hover:text-[#5DEE92] cursor-pointer`}
-          >
-            <LinkIcon className="w-4 h-4" />
-          </button>
-          <button
-            title="Delete"
-            className={` hover:text-red-500 cursor-pointer`}
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-          <button
-            title="Archive"
-            className={` hover:text-gray-500 cursor-pointer`}
-          >
-            <Archive className="w-4 h-4" />
-          </button>
-        </div>
-      </td>
-    </tr>
-  );
-}
 
 // ---------- Main Dashboard ----------
 export default function ActionDashboard({
@@ -537,6 +188,368 @@ export default function ActionDashboard({
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [searchDebounced, setSearchDebounced] = useState("");
+
+  useEffect(() => {
+    addTranslationNamespace("en" , "pages" , "ActionItem");
+    addTranslationNamespace("hindi" , "pages" , "ActionItem");
+    addTranslationNamespace("sanskrit" , "pages" , "ActionItem");
+    addTranslationNamespace("telugu" , "pages" , "ActionItem");
+  } , []);
+
+  const { t } = useTranslation("pages" , {keyPrefix:"ActionItem"})
+
+  function RechartsHeatmap({ heatmapMatrix, onCellClick }) {
+    // const aggregated = useMemo(() => {
+    //   const grid = Array.from({ length: 5 }, () =>
+    //     Array.from({ length: 5 }, () => ({
+    //       count: 0,
+    //       sumLikelihood: 0,
+    //       sumImpact: 0,
+    //       items: [],
+    //     }))
+    //   );
+    //   items.forEach((it) => {
+    //     const col = Math.max(1, Math.min(5, it.likelihood)) - 1;
+    //     const row = 5 - Math.max(1, Math.min(5, it.impact)); // invert Y so 5 is top
+  
+    //     grid[row][col].count += 1;
+    //     grid[row][col].sumLikelihood += it.likelihood;
+    //     grid[row][col].sumImpact += it.impact;
+    //     grid[row][col].items.push(it);
+    //   });
+    //   return grid;
+    // }, [items]);
+  
+    const aggregated = useMemo(() => {
+      // Backend matrix is [likelihood][impact]
+      // But your UI expects matrix[row][col] where row=impact, col=likelihood
+      // So transpose + invert rows
+      const transposed = Array(5)
+        .fill(0)
+        .map(() => Array(5).fill(0));
+  
+      heatmapMatrix.forEach((likelihoodRow, lIdx) => {
+        likelihoodRow.forEach((count, iIdx) => {
+          const uiRow = 5 - (iIdx + 1); // invert impact
+          const uiCol = lIdx; // likelihood stays same
+          transposed[uiRow][uiCol] = { count };
+        });
+      });
+  
+      return transposed;
+    }, [heatmapMatrix]);
+  
+    const maxCount = useMemo(() => {
+      let m = 1;
+      aggregated.forEach((row) =>
+        row.forEach((cell) => (m = Math.max(m, cell.count)))
+      );
+      return m;
+    }, [aggregated]);
+  
+    // tooltip state
+    const [tooltip, setTooltip] = useState(null);
+  
+    // Hoisted onLeave handler
+    const onLeave = () => setTooltip(null);
+  
+    // Customized renderer uses chart width/height to compute cell positions
+    const CustomizedGrid = (props) => {
+      const { width, height } = props;
+      const margin = { top: 32, right: 12, bottom: 28, left: 36 };
+      const chartWidth = Math.max(200, width);
+      const chartHeight = Math.max(180, height);
+      const gridWidth = chartWidth - margin.left - margin.right;
+      const gridHeight = chartHeight - margin.top - margin.bottom;
+      const cols = 5;
+      const rows = 5;
+      const cellW = gridWidth / cols;
+      const cellH = gridHeight / rows;
+      const pad = 8;
+  
+      const onHover = (evt, rIdx, cIdx, cell) => {
+        // compute true axis values
+        const trueLikelihood = cIdx + 1; // left -> right
+        const trueImpact = 5 - rIdx; // bottom -> top
+  
+        const rect = evt.currentTarget.getBoundingClientRect();
+        setTooltip({
+          x: rect.left + rect.width / 2,
+          y: rect.top - 8,
+          likelihood: trueLikelihood,
+          impact: trueImpact,
+          count: cell.count,
+  
+          // Backend matrix DOES NOT provide sums → replace with null or "-"
+          sumLikelihood: null,
+          sumImpact: null,
+  
+          // Add fallback values
+          avgLikelihood: trueLikelihood,
+          avgImpact: trueImpact,
+  
+          items: cell.items,
+        });
+      };
+  
+      const handleKeyDown = (e, rIdx, cIdx, cell) => {
+        if (e.key === "Enter") {
+          const trueLikelihood = cIdx + 1;
+          const trueImpact = 5 - rIdx;
+          onCellClick({
+            likelihood: trueLikelihood,
+            impact: trueImpact,
+            items: cell.items,
+          });
+        }
+      };
+  
+      return (
+        <g
+          onMouseLeave={onLeave}
+        >
+          {/* Likelihood axis (X-axis bottom) */}
+          {[1, 2, 3, 4, 5].map((i) => (
+            <text
+              key={`x-${i}`}
+              x={margin.left + (i - 0.5) * cellW}
+              y={chartHeight - 4}
+              textAnchor="middle"
+              fill="#6B7280"
+              style={{ fontSize: 12 }}
+            >
+              {i}
+            </text>
+          ))}
+  
+          {/* Impact axis (Y-axis left), bottom → top */}
+          {[1, 2, 3, 4, 5].map((i) => (
+            <text
+              key={`y-${i}`}
+              x={margin.left - 12}
+              y={margin.top + (5 - i + 0.5) * cellH}
+              textAnchor="end"
+              fill="#6B7280"
+              style={{ fontSize: 12 }}
+            >
+              {i}
+            </text>
+          ))}
+  
+          {/* Cells */}
+          {aggregated.map((row, rIdx) =>
+            row.map((cell, cIdx) => {
+              const x = margin.left + cIdx * cellW + pad / 2;
+              const y = margin.top + rIdx * cellH + pad / 2;
+              const w = cellW - pad;
+              const h = cellH - pad;
+              const norm = maxCount <= 1 ? 1 : Math.min(1, cell.count / maxCount);
+  
+              // true axis mapping
+              const trueLikelihood = cIdx + 1; // left → right
+              const trueImpact = 5 - rIdx; // bottom → top
+  
+              // color based on true coords
+              const color = chooseHeatColor(trueLikelihood, trueImpact);
+              const scale = 0.9 + 0.1 * norm;
+  
+              return (
+                <g
+                  key={`cell-${rIdx}-${cIdx}`}
+                  transform={`translate(${x + (w * (1 - scale)) / 2}, ${
+                    y + (h * (1 - scale)) / 2
+                  }) scale(${scale})`}
+                >
+                  <rect
+                    x={0}
+                    y={0}
+                    rx={10}
+                    width={w}
+                    height={h}
+                    fill={cell.count === 0 ? "#F3F4F6" : color}
+                    stroke={cell.count === 0 ? "transparent" : "#ffffff22"}
+                    style={{
+                      cursor: "pointer",
+                      transition: "transform 0.12s ease",
+                    }}
+                    onMouseEnter={(e) => onHover(e, rIdx, cIdx, cell)}
+                    onMouseLeave={onLeave}
+                    onClick={() =>
+                      onCellClick({
+                        likelihood: trueLikelihood,
+                        impact: trueImpact,
+                        items: cell.items,
+                      })
+                    }
+                    tabIndex={0}
+                    role="button"
+                    aria-label={`Likelihood ${trueLikelihood} Impact ${trueImpact}, ${cell.count} items`}
+                    onKeyDown={(e) => handleKeyDown(e, rIdx, cIdx, cell)}
+                  />
+                  <text
+                    x={w / 2}
+                    y={h / 2 + 4}
+                    textAnchor="middle"
+                    fill={cell.count === 0 ? "#9CA3AF" : "#111827"}
+                    style={{ fontSize: 12, fontWeight: 700 }}
+                  >
+                    {cell.count}
+                  </text>
+                </g>
+              );
+            })
+          )}
+        </g>
+      );
+    };
+  
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-4 shadow"
+      >
+        <h4 className="font-semibold text-gray-900 dark:text-white">
+          {t("risk_heatmap")}
+        </h4>
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          {t("click_a_cell")}
+        </p>
+  
+        <div className="mt-4" style={{ height: 320 }} onMouseLeave={onLeave}>
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart
+              data={[]}
+              margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
+            >
+              <CartesianGrid horizontal={false} vertical={false} />
+              <XAxis dataKey="likelihood" type="number" domain={[1, 5]} hide />
+              <YAxis dataKey="impact" type="number" domain={[1, 5]} hide />
+              <Customized component={<CustomizedGrid />} />
+            </ComposedChart>
+          </ResponsiveContainer>
+  
+          {/* Tooltip DOM */}
+          {tooltip && (
+            <div
+              className="pointer-events-none fixed z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md p-2 text-xs shadow"
+              style={{
+                left: tooltip.x + 12,
+                top: tooltip.y - 6,
+                transform: "translate(-50%, -100%)",
+                minWidth: 160,
+                maxWidth: 320,
+              }}
+            >
+              <div className="text-xs text-gray-500 dark:text-gray-300">
+                L {tooltip.likelihood} • I {tooltip.impact}
+              </div>
+              <div className="font-semibold text-sm text-gray-900 dark:text-white mt-1">
+                {tooltip.count} item{tooltip.count !== 1 ? "s" : ""}
+              </div>
+              {tooltip.count > 0 && (
+                <div className="text-xs text-gray-500 mt-1">
+                  Avg L: {tooltip.avgLikelihood ?? "-"} • Avg I: {tooltip.avgImpact ?? "-"}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </motion.div>
+    );
+  }
+  
+  function RiskDistribution({ backendData }) {
+    const counts = backendData;
+    const total = Object.values(counts).reduce((a, b) => a + b, 0) || 1;
+  
+    return (
+      <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-4 shadow">
+        <h4 className="font-semibold text-gray-900 dark:text-white">
+          {t("risk_distribution")}
+        </h4>
+        <div className="mt-3 space-y-3">
+          {Object.entries(counts).map(([k, v]) => {
+            const pct = Math.round((v / total) * 100);
+            return (
+              <div key={k} className="flex items-center gap-3">
+                <div className="w-20 text-sm text-gray-600 dark:text-gray-300">
+                  {k}
+                </div>
+                <div className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
+                  <div
+                    className="h-3 rounded-full"
+                    style={{ width: `${pct}%`, background: getCategoryColor(k) }}
+                  />
+                </div>
+                <div className="w-10 text-right text-sm text-gray-600 dark:text-gray-300">
+                  {v}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+  
+  // ---------- Table row ----------
+  function TaskRow({ item, onOpen, onEdit }) {
+    const riskColor = chooseHeatColor(item.impact, item.likelihood);
+    return (
+      <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition">
+        <td className="px-3 py-2 text-sm font-mono">{item.action_id}</td>
+        <td className="px-3 py-2 text-sm">{item.title}</td>
+        <td className="px-3 py-2 text-sm">{item.assignee.full_name}</td>
+        <td className="px-3 py-2 text-sm">{formatDate(item.due_date)}</td>
+        <td className="px-3 py-2 text-sm">{item.status}</td>
+        <td className="px-3 py-2 text-sm">
+          <span
+            className="px-2 py-1 rounded-full text-xs"
+            style={{ background: riskColor, color: "#000" }}
+          >
+            {item.risk_category} ({item.risk_score})
+          </span>
+        </td>
+        <td className="px-3 py-2 text-sm">
+          <div className="flex items-center gap-2">
+            <button
+              title="View"
+              onClick={() => onOpen(item)}
+              className={` hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer`}
+            >
+              <Eye className="w-4 h-4" />
+            </button>
+            <button
+              title="Edit"
+              onClick={() => onEdit(item)}
+              className={`} hover:text-blue-500 cursor-pointer`}
+            >
+              <Pencil className="w-4 h-4" />
+            </button>
+            <button
+              title="Linked Items"
+              className={` hover:text-[#5DEE92] cursor-pointer`}
+            >
+              <LinkIcon className="w-4 h-4" />
+            </button>
+            <button
+              title="Delete"
+              className={` hover:text-red-500 cursor-pointer`}
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+            <button
+              title="Archive"
+              className={` hover:text-gray-500 cursor-pointer`}
+            >
+              <Archive className="w-4 h-4" />
+            </button>
+          </div>
+        </td>
+      </tr>
+    );
+  }
 
   const [summary, setSummary] = useState({
     total: 0,
@@ -925,10 +938,10 @@ export default function ActionDashboard({
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Action Item Dashboard
+              {t("action_item_dashboard")}
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Overview, heatmap, and task list for privacy action items
+              {t("overview_heatmap_and_task_list_for_privacy_action_")}
             </p>
           </div>
 
@@ -938,7 +951,7 @@ export default function ActionDashboard({
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search action items..."
+                placeholder={t("search_action_items")}
                 className="bg-transparent outline-none text-sm w-60 text-gray-700 dark:text-gray-200"
               />
             </div>
@@ -948,7 +961,7 @@ export default function ActionDashboard({
                 onClick={() => setOpen(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-[#5DEE92] text-black rounded-md shadow hover:opacity-95 transition"
               >
-                <Plus className="h-4 w-4" /> Create
+                <Plus className="h-4 w-4" /> {t("create")}
               </button>
               <AddActionItemModal
                 isOpen={open}
@@ -972,7 +985,7 @@ export default function ActionDashboard({
                   onClick={handleExport}
                   className="flex items-center gap-2 px-4 py-2 border border-[#828282] rounded-md bg-white dark:text-white dark:bg-gray-800"
                 >
-                  <Download className="h-4 w-4" /> Export
+                  <Download className="h-4 w-4" /> {t("export")}
                 </button>
               </div>
             </div>
@@ -983,7 +996,7 @@ export default function ActionDashboard({
         <div className="mt-4 flex flex-wrap gap-3 items-center dark:text-white">
           <div className="flex items-center gap-2">
             <label className="text-xs text-gray-500 dark:text-gray-400">
-              From
+              {t("from")}
             </label>
             <input
               type="date"
@@ -994,7 +1007,7 @@ export default function ActionDashboard({
           </div>
           <div className="flex items-center gap-2">
             <label className="text-xs text-gray-500 dark:text-gray-400">
-              To
+              {t("to")}
             </label>
             <input
               type="date"
@@ -1009,7 +1022,7 @@ export default function ActionDashboard({
               onChange={(e) => setDeptFilter(e.target.value)}
               className="rounded-md border px-2 py-1 bg-white dark:bg-gray-800 text-sm"
             >
-              <option value="All">All Departments</option>
+              <option value="All">{t("all_departments")}</option>
               {departmentsList.map((d) => (
                 <option key={d} value={d}>
                   {d}
@@ -1023,12 +1036,12 @@ export default function ActionDashboard({
               onChange={(e) => setRiskFilter(e.target.value)}
               className="rounded-md border px-2 py-1 bg-white dark:bg-gray-800 text-sm"
             >
-              <option value="All">All Risk Levels</option>
-              <option value="Low">Low</option>
-              <option value="Medium">Medium</option>
-              <option value="High">High</option>
-              <option value="Very High">Very High</option>
-              <option value="Critical">Critical</option>
+              <option value="All">{t("all_risk_levels")}</option>
+              <option value="Low">{t("low")}</option>
+              <option value="Medium">{t("medium")}</option>
+              <option value="High">{t("high")}</option>
+              <option value="Very High">{t("very_high")}</option>
+              <option value="Critical">{t("critical")}</option>
             </select>
           </div>
           <div>
@@ -1037,11 +1050,11 @@ export default function ActionDashboard({
               onChange={(e) => setStatusFilter(e.target.value)}
               className="rounded-md border px-2 py-1 bg-white dark:bg-gray-800 text-sm"
             >
-              <option value="All">All Statuses</option>
-              <option value="open">Open</option>
-              <option value="in_progress">In Progress</option>
-              <option value="completed">Completed</option>
-              <option value="overdue">Overdue</option>
+              <option value="All">{t("all_statuses")}</option>
+              <option value="open">{t("open")}</option>
+              <option value="in_progress">{t("in_progress")}</option>
+              <option value="completed">{t("completed")}</option>
+              <option value="overdue">{t("overdue")}</option>
             </select>
           </div>
           <div>
@@ -1050,9 +1063,9 @@ export default function ActionDashboard({
               onChange={(e) => setLinkedFilter(e.target.value)}
               className="rounded-md border px-2 py-1 bg-white dark:bg-gray-800 text-sm"
             >
-              <option value="All">All Linked</option>
-              <option value="RoPA">RoPA</option>
-              <option value="Assessment">Assessment</option>
+              <option value="All">{t("all_linked")}</option>
+              <option value="RoPA">{t("ropa")}</option>
+              <option value="Assessment">{t("assessment")}</option>
             </select>
           </div>
         </div>
@@ -1060,7 +1073,7 @@ export default function ActionDashboard({
         {/* Summary Cards */}
         <div className="mt-6 grid grid-cols-1 md:grid-cols-5 gap-4">
           <SummaryCard
-            title="Total Action Items"
+            title={t("total_action_items")}
             value={summary.total}
             accent={BRAND}
             icon={
@@ -1070,7 +1083,7 @@ export default function ActionDashboard({
             }
           />
           <SummaryCard
-            title="Open / Overdue"
+            title={t("open_overdue")}
             value={summary.openOverdue}
             accent="#f39c12"
             icon={
@@ -1080,7 +1093,7 @@ export default function ActionDashboard({
             }
           />
           <SummaryCard
-            title="High Risk"
+            title={t("high_risk")}
             value={summary.highRisk}
             accent="#e74c3c"
             icon={
@@ -1090,13 +1103,13 @@ export default function ActionDashboard({
             }
           />
           <SummaryCard
-            title="Linked to RoPA/Assess"
+            title={t("linked_to_ropa_assess")}
             value={summary.linkedCount}
             accent="#6c63ff"
             icon={<LinkIcon className="h-4 w-4 text-[#6c63ff]" />}
           />
           <SummaryCard
-            title="Evidence Collected"
+            title={t("evidence_collected")}
             value={summary.evidence}
             accent="#38b36c"
             icon={<FilePlus className="h-4 w-4 text-[#38b36c]" />}
@@ -1140,12 +1153,12 @@ export default function ActionDashboard({
             />
             {riskFilter !== "All" && (
               <div className="flex items-center gap-2 my-2">
-                <span className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">Filtered by risk: <strong>{riskFilter}</strong></span>
+                <span className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">{t("filtered_by_risk")}: <strong>{riskFilter}</strong></span>
                 <button
                   onClick={() => setRiskFilter("All")}
                   className="ml-2 px-2 py-1 rounded-md border border-[#828282] dark:text-white cursor-pointer text-xs"
                 >
-                  Clear Risk Filter
+                  {t("clear_risk_filter")}
                 </button>
               </div>
             )}
@@ -1156,11 +1169,11 @@ export default function ActionDashboard({
 
             <div className="mt-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-4 shadow">
               <h4 className="font-semibold text-gray-900 dark:text-white">
-                Notifications & Alerts
+                {t("notifications_alerts")}
               </h4>
               {loadingAlerts ? (
                 <div className="mt-3 text-sm text-gray-500">
-                  Loading alerts…
+                  {t("loading_alerts")}
                 </div>
               ) : (
                 <div className="mt-3 space-y-2">
@@ -1177,7 +1190,7 @@ export default function ActionDashboard({
                             openAlertModal("overdue", alerts.overdue)
                           }
                         >
-                          View
+                          {t('view')}
                         </button>
                       </div>
                     </div>
@@ -1196,7 +1209,7 @@ export default function ActionDashboard({
                             openAlertModal("critical", alerts.critical)
                           }
                         >
-                          View
+                          {t("view")}
                         </button>
                       </div>
                     </div>
@@ -1214,7 +1227,7 @@ export default function ActionDashboard({
                             openAlertModal("upcoming", alerts.upcoming)
                           }
                         >
-                          View
+                          {t("view")}
                         </button>
                       </div>
                     </div>
@@ -1225,7 +1238,7 @@ export default function ActionDashboard({
                     alerts.critical.length === 0 &&
                     alerts.upcoming.length === 0 && (
                       <div className="text-sm text-gray-500 dark:text-gray-300">
-                        No alerts at the moment.
+                        {t("no_alerts_at_the_moment")}
                       </div>
                     )}
                 </div>
@@ -1238,11 +1251,11 @@ export default function ActionDashboard({
         <div className="mt-6 bg-white dark:text-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-4 shadow">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-gray-900 dark:text-white">
-              Task Status
+              {t("task_status")}
             </h3>
             <div className="flex items-center gap-2">
               <label className="text-sm text-gray-500 dark:text-gray-400">
-                Page
+                {t("page")}
               </label>
               <select
                 value={pagination.page}
@@ -1262,13 +1275,13 @@ export default function ActionDashboard({
             <table className="w-full table-auto border-collapse">
               <thead>
                 <tr className="text-left text-xs text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-700">
-                  <th className="px-3 py-2">Action Item ID</th>
-                  <th className="px-3 py-2">Title</th>
-                  <th className="px-3 py-2">Assigned To</th>
-                  <th className="px-3 py-2">Due Date</th>
-                  <th className="px-3 py-2">Status</th>
-                  <th className="px-3 py-2">Risk Level</th>
-                  <th className="px-3 py-2">Actions</th>
+                  <th className="px-3 py-2">{t("action_item_id")}</th>
+                  <th className="px-3 py-2">{t("title")}</th>
+                  <th className="px-3 py-2">{t("assigned_to")}</th>
+                  <th className="px-3 py-2">{t("due_Date")}</th>
+                  <th className="px-3 py-2">{t("status")}</th>
+                  <th className="px-3 py-2">{t("risk_level")}</th>
+                  <th className="px-3 py-2">{t("actions")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -1286,9 +1299,9 @@ export default function ActionDashboard({
 
           <div className="mt-4 flex items-center justify-between">
             <div className="text-sm text-gray-600 dark:text-gray-300">
-              Showing {(pagination.page - 1) * perPage + 1} –{" "}
-              {Math.min(pagination.page * perPage, pagination.total)} of{" "}
-              {pagination.total} results
+              {t("showing")} {(pagination.page - 1) * perPage + 1} –{" "}
+              {Math.min(pagination.page * perPage, pagination.total)} {t("of")}{" "}
+              {pagination.total} {t("results")}
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -1296,7 +1309,7 @@ export default function ActionDashboard({
                 disabled={pagination.page === 1}
                 className="px-3 py-2 rounded-md border"
               >
-                Prev
+                {t("prev")}
               </button>
               <button
                 onClick={() =>
@@ -1305,7 +1318,7 @@ export default function ActionDashboard({
                 disabled={pagination.page === pagination.pages}
                 className="px-3 py-2 rounded-md border"
               >
-                Next
+                {t("next")}
               </button>
             </div>
           </div>

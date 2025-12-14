@@ -1,11 +1,13 @@
 {
-  "log_history": "Log History",
-  "system_activity_logs_and_security_events": "System activity logs and security events",
+  "log_history": "लॉग इतिहास",
+  "system_activity_logs_and_security_events": "सिस्टम गतिविधि लॉग और सुरक्षा घटनाएँ",
   "user": "उपयोगकर्ता",
   "time": "समय",
-  "ip_address": "IP Address",
+  "ip_address": "आईपी पता",
   "type": "प्रकार",
-  "message": "Message",
+  "message": "संदेश",
   "prev": "पिछला",
-  "next": "अगला"
+  "next": "अगला",
+  "page": "पृष्ठ",
+  "of": "का"
 }

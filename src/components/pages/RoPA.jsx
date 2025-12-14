@@ -22,6 +22,8 @@ import {
   YAxis,
 } from "recharts";
 import { getRopaGraphData } from "../../services/RopaService";
+import { addTranslationNamespace } from "../../i18n/config";
+import { useTranslation } from "react-i18next";
 
 // Register chart.js components
 ChartJS.register(
@@ -57,54 +59,6 @@ const cardVariants = {
   }),
 };
 
-function categorizeRisk(score) {
-  if (score <= 5) return "Low";
-  if (score <= 10) return "Medium";
-  if (score <= 15) return "High";
-  if (score <= 20) return "Very High";
-  return "Critical";
-}
-
-function mockActionItems(count = 200) {
-  const statuses = ["Open", "In Progress", "Completed", "Overdue"];
-  const likelihoodOptions = [1, 2, 3, 4, 5];
-  const impactOptions = [1, 2, 3, 4, 5];
-  const deps = ["Procurement", "Frontend", "Payments", "Legal", "Customer Ops"];
-  return Array.from({ length: count }).map((_, i) => {
-    const likelihood =
-      likelihoodOptions[Math.floor(Math.random() * likelihoodOptions.length)];
-    const impact =
-      impactOptions[Math.floor(Math.random() * impactOptions.length)];
-    const riskScore = likelihood * impact;
-    const riskCategory = categorizeRisk(riskScore);
-    const status = statuses[Math.floor(Math.random() * statuses.length)];
-    const daysOffset = Math.floor(Math.random() * 20) - 10; // some past/future
-    const due = new Date(
-      Date.now() + daysOffset * 24 * 3600 * 1000
-    ).toISOString();
-    return {
-      id: `AIT-${1000 + i}`,
-      title: `Action item ${i + 1} — Improve data flow in ${
-        deps[i % deps.length]
-      }`,
-      assignedTo: i % 3 === 0 ? "team_alpha" : `user_${i % 6}`,
-      assignedToName: i % 3 === 0 ? "Team Alpha" : `User ${i % 6}`,
-      department: deps[i % deps.length],
-      dueDate: due,
-      status,
-      likelihood,
-      impact,
-      riskScore,
-      riskCategory,
-      linked: { ropa: Math.random() > 0.6, assessment: Math.random() > 0.6 },
-      evidenceCollected: Math.random() > 0.6,
-      createdDate: new Date(
-        Date.now() - Math.random() * 1000 * 3600 * 24 * 30
-      ).toISOString(),
-    };
-  });
-}
-
 function chooseHeatColor(impact, likelihood) {
   const score = impact * likelihood;
   if (score <= 5) return "#2ecc71";
@@ -124,6 +78,15 @@ const RoPA = ({ initialItems = null }) => {
   const [cellFilter, setCellFilter] = useState(null);
   const [items, setItems] = useState([]);
   const [availableYears, setAvailableYears] = useState([]);
+
+  useEffect(() => {
+    addTranslationNamespace("en" , "pages" , "RoPA");
+    addTranslationNamespace("hindi" , "pages" , "RoPA");
+    addTranslationNamespace("sanskrit" , "pages" , "RoPA");
+    addTranslationNamespace("telugu" , "pages" , "RoPA"); 
+  } , [])
+
+  const { t } = useTranslation("pages" , {keyPrefix: "RoPA"})
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
@@ -294,7 +257,7 @@ const RoPA = ({ initialItems = null }) => {
   //   }
   // };
 
-  if (!stats || !chartData) return <div className="p-10">Loading...</div>;
+  if (!stats || !chartData) return <div className="p-10">{t("loading")}...</div>;
 
   // const { total, byCategory, thisMonth, lastMonth } = stats;
 
@@ -303,8 +266,8 @@ const RoPA = ({ initialItems = null }) => {
 
     const diff = stats.thisMonth - stats.lastMonth;
 
-    if (diff > 0) return `+${diff} This month`;
-    if (diff < 0) return `${diff} This month`; // diff is negative automatically
+    if (diff > 0) return `+${diff} ${t("this_month")}`;
+    if (diff < 0) return `${diff} ${t("this_month")}`; // diff is negative automatically
     return "No change this month";
   };
 
@@ -494,10 +457,10 @@ const RoPA = ({ initialItems = null }) => {
         className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-4 shadow"
       >
         <h4 className="font-semibold text-gray-900 dark:text-white">
-          Risk Heatmap
+          {t("risk_heatmap")}
         </h4>
         <p className="text-xs text-gray-500 dark:text-gray-400">
-          Click a cell to filter the task table. Likelihood (X) × Impact (Y)
+          {t("click_a_cell")}
         </p>
 
         <div className="mt-4" style={{ height: 320 }}>
@@ -566,7 +529,7 @@ const RoPA = ({ initialItems = null }) => {
               {" "}
               <div className="flex flex-col gap-4">
                 {" "}
-                <h2 className="font-medium">Total RoPA</h2>{" "}
+                <h2 className="font-medium">{t("total_ropa")}</h2>{" "}
                 <div className="text-4xl font-bold text-[#5de992] mb-4">
                   {" "}
                   {stats.total}{" "}
@@ -598,19 +561,19 @@ const RoPA = ({ initialItems = null }) => {
                     onChange={(e) => setMonth(e.target.value)}
                   >
                     {" "}
-                    <option value="">All Months</option>{" "}
-                    <option value="01">Jan</option>{" "}
-                    <option value="02">Feb</option>{" "}
-                    <option value="03">Mar</option>{" "}
-                    <option value="04">Apr</option>{" "}
-                    <option value="05">May</option>{" "}
-                    <option value="06">Jun</option>{" "}
-                    <option value="07">Jul</option>{" "}
-                    <option value="08">Aug</option>{" "}
-                    <option value="09">Sep</option>{" "}
-                    <option value="10">Oct</option>{" "}
-                    <option value="11">Nov</option>{" "}
-                    <option value="12">Dec</option>{" "}
+                    <option value="">{t("all_months")}</option>{" "}
+                    <option value="01">{t("jan")}</option>{" "}
+                    <option value="02">{t("feb")}</option>{" "}
+                    <option value="03">{t("mar")}</option>{" "}
+                    <option value="04">{t("apr")}</option>{" "}
+                    <option value="05">{t("may")}</option>{" "}
+                    <option value="06">{t("jun")}</option>{" "}
+                    <option value="07">{t("jul")}</option>{" "}
+                    <option value="08">{t("aug")}</option>{" "}
+                    <option value="09">{t("sep")}</option>{" "}
+                    <option value="10">{t("oct")}</option>{" "}
+                    <option value="11">{t("nov")}</option>{" "}
+                    <option value="12">{t("dec")}</option>{" "}
                   </select>{" "}
                   {/* Fullscreen Toggle Button */}{" "}
                   <button
@@ -674,22 +637,22 @@ const RoPA = ({ initialItems = null }) => {
           <div className="col-span-4 grid grid-cols-4 gap-4">
             {[
               {
-                title: "InfoVoyage",
+                title: `${t("infovoyage")}`,
                 value: cat("InfoVoyage"),
                 color: "bg-[#5de992] text-black",
               },
               {
-                title: "CheckSync",
+                title: `${t("checksync")}`,
                 value: cat("CheckSync"),
                 color: "bg-white dark:bg-gray-800",
               },
               {
-                title: "Beam",
+                title: `${t("beam")}`,
                 value: cat("Beam"),
                 color: "bg-white dark:bg-gray-800",
               },
               {
-                title: "OffDoff",
+                title: `${t("offdoff")}`,
                 value: cat("OffDoff"),
                 color: "bg-gray-200 dark:bg-gray-700",
               },

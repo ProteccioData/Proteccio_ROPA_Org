@@ -1,9 +1,12 @@
 {
   "assessments": "मूल्यांकन",
-  "data_protection_impact_assessment": "Data Protection Impact Assessment",
-  "assess_privacy_risks_and_mitigation_measures": "Assess privacy risks and mitigation measures",
-  "legitimate_interest_assessment": "Legitimate Interest Assessment",
-  "evaluate_legitimate_interests_for_data_processing": "Evaluate legitimate interests for data processing",
-  "transfer_impact_assessment": "Transfer Impact Assessment",
-  "evaluate_risks_of_cross_border_data_transfers": "Evaluate risks of cross-border data transfers"
+  "data_protection_impact_assessment": "डेटा संरक्षण प्रभाव मूल्यांकन",
+  "assess_privacy_risks_and_mitigation_measures": "गोपनीयता जोखिमों और शमन उपायों का आकलन करें",
+  "legitimate_interest_assessment": "वैध हित मूल्यांकन",
+  "evaluate_legitimate_interests_for_data_processing": "डेटा प्रसंस्करण के लिए वैध हितों का मूल्यांकन करें",
+  "transfer_impact_assessment": "स्थानांतरण प्रभाव मूल्यांकन",
+  "evaluate_risks_of_cross_border_data_transfers": "सीमा-पार डेटा स्थानांतरण के जोखिमों का मूल्यांकन करें",
+  "start_new_dpia": "नया डीपीआईए प्रारंभ करें",
+  "start_new_lia": "नया एलआईए प्रारंभ करें",
+  "start_new_tia": "नया टीआईए प्रारंभ करें"
 }

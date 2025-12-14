@@ -1,9 +1,12 @@
 {
-  "assessments": "అసెస్‌మెంట్‌లు",
-  "data_protection_impact_assessment": "Data Protection Impact Assessment",
-  "assess_privacy_risks_and_mitigation_measures": "Assess privacy risks and mitigation measures",
-  "legitimate_interest_assessment": "Legitimate Interest Assessment",
-  "evaluate_legitimate_interests_for_data_processing": "Evaluate legitimate interests for data processing",
-  "transfer_impact_assessment": "Transfer Impact Assessment",
-  "evaluate_risks_of_cross_border_data_transfers": "Evaluate risks of cross-border data transfers"
+  "assessments": "అంచనాలు",
+  "data_protection_impact_assessment": "డేటా రక్షణ ప్రభావ అంచనా",
+  "assess_privacy_risks_and_mitigation_measures": "గోప్యతా ప్రమాదాలు మరియు నివారణ చర్యలను అంచనా వేయండి",
+  "legitimate_interest_assessment": "న్యాయసమ్మత ఆసక్తి అంచనా",
+  "evaluate_legitimate_interests_for_data_processing": "డేటా ప్రాసెసింగ్ కోసం న్యాయసమ్మత ఆసక్తులను అంచనా వేయండి",
+  "transfer_impact_assessment": "బదిలీ ప్రభావ అంచనా",
+  "evaluate_risks_of_cross_border_data_transfers": "సరిహద్దులు దాటే డేటా బదిలీల ప్రమాదాలను అంచనా వేయండి",
+  "start_new_dpia": "కొత్త డీపీఐఏ ప్రారంభించండి",
+  "start_new_lia": "కొత్త ఎల్‌ఐఏ ప్రారంభించండి",
+  "start_new_tia": "కొత్త టీఐఏ ప్రారంభించండి"
 }

@@ -41,6 +41,8 @@ import {
 import { useAuth } from "../../context/AuthContext";
 import { getAssessments } from "../../services/AssessmentService";
 import { useNavigate } from "react-router-dom";
+import { addTranslationNamespace } from "../../i18n/config";
+import { useTranslation } from "react-i18next";
 
 ChartJS.register(
   CategoryScale,
@@ -79,7 +81,16 @@ export default function Home() {
 
   const { initializing } = useAuth();
 
-  if (initializing) return <div>Loading Dashboard...</div>;
+  useEffect(() => {
+    addTranslationNamespace("en" , "pages" , "Home");
+    addTranslationNamespace("hindi" , "pages" , "Home");
+    addTranslationNamespace("sanskrit" , "pages" , "Home");
+    addTranslationNamespace("telugu" , "pages" , "Home");
+  }, [])
+
+  const { t } = useTranslation("pages" , {keyPrefix:"Home"})
+
+  if (initializing) return <div>{t("loading_dashboard")}...</div>;
   const isAdmin = user?.role === "org_admin";
 
   const [ropaPieData, setRopaPieData] = useState([]);
@@ -95,16 +106,11 @@ export default function Home() {
 
   // sample data (kept same as your previous)
   const chartData = [
-    { label: "InfoVoyage", value: 200, color: "var(--color-chart-1)" },
-    { label: "CheckSync", value: 275, color: "var(--color-chart-2)" },
-    { label: "Beam", value: 90, color: "var(--color-chart-3)" },
-    { label: "OffDoff", value: 187, color: "var(--color-chart-4)" },
+    { label: `${t("infovoyage")}`, value: 200, color: "var(--color-chart-1)" },
+    { label: `${t("checksync")}`, value: 275, color: "var(--color-chart-2)" },
+    { label: `${t("beam")}`, value: 90, color: "var(--color-chart-3)" },
+    { label: `${t("offdoff")}`, value: 187, color: "var(--color-chart-4)" },
   ];
-
-  const reportStats = {
-    totalReports: 12,
-    thisMonthCount: 4,
-  };
 
   // const recentReports = [
   //   {
@@ -182,32 +188,6 @@ export default function Home() {
   //   },
   // ];
 
-  const activities = [
-    {
-      id: 1,
-      activity: "DPIA Completed",
-      date: "2025-04-01",
-      time: "13:01",
-      type: "DPIA",
-      performedBy: "Admin",
-    },
-    {
-      id: 2,
-      activity: "RoPA Updated",
-      date: "2025-04-03",
-      time: "15:20",
-      type: "RoPA",
-      performedBy: "John",
-    },
-    {
-      id: 3,
-      activity: "TIA Approved",
-      date: "2025-04-05",
-      time: "09:45",
-      type: "TIA",
-      performedBy: "Manager",
-    },
-  ];
 
   const transformActivities = (list) =>
     list.map((item) => {
@@ -228,30 +208,6 @@ export default function Home() {
         performedBy: item.email,
       };
     });
-
-  // const upcomingAudits = [
-  //   {
-  //     id: 1,
-  //     dept: "LIA Review",
-  //     date: "20 Oct",
-  //     team: "Privacy team",
-  //     status: "Scheduled",
-  //   },
-  //   {
-  //     id: 2,
-  //     dept: "DPIA Renewal",
-  //     date: "02 Nov",
-  //     team: "Legal",
-  //     status: "Pending",
-  //   },
-  //   {
-  //     id: 3,
-  //     dept: "Security Audit",
-  //     date: "10 Nov",
-  //     team: "IT Security",
-  //     status: "In Review",
-  //   },
-  // ];
 
   // Compliance small bar data
   const ropaStages = {
@@ -516,8 +472,8 @@ export default function Home() {
 
     const diff = stats.ropasThisMonth - stats.ropasLastMonth;
 
-    if (diff > 0) return `+${diff} this month`;
-    if (diff < 0) return `${diff} this month`; // diff is negative automatically
+    if (diff > 0) return `+${diff} ${t("this_month")}`;
+    if (diff < 0) return `${diff} ${t("this_month")}`; // diff is negative automatically
     return "No change this month";
   };
 
@@ -526,7 +482,7 @@ export default function Home() {
 
     if (selectedMonth === null) {
       const total = trendData.reduce((sum, m) => sum + (m.total || 0), 0);
-      return `+${total} this year`;
+      return `+${total} ${t("this_year")}`;
     }
 
     const current =
@@ -536,9 +492,9 @@ export default function Home() {
 
     const diff = current - previous;
 
-    if (diff > 0) return `+${diff} this month`;
-    if (diff < 0) return `${diff} this month`; // negative
-    return "No change this month";
+    if (diff > 0) return `+${diff} ${t("this_month")}`;
+    if (diff < 0) return `${diff} ${t("this_month")}`; // negative
+    return `${t("no_change_this_month")}`;
   };
 
   const getAssessmentNumbers = () => {
@@ -550,7 +506,7 @@ export default function Home() {
       const yearlyTotal = trendData.reduce((sum, m) => sum + (m.total || 0), 0);
       return {
         total,
-        changeText: `+${yearlyTotal} this year`,
+        changeText: `+${yearlyTotal} ${t("this_year")}`,
       };
     }
 
@@ -561,9 +517,9 @@ export default function Home() {
     const diff = curr - prev;
 
     let changeText = "";
-    if (diff > 0) changeText = `+${diff} this month`;
-    else if (diff < 0) changeText = `${diff} this month`;
-    else changeText = "No change this month";
+    if (diff > 0) changeText = `+${diff} ${t("this_month")}`;
+    else if (diff < 0) changeText = `${diff} ${t("this_month")}`;
+    else changeText = `${t("no_change_this_month")}`;
 
     return { total, changeText };
   };
@@ -578,11 +534,11 @@ export default function Home() {
     }`;
 
   if (!isAdmin) {
-    return <div className="p-6 text-center">Only accessible to Org Admins</div>;
+    return <div className="p-6 text-center">{t("only_accessible_to_org_admins")}</div>;
   }
 
   if (!summary) {
-    return <div className="p-6 text-center">Loading Dashboard...</div>;
+    return <div className="p-6 text-center">{t("loading_dashboard")}...</div>;
   }
 
   return (
@@ -602,7 +558,7 @@ export default function Home() {
               <div className="flex justify-between items-center">
                 <div>
                   <p className="text-md font-medium text-gray-700 dark:text-gray-200">
-                    Total RoPA Records
+                    {t("total_ropa_records")}
                   </p>
                   <div className="flex items-baseline gap-2 mt-2">
                     <h2 className="text-4xl font-extrabold text-[#5DE992] dark:text-[#5DE992]">
@@ -644,7 +600,7 @@ export default function Home() {
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="text-lg font-medium text-gray-700 dark:text-gray-200">
-                    RoPA Compliance
+                    {t("ropa_compliance")}
                   </h3>
                   <div className="mt-3">
                     <div className="text-3xl font-extrabold text-[#1F6B3B]">
@@ -652,7 +608,7 @@ export default function Home() {
                       {animateNumbers.compliance}%
                     </div>
                     <div className="text-sm text-gray-500 dark:text-gray-300 mt-1">
-                      Overall compliance across tracked RoPA entries
+                      {t("overall_compliance_across_tracked_ropa_entries")}
                     </div>
                   </div>
                 </div>
@@ -686,14 +642,14 @@ export default function Home() {
                   <div className="flex items-center gap-2">
                     <FileText className="w-5 h-5 md:w-6 md:h-6 text-gray-600 dark:text-gray-100" />
                     <h3 className="text-gray-700 dark:text-gray-300 text-base md:text-lg font-medium">
-                      Reports
+                      {t("reports")}
                     </h3>
                   </div>
                   <button
                     onClick={() => navigate("/reports")}
                     className="text-xs md:text-sm text-[#009938] hover:text-green-900 cursor-pointer font-medium"
                   >
-                    View All
+                    {t("view_all")}
                   </button>
                 </div>
 
@@ -703,7 +659,7 @@ export default function Home() {
                     <div className="flex items-center gap-1 md:gap-2 mb-1">
                       <BarChart3 className="w-3 h-3 md:w-4 md:h-4 text-blue-500" />
                       <span className="text-xs text-gray-600 dark:text-gray-300">
-                        Total Reports
+                        {t("total_reports")}
                       </span>
                     </div>
                     <div className="text-lg md:text-xl font-bold text-blue-600 dark:text-blue-400">
@@ -714,7 +670,7 @@ export default function Home() {
                     <div className="flex items-center gap-1 md:gap-2 mb-1">
                       <Calendar className="w-3 h-3 md:w-4 md:h-4 text-green-500" />
                       <span className="text-xs text-gray-600 dark:text-gray-300">
-                        This Month
+                        {t("this_month")}
                       </span>
                     </div>
                     <div className="text-lg md:text-xl font-bold text-green-600 dark:text-green-400">
@@ -726,12 +682,12 @@ export default function Home() {
                 {/* Recent Reports List */}
                 <div className="mb-3 md:mb-4">
                   <h4 className="text-xs md:text-sm font-medium text-gray-600 dark:text-gray-400 mb-2 md:mb-3">
-                    Recent Reports
+                    {t("recent_reports")}
                   </h4>
                   <div className="space-y-1 min-h-32 md:space-y-2 max-h-32 md:max-h-240px overflow-y-auto">
                     {recentReports.length === 0 ? (
                       <div className="text-xs text-gray-500 text-center py-4">
-                        No recent reports
+                        {t("no_recent_reports")}
                       </div>
                     ) : (
                       recentReports.map((report) => (
@@ -785,7 +741,7 @@ export default function Home() {
               <div className="flex justify-between items-start">
                 <div>
                   <p className="text-md font-medium text-gray-700 dark:text-gray-200">
-                    Assessments
+                    {t("assessments")}
                   </p>
                   <div className="flex items-baseline gap-2 mt-1">
                     <h2 className="text-4xl font-extrabold text-[#5DE992]">
@@ -809,20 +765,20 @@ export default function Home() {
                       )
                     }
                   >
-                    <option value={"all"}>All</option>
+                    <option value={"all"}>{t("all")}</option>
                     {[
-                      "Jan",
-                      "Feb",
-                      "Mar",
-                      "Apr",
-                      "May",
-                      "Jun",
-                      "Jul",
-                      "Aug",
-                      "Sep",
-                      "Oct",
-                      "Nov",
-                      "Dec",
+                      `${t("jan")}`,
+                      `${t("feb")}`,
+                      `${t("mar")}`,
+                      `${t("apr")}`,
+                      `${t("may")}`,
+                      `${t("jun")}`,
+                      `${t("jul")}`,
+                      `${t("aug")}`,
+                      `${t("sep")}`,
+                      `${t("oct")}`,
+                      `${t("nov")}`,
+                      `${t("dec")}`,
                     ].map((m, i) => (
                       <option value={i + 1} key={i}>
                         {m}
@@ -863,7 +819,7 @@ export default function Home() {
               >
                 <div className="w-full">
                   <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
-                    Risk Overview
+                    {t("risk_overview")}
                   </h3>
 
                   <div className="flex justify-between items-center gap-6 pb-4">
@@ -931,7 +887,7 @@ export default function Home() {
                           </span>
                         </span>
                         <span className="text-[10px] uppercase text-gray-500 dark:text-gray-400 tracking-wide">
-                          Risk Score
+                          {t("risk_score")}
                         </span>
                       </div>
                     </div>
@@ -944,7 +900,7 @@ export default function Home() {
                           {riskOverview?.riskDistribution?.Low || 0}
                         </div>
                         <span className="font-medium text-gray-700 dark:text-gray-200">
-                          Low Risk
+                          {t("low_risk")}
                         </span>
                       </div>
 
@@ -954,7 +910,7 @@ export default function Home() {
                           {riskOverview?.riskDistribution?.Medium || 0}
                         </div>
                         <span className="font-medium text-gray-700 dark:text-gray-200">
-                          Medium Risk
+                          {t("medium_risk")}
                         </span>
                       </div>
 
@@ -964,7 +920,7 @@ export default function Home() {
                           {riskOverview?.riskDistribution?.High || 0}
                         </div>
                         <span className="font-medium text-gray-700 dark:text-gray-200">
-                          High Risk
+                          {t("high_risk")}
                         </span>
                       </div>
 
@@ -974,7 +930,7 @@ export default function Home() {
                           {riskOverview?.riskDistribution?.["Very High"] || 0}
                         </div>
                         <span className="font-medium text-gray-700 dark:text-gray-200">
-                          Very High
+                          {t("very_high")}
                         </span>
                       </div>
 
@@ -984,7 +940,7 @@ export default function Home() {
                           {riskOverview?.riskDistribution?.Critical || 0}
                         </div>
                         <span className="font-medium text-gray-700 dark:text-gray-200">
-                          Critical
+                          {t("critical")}
                         </span>
                       </div>
                     </div>
@@ -1002,7 +958,7 @@ export default function Home() {
                 // style={{ flex: 1, minHeight: 0 }}
               >
                 <h3 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-3">
-                  Upcoming Audits
+                  {t("upcoming_audits")}
                 </h3>
                 <div className="space-y-3">
                   {upcomingAudits.length === 0 && (
@@ -1065,14 +1021,14 @@ export default function Home() {
               <div className="w-full flex flex-col">
                 <div className="flex w-full justify-between items-start mb-4">
                   <p className="text-md font-medium text-gray-700 dark:text-gray-300">
-                    Data Mapping
+                    {t("data_mapping")}
                   </p>
                   <div className="flex flex-col">
                     <h2 className="text-4xl text-right font-extrabold text-gray-900 dark:text-white">
                       {animateNumbers.dataMappings}
                     </h2>
                     <p className="text-sm text-gray-500 mt-1">
-                      + {thisWeek} this month
+                      + {thisWeek} {t("this_month")}
                     </p>
                   </div>
                 </div>
@@ -1095,7 +1051,7 @@ export default function Home() {
               <div>
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300">
-                    Data Transfer Stats
+                    {t("data_transfer_stats")}
                   </h3>
                 </div>
 
@@ -1105,25 +1061,25 @@ export default function Home() {
                       {transferStats?.summary?.total || 0}
                     </div>
                     <div className="text-xs text-gray-500 mt-1">
-                      Total Transfers
+                      {t("total_transfers")}
                     </div>
                   </div>
                   <div className="rounded-lg p-4 bg-pink-50 ">
                     <div className="text-2xl font-semibold text-pink-700">
                       {transferStats?.byRiskLevel?.High || 0}
                     </div>
-                    <div className="text-xs text-gray-500 mt-1">High Risk</div>
+                    <div className="text-xs text-gray-500 mt-1">{t("high_risk")}</div>
                   </div>
                 </div>
               </div>
               {/* Recent Transfers */}
               <div className="mt-5 border-t border-gray-200 dark:border-gray-700 pt-4 flex-1 overflow-y-auto">
                 <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  Recent Transfers
+                  {t("recent_transfers")}
                 </h4>
                 {recentTransfers ? (
                   <div className=" text-gray-500 dark:text-gray-400 text-lg text-center">
-                    No Recent Transfers
+                    {t("no_recent_transfers")}
                   </div>
                 ) : (
                   <div className="space-y-2 pr-1">
@@ -1165,16 +1121,16 @@ export default function Home() {
           className="rounded-2xl p-6 shadow-sm border border-[#828282] dark:border-gray-700 bg-white dark:bg-gray-800"
         >
           <h3 className="text-lg font-semibold mb-6  dark:text-white text-gray-900">
-            <span>Recent Activities</span>
+            <span>{t("recent_activities")}</span>
           </h3>
 
           {/* Table Header */}
           <div className="grid grid-cols-5 gap-4 pb-3 mb-3 border-b text-sm font-medium dark:border-gray-700 dark:text-gray-400 border-gray-200 text-gray-600">
-            <div>Activity</div>
-            <div>Date</div>
-            <div>Time</div>
-            <div>Type</div>
-            <div>Performed By</div>
+            <div>{t("activity")}</div>
+            <div>{t("date")}</div>
+            <div>{t("time")}</div>
+            <div>{t("type")}</div>
+            <div>{t("performed_by")}</div>
           </div>
 
           {/* Table Rows */}

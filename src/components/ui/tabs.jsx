@@ -19,6 +19,8 @@ import ViewAssessmentModal from "../modules/ViewAssessmentModal";
 import { useAssessmentView } from "../hooks/useAssessmentView";
 import ConfirmationModal from "./ConfirmationModal";
 import { useToast } from "./ToastProvider";
+import { useTranslation } from "react-i18next";
+import { addTranslationNamespace } from "../../i18n/config";
 
 const Badge = ({ text, color }) => (
   <span
@@ -175,7 +177,7 @@ export const Tabs = ({
   activeTabClassName,
   tabClassName,
   contentClassName,
-  reloadKey
+  reloadKey,
 }) => {
   const [active, setActive] = useState(propTabs[0]);
   const [tabs, setTabs] = useState(propTabs);
@@ -190,6 +192,15 @@ export const Tabs = ({
   // View modal hook
   const { assessment, loadAssessment } = useAssessmentView();
   const [viewOpen, setViewOpen] = useState(false);
+
+  useEffect(() => {
+    addTranslationNamespace("en", "ui", "tabs");
+    addTranslationNamespace("hindi", "ui", "tabs");
+    addTranslationNamespace("sanskrit", "ui", "tabs");
+    addTranslationNamespace("telugu", "ui", "tabs");
+  }, []);
+
+  const { t } = useTranslation("ui", { keyPrefix: "tabs" });
 
   useEffect(() => {
     const load = async () => {
@@ -213,9 +224,7 @@ export const Tabs = ({
     try {
       await deleteAssessment(selectedId);
 
-      addToast(
-        "success" ,"Assessment Deleted successfully.",
-      );
+      addToast("success", "Assessment Deleted successfully.");
 
       // Update UI
       setRecords((prev) =>
@@ -325,7 +334,7 @@ export const FadeInDiv = ({
   active,
   records,
   onViewAssessment,
-  onDelete, 
+  onDelete,
 }) => {
   const isActive = (tab) => tab.value === tabs[0].value;
 

@@ -34,7 +34,7 @@ export default function TermsofService() {
 
           <section className="bg-white rounded-xl shadow-lg p-8">
             <h2 className="text-2xl font-bold mb-4">1. Definitions</h2>
-            <ol className="list-decimal ml-6 text-gray-700 space-y-2">
+            <ol className="list-none ml-6 text-gray-700 space-y-2">
               <li>
                 <strong>1.1 “Application”</strong> refers to the RoPA SaaS platform, interfaces,
                 systems, tools, mobile/web versions, APIs, modules, and all associated services.
@@ -135,7 +135,7 @@ export default function TermsofService() {
 
           <section className="bg-white rounded-xl shadow-lg p-8">
             <h2 className="text-2xl font-bold mb-4">4. Account Registration & Responsibilities</h2>
-            <ol className="list-decimal ml-6 text-gray-700 space-y-2">
+            <ol className="list-none ml-6 text-gray-700 space-y-2">
               <li><strong>4.1 Accurate Information:</strong> You must provide accurate, complete, and up-to-date registration information when creating an account or accessing the Application.</li>
               <li><strong>4.2 Account Security:</strong> You are solely responsible for maintaining the confidentiality and security of your login credentials. Any activity conducted under your account will be deemed authorized by you.</li>
               <li><strong>4.3 Notification of Breach:</strong> You must notify us immediately if you become aware of any unauthorized use of your account or any suspected compromise of your credentials.</li>
@@ -246,7 +246,7 @@ export default function TermsofService() {
           <section className="bg-white rounded-xl shadow-lg p-8">
             <h2 className="text-2xl font-bold mb-4">9. Backups, Availability & Business Continuity</h2>
 
-            <ul className="list-disc ml-6 text-gray-700 space-y-1">
+            <ul className="list-none ml-6 text-gray-700 space-y-1">
               <li><strong>9.1 Automated Backups</strong><br />Proteccio Data performs automated backups at regular intervals to help safeguard Customer Data.</li>
               <li><strong>9.2 Disaster Recovery</strong><br />We maintain disaster recovery procedures designed to restore services within reasonable time frames following an outage or system failure.</li>
               <li><strong>9.3 Downtime</strong><br />The Application may experience planned maintenance or unplanned downtime due to technical issues, updates, or circumstances beyond our control.</li>

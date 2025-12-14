@@ -1,5 +1,12 @@
 {
   "filter": "Filter",
   "no_assessment_records_found": "No assessment records found.",
-  "delete_assessment": "Delete Assessment"
+  "delete_assessment": "Delete Assessment",
+  "assessment_id" : "Assessment Id",
+  "stage" : "Stage",
+  "impact" : "Impact",
+  "likelihood" : "Likelihood",
+  "created_by" : "Created By",
+  "next_review_date" : "Next Review Date",
+  "actions" : "Actions"
 }

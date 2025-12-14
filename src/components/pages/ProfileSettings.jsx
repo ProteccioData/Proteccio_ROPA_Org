@@ -33,10 +33,13 @@ export default function ProfileSettings({
   const [profileError, setProfileError] = useState(null);
 
   // i18n
-  const { t, i18n } = useTranslation('pages', { keyPrefix: 'ProfileSettings' });
-  
+  const { t, i18n } = useTranslation("pages", { keyPrefix: "ProfileSettings" });
+
   // UI states
-  const [lang, setLang] = useState(i18n.language || "en");
+  const [lang, setLang] = useState(
+    localStorage.getItem("app_language") || i18n.language || "en"
+  );
+
   const [fontSize, setFontSize] = useState("md");
   // Initialize keyboardNav from localStorage (string 'false' disables)
   // const [keyboardNav, setKeyboardNav] = useState(() =>
@@ -44,10 +47,11 @@ export default function ProfileSettings({
   // );
 
   const { keyboardNavEnabled, setKeyboardNavEnabled } = useKeyboardNav();
-  
+
   // Handle language change
   const handleLanguageChange = (newLang) => {
     setLang(newLang);
+    localStorage.setItem("app_language", newLang);
     changeLanguage(newLang);
   };
   // 2FA state
@@ -189,11 +193,11 @@ export default function ProfileSettings({
     const errors = [];
 
     if (!currentPwd || !newPwd || !confirmPwd)
-      errors.push(t('pwd_all_required'));
-    if (newPwd !== confirmPwd) errors.push(t('pwd_mismatch'));
-    if (newPwd.length < 8) errors.push(t('pwd_min_len'));
-    if (!/[A-Z]/.test(newPwd)) errors.push(t('pwd_uppercase'));
-    if (!/[0-9]/.test(newPwd)) errors.push(t('pwd_number'));
+      errors.push(t("pwd_all_required"));
+    if (newPwd !== confirmPwd) errors.push(t("pwd_mismatch"));
+    if (newPwd.length < 8) errors.push(t("pwd_min_len"));
+    if (!/[A-Z]/.test(newPwd)) errors.push(t("pwd_uppercase"));
+    if (!/[0-9]/.test(newPwd)) errors.push(t("pwd_number"));
 
     setPasswordErrors(errors);
 
@@ -207,7 +211,7 @@ export default function ProfileSettings({
       });
 
       setShowChangePassword(false);
-      addToast("success", t('pwd_changed'));
+      addToast("success", t("pwd_changed"));
     } catch (err) {
       const message =
         err.response?.data?.error || "Failed to change password. Try again.";
@@ -229,10 +233,10 @@ export default function ProfileSettings({
         >
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              {t('profile_settings')}
+              {t("profile_settings")}
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              {t('profile_subtitle')}
+              {t("profile_subtitle")}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -270,7 +274,7 @@ export default function ProfileSettings({
                       {user.jobTitle} • {user.department}
                     </p>
                     <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                      {t('role')}:{" "}
+                      {t("role")}:{" "}
                       <span className="font-medium text-gray-700 dark:text-gray-200">
                         {user.role}
                       </span>
@@ -280,7 +284,7 @@ export default function ProfileSettings({
 
                 <div className="mt-4 space-y-2">
                   <small className="text-xs text-gray-500 dark:text-gray-400">
-                    {t('status')}
+                    {t("status")}
                   </small>
                   <div className="flex items-center gap-2">
                     <span
@@ -306,7 +310,7 @@ export default function ProfileSettings({
 
                   <div className="pt-2 border-t border-gray-100 dark:border-gray-700/40 mt-2">
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {t('last_login')}
+                      {t("last_login")}
                     </p>
                     <p className="text-sm text-gray-700 dark:text-gray-200">
                       {formatDate(user.lastLogin.time)} • {user.lastLogin.ip}
@@ -316,94 +320,96 @@ export default function ProfileSettings({
 
                 <div className="mt-4 border-t border-gray-100 dark:border-gray-700/40 pt-3">
                   <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-                    {t('accessibility')}
+                    {t("accessibility")}
                   </h3>
                   <div className="mt-3 space-y-2">
                     <Select
-                      label={t('font_size')}
+                      label={t("font_size")}
                       value={fontSize}
                       onChange={setFontSize}
                       options={[
-                        { value: "sm", label: t('small') },
-                        { value: "md", label: t('medium') },
-                        { value: "lg", label: t('large') },
+                        { value: "sm", label: t("small") },
+                        { value: "md", label: t("medium") },
+                        { value: "lg", label: t("large") },
                       ]}
                     />
                     <Toggle
-                      label={t('keyboard_nav')}
+                      label={t("keyboard_nav")}
                       checked={keyboardNavEnabled}
                       setChecked={setKeyboardNavEnabled}
                     />
                   </div>
                 </div>
 
-                {user.role === "org_admin" && (<aside className="col-span-1 mt-8 rounded-2xl  ">
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-                    {t('active_sessions') || "Active Users Sessions"}
-                  </h3>
-                  <div className="mt-3 space-y-2">
-                    {sessions.map((s) => (
-                      <div
-                        key={s.id}
-                        className="flex items-center justify-between p-2 rounded-md bg-gray-50 dark:bg-gray-700/30"
-                      >
-                        <div>
-                          <p className="text-sm font-medium text-gray-900 dark:text-white">
-                            {s.device}
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {s.browser} • {s.ip}
-                          </p>
+                {user.role === "org_admin" && (
+                  <aside className="col-span-1 mt-8 rounded-2xl  ">
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                      {t("active_sessions") || "Active Users Sessions"}
+                    </h3>
+                    <div className="mt-3 space-y-2">
+                      {sessions.map((s) => (
+                        <div
+                          key={s.id}
+                          className="flex items-center justify-between p-2 rounded-md bg-gray-50 dark:bg-gray-700/30"
+                        >
+                          <div>
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">
+                              {s.device}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              {s.browser} • {s.ip}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleEndSession(s.id)}
+                              className="px-2 py-1 text-xs rounded-md border text-red-500"
+                            >
+                              {t("end")}
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleEndSession(s.id)}
-                            className="px-2 py-1 text-xs rounded-md border text-red-500"
-                          >
-                            {t('end')}
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                      ))}
 
-                    <div className="mt-2 flex gap-2">
-                      <button
-                        onClick={handleEndAllSessions}
-                        className="px-3 py-2 rounded-md border dark:text-white"
-                      >
-                        {t('end_all')}
-                      </button>
-                      <button
-                        onClick={() => alert(t('session_warn_modal'))}
-                        className="px-3 py-2 bg-[#5DEE92] text-black rounded-md"
-                      >
-                        {t('warn_users')}
-                      </button>
+                      <div className="mt-2 flex gap-2">
+                        <button
+                          onClick={handleEndAllSessions}
+                          className="px-3 py-2 rounded-md border dark:text-white"
+                        >
+                          {t("end_all")}
+                        </button>
+                        <button
+                          onClick={() => alert(t("session_warn_modal"))}
+                          className="px-3 py-2 bg-[#5DEE92] text-black rounded-md"
+                        >
+                          {t("warn_users")}
+                        </button>
+                      </div>
+
+                      {isAdmin && (
+                        <div className="mt-4 border-t border-gray-100 dark:border-gray-700/40 pt-3">
+                          <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
+                            {t("admin_tools")}
+                          </h4>
+                          <div className="mt-2 flex flex-col gap-2">
+                            <button
+                              onClick={() => alert(t("view_role_assignments"))}
+                              className="px-3 py-2 rounded-md border"
+                            >
+                              {t("view_role_assignments")}
+                            </button>
+                            <button
+                              onClick={() => alert(t("force_lock"))}
+                              className="px-3 py-2 rounded-md border"
+                            >
+                              {t("force_lock")}
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
-
-                    {isAdmin && (
-                      <div className="mt-4 border-t border-gray-100 dark:border-gray-700/40 pt-3">
-                        <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
-                          {t('admin_tools')}
-                        </h4>
-                        <div className="mt-2 flex flex-col gap-2">
-                          <button
-                            onClick={() => alert(t('view_role_assignments'))}
-                            className="px-3 py-2 rounded-md border"
-                          >
-                            {t('view_role_assignments')}
-                          </button>
-                          <button
-                            onClick={() => alert(t('force_lock'))}
-                            className="px-3 py-2 rounded-md border"
-                          >
-                            {t('force_lock')}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </aside>)}
+                  </aside>
+                )}
               </>
             ) : null}
           </section>
@@ -412,35 +418,35 @@ export default function ProfileSettings({
           <section className="col-span-2 bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700 shadow">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                {t('personal_information')}
+                {t("personal_information")}
               </h2>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setEditOpen(true)}
                   className="px-3 py-2 bg-[#5DEE92] hover:opacity-95 text-black rounded-md"
                 >
-                  {t('edit')}
+                  {t("edit")}
                 </button>
               </div>
             </div>
 
             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <InfoRow label={t('first_name')} value={user?.firstName || "-"} />
-              <InfoRow label={t('last_name')} value={user?.lastName || "-"} />
+              <InfoRow label={t("first_name")} value={user?.firstName || "-"} />
+              <InfoRow label={t("last_name")} value={user?.lastName || "-"} />
               {/* <InfoRow label={t('job_title')} value={user?.jobTitle || "-"} /> */}
               <InfoRow
-                label={t('department')}
+                label={t("department")}
                 value={user?.department || "-"}
               />
-              <InfoRow label={t('timezone')} value={user?.timezone || "-"} />
-              <InfoRow label={t('email')} value={user?.email || "-"} />
-              <InfoRow label={t('role')} value={user?.role || "-"} />
+              <InfoRow label={t("timezone")} value={user?.timezone || "-"} />
+              <InfoRow label={t("email")} value={user?.email || "-"} />
+              <InfoRow label={t("role")} value={user?.role || "-"} />
               {/* <InfoRow label={t('access_level')} value={t('access_desc')} /> */}
             </div>
 
             <div className="mt-6 border-t border-gray-100 dark:border-gray-700/40 pt-4">
               <h3 className="font-semibold text-gray-900 dark:text-white">
-                {t('security')}
+                {t("security")}
               </h3>
 
               <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -453,7 +459,7 @@ export default function ProfileSettings({
                           Two-Factor Authentication
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {twoFAEnabled ? t('2fa_enabled') : t('2fa_disabled')}
+                          {twoFAEnabled ? t("2fa_enabled") : t("2fa_disabled")}
                         </p>
                       </div>
                     </div>
@@ -475,27 +481,27 @@ export default function ProfileSettings({
                   <div className="flex items-center gap-3 justify-between">
                     <div>
                       <p className="font-medium text-gray-900 dark:text-white">
-                        {t('change_password')}
+                        {t("change_password")}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {t('pwd_rules_preview')}
+                        {t("pwd_rules_preview")}
                       </p>
                     </div>
                     <button
                       onClick={() => setShowChangePassword(true)}
                       className="px-3 py-2 rounded-md border dark:text-white"
                     >
-                      {t('change')}
+                      {t("change")}
                     </button>
                   </div>
 
                   <div className="flex items-center gap-3 justify-between">
                     <div>
                       <p className="font-medium text-gray-900 dark:text-white">
-                        {t('session_timeout')}
+                        {t("session_timeout")}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {t('session_timeout_desc')}
+                        {t("session_timeout_desc")}
                       </p>
                     </div>
                     <Select
@@ -515,10 +521,10 @@ export default function ProfileSettings({
                   <div className="flex items-center gap-3 justify-between">
                     <div>
                       <p className="font-medium text-gray-900 dark:text-white">
-                        {t('recent_activity')}
+                        {t("recent_activity")}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {t('recent_activity_desc')}
+                        {t("recent_activity_desc")}
                       </p>
                     </div>
                     <div>
@@ -526,7 +532,7 @@ export default function ProfileSettings({
                         onClick={() => {}}
                         className="px-3 py-2 rounded-md border dark:text-white"
                       >
-                        {t('view_all')}
+                        {t("view_all")}
                       </button>
                     </div>
                   </div>
@@ -550,7 +556,7 @@ export default function ProfileSettings({
                             onClick={() => handleEndSession(s.id)}
                             className="px-2 py-1 text-xs rounded-md border text-red-500"
                           >
-                            {t('end_session')}
+                            {t("end_session")}
                           </button>
                         </div>
                       </div>
@@ -561,13 +567,13 @@ export default function ProfileSettings({
                         onClick={handleEndAllSessions}
                         className="px-3 py-2 rounded-md border dark:text-white"
                       >
-                        {t('end_all_sessions')}
+                        {t("end_all_sessions")}
                       </button>
                       <button
                         onClick={handleSignOutAll}
                         className="px-3 py-2 bg-[#5DEE92] text-black rounded-md"
                       >
-                        {t('sign_out_all')}
+                        {t("sign_out_all")}
                       </button>
                     </div>
                   </div>
@@ -578,7 +584,7 @@ export default function ProfileSettings({
             <div className="mt-6 flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-300">
-                  {t('support_langs')}
+                  {t("support_langs")}
                 </p>
               </div>
               <div>
@@ -587,10 +593,10 @@ export default function ProfileSettings({
                   onChange={(e) => handleLanguageChange(e.target.value)}
                   className="rounded-md border px-3 py-2 bg-white dark:bg-gray-800 dark:text-white"
                 >
-                  <option value="en">{t('english')}</option>
-                  <option value="hindi">{t('hindi')}</option>
-                  <option value="sanskrit">{t('sanskrit')}</option>
-                  <option value="telugu">{t('telugu')}</option>
+                  <option value="en">{t("english")}</option>
+                  <option value="hindi">{t("hindi")}</option>
+                  <option value="sanskrit">{t("sanskrit")}</option>
+                  <option value="telugu">{t("telugu")}</option>
                 </select>
               </div>
             </div>
@@ -598,17 +604,17 @@ export default function ProfileSettings({
             <div className="mt-6 border-t border-gray-100 dark:border-gray-700/40 pt-4 flex flex-col md:flex-row gap-3">
               <button
                 onClick={() => {
-                  alert(t('access_requested'));
+                  alert(t("access_requested"));
                 }}
                 className="px-4 py-2 rounded-md border hover:bg-gray-50 dark:hover:bg-gray-700/50 dark:text-white"
               >
-                {t('request_access')}
+                {t("request_access")}
               </button>
               <button
-                onClick={() => alert(t('download_user_data'))}
+                onClick={() => alert(t("download_user_data"))}
                 className="px-4 py-2 bg-[#5DEE92] text-black rounded-md"
               >
-                {t('download_data')}
+                {t("download_data")}
               </button>
             </div>
           </section>
@@ -727,8 +733,8 @@ function Toggle({ label, checked, setChecked }) {
 }
 
 function LanguageSelector({ lang, setLang }) {
-  const { t } = useTranslation('pages', { keyPrefix: 'ProfileSettings' });
-  
+  const { t } = useTranslation("pages", { keyPrefix: "ProfileSettings" });
+
   return (
     <div className="flex items-center gap-2">
       <Globe className="h-4 w-4 text-gray-500 dark:text-gray-300" />
@@ -737,10 +743,10 @@ function LanguageSelector({ lang, setLang }) {
         onChange={(e) => setLang(e.target.value)}
         className="rounded-md border dark:text-white px-2 py-1 bg-white dark:bg-gray-800 text-sm"
       >
-        <option value="en">{t('en')}</option>
-        <option value="hindi">{t('hi')}</option>
-        <option value="sanskrit">{t('sa')}</option>
-        <option value="telugu">{t('te')}</option>
+        <option value="en">{t("en")}</option>
+        <option value="hindi">{t("hi")}</option>
+        <option value="sanskrit">{t("sa")}</option>
+        <option value="telugu">{t("te")}</option>
       </select>
     </div>
   );
@@ -773,7 +779,7 @@ function Modal({ children, onClose }) {
 /* ---------------------- Edit Profile Form (modal) ---------------------- */
 
 function EditProfileForm({ initial = {}, onCancel, onSave, busy }) {
-  const { t } = useTranslation('pages', { keyPrefix: 'ProfileSettings' });
+  const { t } = useTranslation("pages", { keyPrefix: "ProfileSettings" });
   const [full_name, setFullName] = useState(initial.full_name || "");
   const [department, setDepartment] = useState(initial.department || "");
   const [userName, setUserName] = useState(initial.userName || "");
@@ -851,7 +857,7 @@ function EditProfileForm({ initial = {}, onCancel, onSave, busy }) {
 /* ---------------------- Change Password Form ---------------------- */
 
 function ChangePasswordForm({ onSubmit, errors = [], busy }) {
-  const { t } = useTranslation('pages', { keyPrefix: 'ProfileSettings' });
+  const { t } = useTranslation("pages", { keyPrefix: "ProfileSettings" });
   const [currentPwd, setCurrentPwd] = useState("");
   const [newPwd, setNewPwd] = useState("");
   const [confirmPwd, setConfirmPwd] = useState("");
@@ -1025,4 +1031,3 @@ function sampleAuditLogs() {
     },
   ];
 }
-

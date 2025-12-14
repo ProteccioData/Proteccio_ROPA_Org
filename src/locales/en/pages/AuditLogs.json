@@ -16,5 +16,6 @@
   "date_range_2": "Date range",
   "log_type": "Log type",
   "search_logs": "Search Logs",
-  "expot_logs": "Expot Logs"
+  "export_logs": "Export Logs",
+  "security_alerts": "Security Alerts"
 }

@@ -1,14 +1,14 @@
 {
-  "ropa_records": "RoPA Records",
-  "manage_ropa_s_and_view_details": "Manage RoPA’s and देखें details",
+  "ropa_records": "रोपा रिकॉर्ड्स",
+  "manage_ropa_s_and_view_details": "रोपा का प्रबंधन करें और विवरण देखें",
   "filter": "फ़िल्टर",
-  "ropa_id": "RoPA ID",
+  "ropa_id": "रोपा आईडी",
   "title": "शीर्षक",
-  "stage": "Stage",
-  "process_owner": "Process Owner",
+  "stage": "चरण",
+  "process_owner": "प्रक्रिया स्वामी",
   "department": "विभाग",
-  "actions": "कार्रवाई",
-  "archive": "Archive",
-  "link_ropa": "Link RoPA",
-  "new_ropa": "New RoPA"
+  "actions": "कार्रवाइयाँ",
+  "archive": "संग्रहित करें",
+  "link_ropa": "रोपा लिंक करें",
+  "new_ropa": "नया रोपा"
 }

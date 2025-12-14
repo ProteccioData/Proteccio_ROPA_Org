@@ -1,5 +1,12 @@
 {
-  "filter": "छनन",
-  "no_assessment_records_found": "न कोऽपि मूल्यांकन रिकॉर्ड लब्धः",
-  "delete_assessment": "मूल्यांकन हटयतु"
+  "filter": "निस्यन्दकः",
+  "no_assessment_records_found": "किमपि मूल्यांकन अभिलेखः न लब्धः।",
+  "delete_assessment": "मूल्यांकनं अपसारयतु",
+  "assessment_id": "मूल्यांकन परिचयः",
+  "stage": "अवस्था",
+  "impact": "प्रभावः",
+  "likelihood": "संभाव्यता",
+  "created_by": "निर्मितं कर्तृणा",
+  "next_review_date": "अग्रिम समीक्षा तिथिः",
+  "actions": "क्रियाः"
 }

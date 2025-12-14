@@ -21,5 +21,8 @@
   "next": "Next",
   "create_new_flow": "Create New Flow",
   "edit_metadata": "Edit Metadata",
-  "create_your_first_flow": "Create Your First Flow"
+  "create_your_first_flow": "Create Your First Flow",
+  "total" : "Total",
+  "archive": "Archive",
+  "unarchive": "Unarchive"
 }

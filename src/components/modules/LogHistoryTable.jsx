@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { getAuditLogs } from "../../services/AuditLogService";
+import { addTranslationNamespace } from "../../i18n/config";
+import { useTranslation } from "react-i18next";
 
 export default function LogHistoryTable({ filters, onAlertCount }) {
   const [logs, setLogs] = useState([]);
@@ -9,6 +11,15 @@ export default function LogHistoryTable({ filters, onAlertCount }) {
     pages: 1,
     total: 0,
   });
+
+  useEffect(() => {
+    addTranslationNamespace("en" , "modules" , "LogHistoryTable");
+    addTranslationNamespace("hindi" , "modules" , "LogHistoryTable");
+    addTranslationNamespace("sanskrit" , "modules" , "LogHistoryTable");
+    addTranslationNamespace("telugu" , "modules" , "LogHistoryTable");
+  } , []);
+
+  const { t } = useTranslation("modules" , {keyPrefix:"LogHistoryTable"})
 
   useEffect(() => {
     setPagination((p) => ({ ...p, page: 1 }));
@@ -67,10 +78,10 @@ export default function LogHistoryTable({ filters, onAlertCount }) {
       {/* Header */}
       <div className="px-6 py-4 border-b border-[#828282] dark:border-gray-700">
         <h2 className="text-lg font-semibold dark:text-gray-100">
-          Log History
+          {t("log_history")}
         </h2>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          System activity logs and security events
+          {t("system_activity_logs_and_security_events")}
         </p>
       </div>
 
@@ -78,11 +89,11 @@ export default function LogHistoryTable({ filters, onAlertCount }) {
       <div className="p-4">
         {/* Column headers */}
         <div className="grid grid-cols-5 gap-4 px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400">
-          <div>User</div>
-          <div>Time</div>
-          <div>IP Address</div>
-          <div>Type</div>
-          <div>Message</div>
+          <div>{t("user")}</div>
+          <div>{t("time")}</div>
+          <div>{t("ip_address")}</div>
+          <div>{t("type")}</div>
+          <div>{t("message")}</div>
         </div>
 
         {/* Rows */}
@@ -131,11 +142,11 @@ export default function LogHistoryTable({ filters, onAlertCount }) {
             onClick={() => setPagination((p) => ({ ...p, page: p.page - 1 }))}
             className="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700 text-sm disabled:opacity-40"
           >
-            Prev
+            {t("prev")}
           </button>
 
           <span className="text-sm dark:text-gray-300 px-2 py-1">
-            Page {pagination.page} of {pagination.pages}
+            {t("page")} {pagination.page} {t("of")} {pagination.pages}
           </span>
 
           <button
@@ -143,7 +154,7 @@ export default function LogHistoryTable({ filters, onAlertCount }) {
             onClick={() => setPagination((p) => ({ ...p, page: p.page + 1 }))}
             className="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700 text-sm disabled:opacity-40"
           >
-            Next
+            {t("next")}
           </button>
         </div>
       </div>

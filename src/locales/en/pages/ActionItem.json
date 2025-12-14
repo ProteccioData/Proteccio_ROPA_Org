@@ -1,5 +1,6 @@
 {
   "risk_heatmap": "Risk Heatmap",
+  "click_a_cell" : "Click a cell to filter the task table. Likelihood (X) × Impact (Y)",
   "risk_distribution": "Risk Distribution",
   "action_item_dashboard": "Action Item Dashboard",
   "overview_heatmap_and_task_list_for_privacy_action_": "Overview, heatmap, and task list for privacy action items",
@@ -22,7 +23,7 @@
   "all_linked": "All Linked",
   "ropa": "RoPA",
   "assessment": "Assessment",
-  "clear": "Clear",
+  "clear_risk_filter": "Clear Risk Filter",
   "notifications_alerts": "Notifications & Alerts",
   "loading_alerts": "Loading alerts…",
   "view": "View",
@@ -48,5 +49,9 @@
   "open_overdue": "Open / Overdue",
   "high_risk": "High Risk",
   "linked_to_ropa_assess": "Linked to RoPA/Assess",
-  "evidence_collected": "Evidence Collected"
+  "evidence_collected": "Evidence Collected",
+  "filtered_by_risk" : "Filtered by risk",
+  "showing" : "Showing",
+  "of" : "of",
+  "results" : "results"
 }

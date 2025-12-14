@@ -1,5 +1,12 @@
 {
   "filter": "फ़िल्टर",
   "no_assessment_records_found": "कोई मूल्यांकन रिकॉर्ड नहीं मिला।",
-  "delete_assessment": "मूल्यांकन हटाएं"
+  "delete_assessment": "मूल्यांकन हटाएँ",
+  "assessment_id": "मूल्यांकन आईडी",
+  "stage": "चरण",
+  "impact": "प्रभाव",
+  "likelihood": "संभाव्यता",
+  "created_by": "द्वारा बनाया गया",
+  "next_review_date": "अगली समीक्षा तिथि",
+  "actions": "कार्रवाइयाँ"
 }

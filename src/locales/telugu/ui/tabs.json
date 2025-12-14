@@ -1,5 +1,12 @@
 {
   "filter": "ఫిల్టర్",
-  "no_assessment_records_found": "అసెస్‌మెంట్ రికార్డులు కనుగొనబడలేదు.",
-  "delete_assessment": "అసెస్‌మెంట్‌ను తొలగించండి"
+  "no_assessment_records_found": "ఏ అంచనా రికార్డులు లభించలేదు.",
+  "delete_assessment": "అంచనాను తొలగించండి",
+  "assessment_id": "అంచనా ఐడి",
+  "stage": "దశ",
+  "impact": "ప్రభావం",
+  "likelihood": "సంభావ్యత",
+  "created_by": "సృష్టించిన వారు",
+  "next_review_date": "తదుపరి సమీక్ష తేదీ",
+  "actions": "చర్యలు"
 }

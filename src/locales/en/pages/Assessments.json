@@ -5,5 +5,8 @@
   "legitimate_interest_assessment": "Legitimate Interest Assessment",
   "evaluate_legitimate_interests_for_data_processing": "Evaluate legitimate interests for data processing",
   "transfer_impact_assessment": "Transfer Impact Assessment",
-  "evaluate_risks_of_cross_border_data_transfers": "Evaluate risks of cross-border data transfers"
+  "evaluate_risks_of_cross_border_data_transfers": "Evaluate risks of cross-border data transfers",
+  "start_new_dpia": "Start new DPIA",
+  "start_new_lia" : "Start new LIA",
+  "start_new_tia" : "Start new TIA"
 }

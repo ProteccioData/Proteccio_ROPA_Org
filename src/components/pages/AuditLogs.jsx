@@ -3,9 +3,21 @@ import { AlertTriangle, Download, Filter } from "lucide-react";
 import Button from "../ui/Button";
 import LogHistoryTable from "../modules/LogHistoryTable";
 import { exportAuditLogs } from "../../services/AuditLogService";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { addTranslationNamespace } from "../../i18n/config";
+import { useTranslation } from "react-i18next";
 
 export default function AuditLogs() {
+
+  useEffect(() => {
+    addTranslationNamespace("en" , "pages" , "AuditLogs");
+    addTranslationNamespace("hindi" , "pages" , "AuditLogs");
+    addTranslationNamespace("sanskrit" , "pages" , "AuditLogs");
+    addTranslationNamespace("telugu" , "pages" , "AuditLogs");
+  } , []);
+
+  const { t } = useTranslation("pages" , {keyPrefix:"AuditLogs"})
+
   const [filters, setFilters] = useState({
     date_from: "",
     date_to: "",
@@ -40,7 +52,7 @@ export default function AuditLogs() {
       <div className="bg-white dark:bg-gray-800 dark:border-gray-700 border border-[#828282] rounded-lg shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-[#828282]">
           <h3 className="text-xl font-semibold dark:text-gray-100">
-            Quick Actions
+            {t("quick_actions")}
           </h3>
         </div>
 
@@ -53,7 +65,7 @@ export default function AuditLogs() {
           <div className="w-full max-w-3xl grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
-                Date Range
+                {t("date_range")}
               </label>
               <div className="relative">
                 <select
@@ -74,16 +86,16 @@ export default function AuditLogs() {
                     }
                   }}
                 >
-                  <option>Select Range</option>
-                  <option>Last 7 Days</option>
-                  <option>Last 30 Days</option>
+                  <option>{t("select_range")}</option>
+                  <option>{t("last_7_days")}</option>
+                  <option>{t("last_30_days")}</option>
                 </select>
               </div>
             </div>
 
             <div>
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
-                Type
+                {t("type")}
               </label>
               <select
                 aria-label="Log type"
@@ -92,23 +104,23 @@ export default function AuditLogs() {
                   setFilters((f) => ({ ...f, type: e.target.value }))
                 }
               >
-                <option value="">All</option>
-                <option value="login">Login</option>
-                <option value="logout">Logout</option>
-                <option value="create">Create</option>
-                <option value="update">Update</option>
-                <option value="delete">Delete</option>
-                <option value="view">View</option>
+                <option value="">{t("all")}</option>
+                <option value="login">{t("login")}</option>
+                <option value="logout">{t("logout")}</option>
+                <option value="create">{t("create")}</option>
+                <option value="update">{t("update")}</option>
+                <option value="delete">{t("delete")}</option>
+                <option value="view">{t("view")}</option>
               </select>
             </div>
 
             <div>
               <label className="block text-xs font-medium text-gray-400 mb-2">
-                User
+                {t("user")}
               </label>
               <input
                 type="text"
-                placeholder="Search Logs"
+                placeholder={`${t("search_logs")}`}
                 className="w-full bg-[#F4F4F4] dark:text-gray-400 dark:bg-gray-900 rounded-md px-3 py-2 text-sm"
                 onChange={(e) =>
                   setFilters((f) => ({ ...f, search: e.target.value }))
@@ -124,10 +136,10 @@ export default function AuditLogs() {
               className="flex items-center gap-2 px-4 py-2 rounded-lg border border-red-500 text-red-600 text-sm font-medium hover:bg-red-50 dark:hover:bg-red-900/30 transition"
             >
               <AlertTriangle size={16} />
-              Security Alerts ({securityAlerts})
+              {t("security_alerts")} ({securityAlerts})
             </button>
 
-            <Button text="Expot Logs" icon={Download} onClick={handleExport} />
+            <Button text={t("export_logs")} icon={Download} onClick={handleExport} />
           </div>
         </motion.div>
       </div>

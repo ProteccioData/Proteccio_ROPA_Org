@@ -1,14 +1,14 @@
 {
-  "ropa_records": "RoPA Records",
-  "manage_ropa_s_and_view_details": "Manage RoPA’s and दृश्य details",
-  "filter": "छनन",
-  "ropa_id": "RoPA ID",
-  "title": "शीर्षक",
-  "stage": "Stage",
-  "process_owner": "Process Owner",
-  "department": "विभाग",
-  "actions": "Actions",
-  "archive": "Archive",
-  "link_ropa": "Link RoPA",
-  "new_ropa": "New RoPA"
+  "ropa_records": "रोपा अभिलेखाः",
+  "manage_ropa_s_and_view_details": "रोपा अभिलेखान् प्रबन्धयतु विवरणानि च पश्यतु",
+  "filter": "निस्यन्दकः",
+  "ropa_id": "रोपा परिचयः",
+  "title": "शीर्षकम्",
+  "stage": "अवस्था",
+  "process_owner": "प्रक्रिया स्वामी",
+  "department": "विभागः",
+  "actions": "क्रियाः",
+  "archive": "संग्रहीतं कुरु",
+  "link_ropa": "रोपा संयोजयतु",
+  "new_ropa": "नवीनं रोपा"
 }

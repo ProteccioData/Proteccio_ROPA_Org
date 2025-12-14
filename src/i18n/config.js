@@ -16,6 +16,8 @@ async function loadTranslations(language, category, file) {
   }
 }
 
+const savedLanguage = localStorage.getItem("app_language") || "en";
+
 // Initialize i18n
 i18n
   .use(initReactI18next)
@@ -42,7 +44,7 @@ i18n
         },
       },
     },
-    lng: 'en', // default language
+    lng: savedLanguage, // default language
     fallbackLng: 'en',
     interpolation: {
       escapeValue: false, // React already escapes values
