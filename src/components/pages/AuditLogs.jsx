@@ -9,11 +9,15 @@ import { useTranslation } from "react-i18next";
 
 export default function AuditLogs() {
 
+  const [ready , setReady] = useState(false);
+
   useEffect(() => {
-    addTranslationNamespace("en" , "pages" , "AuditLogs");
-    addTranslationNamespace("hindi" , "pages" , "AuditLogs");
-    addTranslationNamespace("sanskrit" , "pages" , "AuditLogs");
-    addTranslationNamespace("telugu" , "pages" , "AuditLogs");
+    Promise.all([
+      addTranslationNamespace("en" , "pages" , "AuditLogs"),
+      addTranslationNamespace("hindi" , "pages" , "AuditLogs"),
+      addTranslationNamespace("sanskrit" , "pages" , "AuditLogs"),
+      addTranslationNamespace("telugu" , "pages" , "AuditLogs")
+    ]).then(() => setReady(true));
   } , []);
 
   const { t } = useTranslation("pages" , {keyPrefix:"AuditLogs"})
@@ -45,6 +49,8 @@ export default function AuditLogs() {
       console.error("Export failed", err);
     }
   };
+
+  if (!ready) return <div> Loading... </div>
 
   return (
     <div className="space-y-6">

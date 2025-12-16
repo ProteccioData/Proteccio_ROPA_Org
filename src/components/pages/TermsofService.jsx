@@ -1,6 +1,19 @@
+import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
+import { addTranslationNamespace } from "../../i18n/config";
 
 export default function TermsofService() {
+
+  // useEffect(() => {
+  //   addTranslationNamespace("en" , "pages" , "TermsofService"),
+  //   addTranslationNamespace("hindi" , "pages" , "TermsofService"),
+  //   addTranslationNamespace("telugu" , "pages" , "TermsofService"),
+  //   addTranslationNamespace("sanskrit" , "pages" , "TermsofService")
+  // } , [])
+
+  const { t } = useTranslation("pages" , { keyPrefix: "TermsofService" });
+
   const navigate = useNavigate();
 
   return (
@@ -11,7 +24,7 @@ export default function TermsofService() {
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center">
               <i className="lucide lucide-file-text mx-auto text-6xl mb-6 opacity-90" />
-              <h1 className="text-4xl md:text-5xl font-bold mb-4">Terms of Service</h1>
+              <h1 className="text-4xl md:text-5xl font-bold mb-4">{t("terms_of_service")}</h1>
               <p className="text-lg opacity-90">RoPA Application by Proteccio Data</p>
               <div className="mt-4 flex justify-center gap-4">
                 <span className="bg-white/20 px-4 py-2 rounded-full">Last Updated: Dec 12, 2025</span>

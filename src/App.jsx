@@ -73,9 +73,14 @@ export default function App() {
         addTranslationNamespace("hindi", "layout", "Footer"),
         addTranslationNamespace("sanskrit", "layout", "Footer"),
         addTranslationNamespace("telugu", "layout", "Footer"),
+
+        addTranslationNamespace("en", "pages", "TermsofService"),
+        addTranslationNamespace("hindi", "pages", "TermsofService"),
+        addTranslationNamespace("telugu", "pages", "TermsofService"),
+        addTranslationNamespace("sanskrit", "pages", "TermsofService"),
       ]);
 
-      setLayoutI18nReady(true)
+      setLayoutI18nReady(true);
     };
 
     loadLayoutNamespaces();
