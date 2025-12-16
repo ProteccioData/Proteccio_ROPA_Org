@@ -16,6 +16,8 @@ import {
   ArrowRight,
 } from "lucide-react";
 import NotificationService from "../../services/NotificationService";
+import { useTranslation } from "react-i18next";
+import { addTranslationNamespace } from "../../i18n/config";
 
 // ---------------------------------------------
 // ICON & STYLE MAPS
@@ -86,6 +88,25 @@ export default function NotificationSidebar({ isOpen, onClose }) {
   const [notifications, setNotifications] = useState([]);
   const [filter, setFilter] = useState("all");
   const [isLoading, setIsLoading] = useState(false);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    Promise.all([
+      addTranslationNamespace("en", "modules", "NotificationsSidebar"),
+      addTranslationNamespace("hindi", "modules", "NotificationsSidebar"),
+      addTranslationNamespace("sanskrit", "modules", "NotificationsSidebar"),
+      addTranslationNamespace("telugu", "modules", "NotificationsSidebar"),
+    ]).then(() => setReady(true));
+  }, []);
+
+  const { t } = useTranslation("modules", {
+    keyPrefix: "NotificationsSidebar",
+  });
+
+  const FILTERS = [
+    { key: "all", label: t("all") },
+    { key: "unread", label: t("unread") },
+  ];
 
   // FETCH DATA
   useEffect(() => {
@@ -143,6 +164,8 @@ export default function NotificationSidebar({ isOpen, onClose }) {
     return groups;
   }, [notifications, filter]);
 
+  if (!ready) return null;
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -179,11 +202,12 @@ export default function NotificationSidebar({ isOpen, onClose }) {
                   </div>
                   <div>
                     <h2 className="text-xl font-bold text-zinc-900 dark:text-white">
-                      Inbox
+                      {t("inbox")}
                     </h2>
                     <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                      You have {notifications.filter((n) => !n.is_read).length}{" "}
-                      unread updates
+                      {t("you_have")}{" "}
+                      {notifications.filter((n) => !n.is_read).length}{" "}
+                      {t("unread_updates")}
                     </p>
                   </div>
                 </div>
@@ -199,17 +223,17 @@ export default function NotificationSidebar({ isOpen, onClose }) {
               {/* FILTERS */}
               <div className="flex items-center justify-between mt-2">
                 <div className="flex gap-1 p-1 bg-zinc-100 dark:bg-white/5 rounded-xl">
-                  {["all", "unread"].map((f) => (
+                  {FILTERS.map(({ key, label }) => (
                     <button
-                      key={f}
-                      onClick={() => setFilter(f)}
+                      key={key}
+                      onClick={() => setFilter(key)}
                       className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-300 cursor-pointer ${
-                        filter === f
+                        filter === key
                           ? "bg-white dark:bg-zinc-800 shadow-sm text-zinc-900 dark:text-white"
                           : "text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
                       }`}
                     >
-                      {f[0].toUpperCase() + f.slice(1)}
+                      {label}
                     </button>
                   ))}
                 </div>
@@ -219,7 +243,7 @@ export default function NotificationSidebar({ isOpen, onClose }) {
                   className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 transition-colors cursor-pointer"
                 >
                   <CheckCheck size={14} />
-                  Mark all read
+                  {t("mark_all_read")}
                 </button>
               </div>
             </div>
@@ -243,10 +267,10 @@ export default function NotificationSidebar({ isOpen, onClose }) {
                     />
                   </div>
                   <p className="text-zinc-500 dark:text-zinc-400 font-medium">
-                    All caught up!
+                    {t("all_caught_up")}
                   </p>
                   <p className="text-zinc-400 dark:text-zinc-600 text-sm mt-1">
-                    Check back later for updates.
+                    {t("check_back_later_for_updates")}
                   </p>
                 </motion.div>
               ) : (
@@ -276,7 +300,7 @@ export default function NotificationSidebar({ isOpen, onClose }) {
             {/* ---------------- FOOTER ---------------- */}
             <div className="p-3 bg-zinc-50 dark:bg-white/5 border-t border-zinc-200 dark:border-white/5 text-center">
               <p className="text-[10px] text-zinc-400 uppercase tracking-widest font-semibold">
-                Notifications
+                {t("notifications")}
               </p>
             </div>
           </motion.div>

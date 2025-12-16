@@ -6,35 +6,8 @@ import {
   downloadArticleCover,
   getArticles,
 } from "../../services/ArticleService";
-
-// const mockArticles = [
-//   {
-//     id: "a1",
-//     title: "Sample Article 1",
-//     excerpt: "A quick look at how small retailers can leverage software to cut waste and stabilise prices.",
-//     image: "https://images.unsplash.com/photo-1522199710521-72d69614c702?q=80&w=1200&auto=format&fit=crop",
-//     publishedAt: "2025-10-01T10:00:00Z",
-//     body: `<p>This is a sample article body. Replace with real HTML or render markdown.</p><p>Tip: fetch article content from your CMS and sanitize HTML.</p>`
-//   },
-//   // duplicate/other items for pagination...
-//   {
-//     id: "a2",
-//     title: "Sample Article 2",
-//     excerpt: "UX patterns and micro-animations that increase conversions in 2025.",
-//     image: "https://images.unsplash.com/photo-1522199710521-72d69614c702?q=80&w=1200&auto=format&fit=crop",
-//     publishedAt: "2025-09-18T09:00:00Z",
-//     body: "<p>Content...</p>"
-//   },
-//   // add several items so pagination shows multiple pages
-//   ...Array.from({ length: 14 }).map((_, i) => ({
-//     id: `a${i + 3}`,
-//     title: `Sample Article ${i + 3}`,
-//     excerpt: `Short excerpt for sample article ${i + 3}.`,
-//     image: "https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d?q=80&w=1200&auto=format&fit=crop",
-//     publishedAt: new Date(Date.now() - i * 86400000).toISOString(),
-//     body: `<p>Sample article body ${i + 3}.</p>`
-//   }))
-// ];
+import { useTranslation } from "react-i18next";
+import { addTranslationNamespace } from "../../i18n/config";
 
 export default function ArticlesPage() {
   const navigate = useNavigate();
@@ -53,6 +26,18 @@ export default function ArticlesPage() {
     limit: perPage,
     pages: 1,
   });
+  const [ready , setReady] = useState(false);
+
+  useEffect(() => {
+    Promise.all([
+      addTranslationNamespace("en" , "pages" , "Article"),
+      addTranslationNamespace("hindi" , "pages" , "Article"),
+      addTranslationNamespace("sanskrit" , "pages" , "Article"),
+      addTranslationNamespace("telugu" , "pages" , "Article"),
+    ]).then(() => setReady(true))
+  })
+
+  const { t } = useTranslation("pages" , {keyPrefix: "Article"})
 
   useEffect(() => {
     async function load() {
@@ -86,16 +71,18 @@ export default function ArticlesPage() {
     return words.slice(0, limit).join(" ") + "...";
   };
 
+  if (!ready) return <div>Loading....</div>
+
   return (
     <div className="  dark:bg-gray-900 transition-colors duration-300">
       <div className="max-w-8xl mx-auto px-6">
         <header className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              Articles
+              {t("articles")}
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Latest posts published by admins. Tap to read in full.
+              {t("latest_posts_published_by_admins_tap_to_read_in_fu")}
             </p>
           </div>
         </header>
@@ -136,7 +123,7 @@ export default function ArticlesPage() {
                         {new Date(a.createdAt).toLocaleDateString()}
                       </span>
                       <span className="text-xs text-[#1a7f4d] dark:text-[#5DEE92] font-medium">
-                        Read
+                        {t("read")}
                       </span>
                     </div>
                   </div>

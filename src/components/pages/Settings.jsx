@@ -20,6 +20,8 @@ import {
   MapPin,
 } from "lucide-react";
 import { useToast } from "../ui/ToastProvider";
+import { useTranslation } from "react-i18next";
+import { addTranslationNamespace } from "../../i18n/config";
 
 /* ---------- CONFIG ---------- */
 const STORAGE_KEY = "settings:v1";
@@ -47,10 +49,6 @@ const PERMISSIONS = {
   AUDIT: ["VIEW", "USER_SPECIFIC", "ALL"],
   REPORTS: ["GENERATE", "SCHEDULE", "DOWNLOAD", "VIEW", "EDIT"],
 };
-const permissionGroups = Object.entries(PERMISSIONS).map(([g, p]) => ({
-  group: g,
-  perms: p,
-}));
 
 /* ---------- Helpers ---------- */
 const uid = (pref = "") => pref + Math.random().toString(36).slice(2, 9);
@@ -263,12 +261,24 @@ export default function SettingsPage() {
   const initial = useMemo(() => loadSettings(), []);
   const [state, setState] = useState(initial);
 
-  const [activeTab, setActiveTab] = useState("General"); // tabs: General, Access, Security, Notifications, Backups, Compliance
+  const [activeTab, setActiveTab] = useState("general"); // tabs: General, Access, Security, Notifications, Backups, Compliance
 
   /* Modals */
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [roleToEdit, setRoleToEdit] = useState(null);
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    Promise.all([
+      addTranslationNamespace("en", "pages", "Settings"),
+      addTranslationNamespace("hindi", "pages", "Settings"),
+      addTranslationNamespace("sanskrit", "pages", "Settings"),
+      addTranslationNamespace("telugu", "pages", "Settings"),
+    ]).then(() => setReady(true));
+  }, []);
+
+  const { t } = useTranslation("pages", { keyPrefix: "Settings" });
 
   const { addToast } = useToast();
 
@@ -411,34 +421,42 @@ export default function SettingsPage() {
   }
 
   /* ---------- Render: Tabs Nav ---------- */
-  const tabs = [
-    "General",
-    "Access",
-    "Security",
-    "Notifications",
-    "Backups",
-    "Compliance",
+  const TABS = [
+    { id: "general", labelKey: "general" },
+    { id: "access", labelKey: "access" },
+    { id: "security", labelKey: "security" },
+    { id: "notifications", labelKey: "notifications" },
+    { id: "backups", labelKey: "backups" },
+    { id: "compliance", labelKey: "compliance" },
   ];
+
+  const TWO_FA_MODES = [
+    { id: "optional", labelKey: "optional" },
+    { id: "mandatory", labelKey: "mandatory" },
+    { id: "disabled", labelKey: "disabled" },
+  ];
+
+  if (!ready) return <div>Loading...</div>;
 
   return (
     <div className="p-6 dark:text-white" style={{ fontFamily: BRAND.font }}>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold">Settings</h1>
+          <h1 className="text-2xl font-bold">{t("settings")}</h1>
           <p className="text-sm text-gray-500 dark:text-gray-300">
-            Centralize org-wide configuration, security, compliance and auditing
+            {t("centralize_org_wide_configuration_security_complia")}
           </p>
         </div>
 
         <div className="flex gap-2 items-center">
           <div className="text-sm text-gray-600 dark:text-gray-300">
-            Active tab
+            {t("active_tab")}
           </div>
           <div
             className="px-3 py-1 rounded border"
             style={{ borderColor: BRAND.border }}
           >
-            {activeTab}
+            {t(TABS.find((t) => t.id === activeTab)?.labelKey)}
           </div>
         </div>
       </div>
@@ -446,18 +464,17 @@ export default function SettingsPage() {
       {/* Tabs */}
       <div className="mb-6">
         <div className="flex gap-2 flex-wrap">
-          {tabs.map((t) => (
+          {TABS.map((tab) => (
             <button
-              key={t}
-              onClick={() => setActiveTab(t)}
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
               className={`px-4 py-2 rounded-2xl font-medium cursor-pointer ${
-                activeTab === t
+                activeTab === tab.id
                   ? "bg-[#5DEE92] text-black"
                   : "bg-white dark:bg-[#071019] border border-[#828282]"
               }`}
-              
             >
-              {t}
+              {t(tab.labelKey)}
             </button>
           ))}
         </div>
@@ -466,15 +483,15 @@ export default function SettingsPage() {
       {/* Tab content */}
       <div className="space-y-6">
         {/* GENERAL */}
-        {activeTab === "General" && (
+        {activeTab === "general" && (
           <Card
-            title="General Settings"
-            subtitle="Organization information and default preferences"
+            title={t("general_settings")}
+            subtitle={t("organization_information_and_default_preferences")}
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium">
-                  Organization name
+                  {t("organization_name")}
                 </label>
                 <input
                   className="mt-1 w-full border border-[#828282] rounded px-3 py-2"
@@ -486,7 +503,7 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium">Logo</label>
+                <label className="block text-sm font-medium">{t("logo")}</label>
                 <div className="mt-2 flex items-center gap-3">
                   <div
                     className="w-20 h-20 rounded bg-[#f3fff7] dark:bg-[#f3fff7]/20 flex items-center justify-center border"
@@ -509,7 +526,7 @@ export default function SettingsPage() {
                       onChange={(e) => handleLogoUpload(e.target.files[0])}
                     />
                     <div className="text-xs text-gray-500 mt-1">
-                      Recommended: 400x400 PNG or SVG
+                      {t("recommended_400x400_png_or_svg")}
                     </div>
                   </div>
                 </div>
@@ -517,7 +534,7 @@ export default function SettingsPage() {
 
               <div>
                 <label className="block text-sm font-medium border-[#828282]">
-                  Address
+                  {t("address")}
                 </label>
                 <textarea
                   className="mt-1 w-full border border-[#828282] rounded px-3 py-2"
@@ -528,7 +545,7 @@ export default function SettingsPage() {
 
               <div>
                 <label className="block text-sm font-medium">
-                  Registration number
+                  {t("registration_number")}
                 </label>
                 <input
                   className="mt-1 w-full border border-[#828282] rounded px-3 py-2"
@@ -540,72 +557,27 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium">Time zone</label>
+                <label className="block text-sm font-medium">
+                  {t("time_zone")}
+                </label>
                 <select
                   className="mt-1 w-full border dark:bg-gray-900 border-[#828282] rounded px-3 py-2"
                   value={state.general.timeZone}
                   onChange={(e) => update("general.timeZone", e.target.value)}
                 >
                   <option className="dark:bg-gray-900" value="Asia/Kolkata">
-                    Asia/Kolkata
+                    {t("asia_kolkata")}
                   </option>
-                  <option value="UTC">UTC</option>
-                  <option value="America/New_York">America/New_York</option>
+                  <option value="UTC">{t("utc")}</option>
+                  <option value="America/New_York">
+                    {t("america_new_york")}
+                  </option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-sm font-medium">
-                  Default language
-                </label>
-                <select
-                  className="mt-1 w-full dark:bg-gray-900 border border-[#828282] rounded px-3 py-2"
-                  value={state.general.defaultLanguage}
-                  onChange={(e) =>
-                    update("general.defaultLanguage", e.target.value)
-                  }
-                >
-                  <option>English</option>
-                  <option>Hindi</option>
-                  <option>Spanish</option>
-                </select>
-
-                <div className="mt-2 text-sm">
-                  <label className="block text-sm font-medium">
-                    Indian languages (optional)
-                  </label>
-                  <div className="mt-2 flex gap-2 flex-wrap">
-                    {indianLanguages.map((l) => {
-                      const active =
-                        state.general.secondaryLanguages.includes(l);
-                      return (
-                        <button
-                          key={l}
-                          onClick={() => {
-                            const cur = state.general.secondaryLanguages || [];
-                            update(
-                              "general.secondaryLanguages",
-                              cur.includes(l)
-                                ? cur.filter((x) => x !== l)
-                                : [...cur, l]
-                            );
-                          }}
-                          className={`px-2 py-1 rounded ${
-                            active ? "bg-[#5DEE92] text-black" : "border"
-                          }`}
-                          style={{ borderColor: BRAND.border }}
-                        >
-                          {l}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium">
-                  Default country
+                  {t("default_country")}
                 </label>
                 <select
                   className="mt-1 w-full dark:bg-gray-900 border border-[#828282] rounded px-3 py-2"
@@ -614,19 +586,19 @@ export default function SettingsPage() {
                     update("general.defaultCountry", e.target.value)
                   }
                 >
-                  <option>India</option>
-                  <option>United States</option>
-                  <option>United Kingdom</option>
+                  <option>{t("india")}</option>
+                  <option>{t("united_states")}</option>
+                  <option>{t("united_kingdom")}</option>
                 </select>
               </div>
 
               <div className="flex items-center gap-4">
                 <div>
                   <label className="block text-sm font-medium">
-                    Configure templates
+                    {t("configure_templates")}
                   </label>
                   <div className="text-sm text-gray-500 dark:text-gray-300">
-                    Enable templates and defaults to streamline RoPA entry
+                    {t("enable_templates_and_defaults_to_streamline_ropa_e")}
                   </div>
                 </div>
                 <div>
@@ -639,7 +611,7 @@ export default function SettingsPage() {
 
               <div className="">
                 <label className="block text-sm font-medium">
-                  Mask personal names/emails in exports/logs
+                  {t("mask_personal_names_emails_in_exports_logs")}
                 </label>
                 <div className="flex items-center gap-3 mt-2">
                   <Toggle
@@ -649,7 +621,7 @@ export default function SettingsPage() {
                     }
                   />
                   <div className="text-sm text-gray-500 dark:text-gray-300">
-                    Toggle to mask PII in exports and logs
+                    {t("toggle_to_mask_pii_in_exports_and_logs")}
                   </div>
                 </div>
               </div>
@@ -663,11 +635,10 @@ export default function SettingsPage() {
                         className="w-4 h-4"
                         style={{ color: BRAND.primary }}
                       />
-                      Bulk Import Data
+                      {t("bulk_import_data")}
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-300 mt-1">
-                      Download a sample file and upload your data to populate
-                      organization settings in bulk.
+                      {t("download_a_sample_file_and_upload_your_data_to_pop")}
                     </div>
                   </div>
                 </div>
@@ -686,7 +657,7 @@ export default function SettingsPage() {
                     URL.revokeObjectURL(url);
                   }}
                 >
-                  Download Sample CSV
+                  {t("download_sample_csv")}
                 </button>
 
                 {/* Upload Area */}
@@ -756,7 +727,7 @@ export default function SettingsPage() {
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="font-medium text-sm text-gray-700 dark:text-gray-200">
-                        Imported Data Preview
+                        {t("imported_data_preview")}
                       </div>
                       <div className="text-xs text-gray-500 dark:text-gray-300">
                         {state.general.importedData.length} record(s)
@@ -774,7 +745,7 @@ export default function SettingsPage() {
                         style={{ borderColor: BRAND.border }}
                         onClick={() => update("general.importedData", null)}
                       >
-                        Clear Imported Data
+                        {t("clear_imported_data")}
                       </button>
                     </div>
                   </motion.div>
@@ -790,11 +761,10 @@ export default function SettingsPage() {
                         className="w-4 h-4"
                         style={{ color: BRAND.primary }}
                       />
-                      Bulk Export Data
+                      {t("bulk_export_data")}
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-300 mt-1">
-                      Export all organization settings, roles, users, and
-                      compliance data in one file.
+                      {t("accepted_formats_csv_json_max_size_5mb")}
                     </div>
                   </div>
                 </div>
@@ -812,8 +782,8 @@ export default function SettingsPage() {
                       style={{ borderColor: BRAND.border }}
                       defaultValue="csv"
                     >
-                      <option value="csv">Export as CSV</option>
-                      <option value="json">Export as JSON</option>
+                      <option value="csv">{t("export_as_csv")}</option>
+                      <option value="json">{t("export_as_json")}</option>
                     </select>
 
                     <motion.button
@@ -822,13 +792,12 @@ export default function SettingsPage() {
                       onClick={() => handleBulkExport(state)}
                       className="px-5 py-2 bg-[#5DEE92] text-black rounded-lg font-semibold text-sm"
                     >
-                      Export All Data
+                      {t("export_all_data")}
                     </motion.button>
                   </div>
 
                   <p className="text-xs text-gray-500 dark:text-gray-300 mt-3">
-                    Includes: General settings, roles, users, access control,
-                    compliance, security & backups.
+                    {t("includes_general_settings_roles_users_access_contr")}
                   </p>
                 </motion.div>
               </div>
@@ -837,19 +806,21 @@ export default function SettingsPage() {
         )}
 
         {/* ACCESS */}
-        {activeTab === "Access" && (
+        {activeTab === "access" && (
           <Card
-            title="Access Control"
-            subtitle="Manage invites, roles, and role assignment history"
+            title={t("access_control")}
+            subtitle={t("manage_invites_roles_and_role_assignment_history")}
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Invite */}
               <div>
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-sm font-semibold">Invite by email</div>
+                    <div className="text-sm font-semibold">
+                      {t("invite_by_email")}
+                    </div>
                     <div className="text-xs text-gray-500 dark:text-gray-300">
-                      Send invitation to join org
+                      {t("send_invitation_to_join_org")}
                     </div>
                   </div>
                 </div>
@@ -857,7 +828,7 @@ export default function SettingsPage() {
                 <div className="mt-3 flex gap-2">
                   <input
                     id="inviteEmail"
-                    placeholder="email@example.com"
+                    placeholder={t("email_example_com")}
                     className="flex-1 border border-[#828282] rounded px-3 py-2"
                   />
                   <button
@@ -869,12 +840,12 @@ export default function SettingsPage() {
                     }}
                     className="px-4 py-2 rounded bg-[#5DEE92] text-black flex items-center gap-2"
                   >
-                    <Mail /> Invite
+                    <Mail /> {t("invite")}
                   </button>
                 </div>
 
                 <div className="mt-4">
-                  <div className="text-sm font-medium">Invite queue</div>
+                  <div className="text-sm font-medium">{t("invite_queue")}</div>
                   <div className="mt-2 space-y-2">
                     {(state.access.inviteQueue || []).map((i) => (
                       <div
@@ -899,23 +870,9 @@ export default function SettingsPage() {
                     ))}
                     {(state.access.inviteQueue || []).length === 0 && (
                       <div className="text-sm text-gray-500 dark:text-gray-300">
-                        No invites queued
+                        {t("no_invites_queued")}
                       </div>
                     )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Role assignment history placeholder */}
-              <div className="md:col-span-2 mt-2">
-                <div className="text-sm font-semibold mb-2">
-                  Role assignment history
-                </div>
-                <div className="p-3 border border-[#828282] rounded">
-                  <div className="text-sm text-gray-500 dark:text-gray-300">
-                    View history of who changed role assignments (who, when,
-                    what). For demo this is a placeholder — wire to audit logs
-                    backend for real data.
                   </div>
                 </div>
               </div>
@@ -924,16 +881,18 @@ export default function SettingsPage() {
         )}
 
         {/* SECURITY */}
-        {activeTab === "Security" && (
+        {activeTab === "security" && (
           <Card
-            title="Security Settings"
-            subtitle="Passwords, 2FA, session & IP controls"
+            title={t("security_settings")}
+            subtitle={t("passwords_2fa_session_ip_controls")}
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <div className="text-sm font-semibold">Password policy</div>
+                <div className="text-sm font-semibold">
+                  {t("password_policy")}
+                </div>
                 <div className="mt-2 space-y-2">
-                  <label className="text-xs">Minimum length</label>
+                  <label className="text-xs">{t("minimum_length")}</label>
                   <input
                     type="number"
                     min={6}
@@ -948,7 +907,7 @@ export default function SettingsPage() {
                   />
 
                   <div className="flex items-center gap-3 mt-2">
-                    <div className="text-sm">Require numbers</div>
+                    <div className="text-sm">{t("require_numbers")}</div>
                     <Toggle
                       checked={state.security.passwordPolicy.requireNumbers}
                       onChange={(v) =>
@@ -957,7 +916,9 @@ export default function SettingsPage() {
                     />
                   </div>
                   <div className="flex items-center gap-3 mt-2">
-                    <div className="text-sm">Require special characters</div>
+                    <div className="text-sm">
+                      {t("require_special_characters")}
+                    </div>
                     <Toggle
                       checked={state.security.passwordPolicy.requireSpecial}
                       onChange={(v) =>
@@ -967,7 +928,9 @@ export default function SettingsPage() {
                   </div>
 
                   <div className="mt-2">
-                    <label className="text-xs pr-2">Password expiry (days)</label>
+                    <label className="text-xs pr-2">
+                      {t("password_expiry")}
+                    </label>
                     <input
                       type="number"
                       min={0}
@@ -986,13 +949,13 @@ export default function SettingsPage() {
 
               <div>
                 <div className="text-sm font-semibold">
-                  Two-Factor Authentication (2FA)
+                  {t("two_factor_auth")}
                 </div>
                 <div className="mt-2 space-y-2">
                   {/* 2FA Mode Selector (Modern Toggle Tabs) */}
                   <div className="flex flex-col gap-2 mt-2">
                     <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Mode
+                      {t("mode")}
                     </label>
 
                     <motion.div
@@ -1000,12 +963,12 @@ export default function SettingsPage() {
                       className="relative flex bg-gray-100 dark:bg-[#0d131a] rounded-xl border border-gray-200/40 dark:border-gray-700 p-1 w-fit"
                       style={{ minWidth: "280px" }}
                     >
-                      {["optional", "mandatory", "disabled"].map((mode) => {
-                        const isActive = state.security.twoFA === mode;
+                      {TWO_FA_MODES.map((mode) => {
+                        const isActive = state.security.twoFA === mode.id;
                         return (
                           <motion.button
                             key={mode}
-                            onClick={() => update("security.twoFA", mode)}
+                            onClick={() => update("security.twoFA", mode.id)}
                             className={`relative z-10 flex-1 px-4 py-2 text-sm font-medium capitalize transition-colors duration-200 ${
                               isActive
                                 ? "text-black"
@@ -1023,7 +986,9 @@ export default function SettingsPage() {
                                 className="absolute inset-0 z-0 bg-[#5DEE92] rounded-lg shadow-md "
                               />
                             )}
-                            <span className="relative z-10 cursor-pointer">{mode}</span>
+                            <span className="relative z-10 cursor-pointer">
+                              {t(mode.labelKey)}
+                            </span>
                           </motion.button>
                         );
                       })}
@@ -1031,7 +996,9 @@ export default function SettingsPage() {
                   </div>
 
                   <div className="mt-2">
-                    <label className="text-sm pr-2">Session timeout (minutes)</label>
+                    <label className="text-sm pr-2">
+                      {t("session_timeout")}
+                    </label>
                     <input
                       type="number"
                       className="w-24 border border-[#828282] rounded px-2 py-1"
@@ -1049,7 +1016,7 @@ export default function SettingsPage() {
 
               {/* IP lists */}
               <div>
-                <div className="text-sm font-semibold">IP allowlist</div>
+                <div className="text-sm font-semibold">{t("ip_allowlist")}</div>
                 <div className="mt-2">
                   <div className="flex gap-2">
                     <input
@@ -1066,7 +1033,7 @@ export default function SettingsPage() {
                       }}
                       className="px-3 py-1 rounded bg-[#5DEE92] text-black"
                     >
-                      Add
+                      {t("add")}
                     </button>
                   </div>
                   <div className="mt-3 space-y-2">
@@ -1080,19 +1047,21 @@ export default function SettingsPage() {
                           onClick={() => removeIP("ipAllowlist", ip)}
                           className="text-red-600 px-2"
                         >
-                          Remove
+                          {t("remove")}
                         </button>
                       </div>
                     ))}
                     {(state.security.ipAllowlist || []).length === 0 && (
-                      <div className="text-sm text-gray-500 dark:text-gray-300">No IPs added</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-300">
+                        {t("no_ips_added")}
+                      </div>
                     )}
                   </div>
                 </div>
               </div>
 
               <div>
-                <div className="text-sm font-semibold">IP denylist</div>
+                <div className="text-sm font-semibold">{t("ip_denylist")}</div>
                 <div className="mt-2">
                   <div className="flex gap-2">
                     <input
@@ -1109,7 +1078,7 @@ export default function SettingsPage() {
                       }}
                       className="px-3 py-1 rounded bg-[#5DEE92] text-black"
                     >
-                      Add
+                      {t("add")}
                     </button>
                   </div>
                   <div className="mt-3 space-y-2">
@@ -1123,13 +1092,13 @@ export default function SettingsPage() {
                           onClick={() => removeIP("ipDenylist", ip)}
                           className="text-red-600 px-2"
                         >
-                          Remove
+                          {t("remove")}
                         </button>
                       </div>
                     ))}
                     {(state.security.ipDenylist || []).length === 0 && (
                       <div className="text-sm text-gray-500 dark:text-gray-300">
-                        No IPs blocked
+                        {t("no_ips_blocked")}
                       </div>
                     )}
                   </div>
@@ -1138,7 +1107,7 @@ export default function SettingsPage() {
 
               <div className="md:col-span-2">
                 <div className="text-sm font-semibold">
-                  Encryption & Transport
+                  {t("encryption_transport")}
                 </div>
                 <div className="mt-2 p-3 border border-[#828282] rounded">
                   <div className="text-sm">
@@ -1148,8 +1117,7 @@ export default function SettingsPage() {
                     TLS supported: {state.security.encryption.tls.join(", ")}
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-300 mt-2">
-                    Visibility only — configure actual encryption at infra
-                    level.
+                    {t("visibility_only_configure_actual_encryption_at_inf")}
                   </div>
                 </div>
               </div>
@@ -1158,34 +1126,34 @@ export default function SettingsPage() {
         )}
 
         {/* NOTIFICATIONS */}
-        {activeTab === "Notifications" && (
+        {activeTab === "notifications" && (
           <Card
-            title="Notifications & Alerts"
-            subtitle="Configure system alerts, frequency and recipients"
+            title={t("notifications_alerts")}
+            subtitle={t("configure_system_alerts_frequency_and_recipients")}
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-sm font-semibold">
-                      System notifications
+                      {t("system_notifications")}
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-300">
-                      On-screen and email notifications
+                      {t("on_screen_and_email_notifications")}
                     </div>
                   </div>
                 </div>
 
                 <div className="mt-3 space-y-2">
                   <div className="flex items-center gap-3">
-                    <div className="text-sm">On-screen</div>
+                    <div className="text-sm">{t("on_screen")}</div>
                     <Toggle
                       checked={state.notifications.onScreen}
                       onChange={(v) => update("notifications.onScreen", v)}
                     />
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="text-sm">Email</div>
+                    <div className="text-sm">{t("email")}</div>
                     <Toggle
                       checked={state.notifications.email}
                       onChange={(v) => update("notifications.email", v)}
@@ -1194,7 +1162,7 @@ export default function SettingsPage() {
 
                   <div className="mt-3">
                     <label className="text-sm font-medium pr-2">
-                      Default notification frequency
+                      {t("default_notification_frequency")}
                     </label>
                     <select
                       className="mt-1 border border-[#828282] dark:bg-gray-900 rounded px-3 py-1"
@@ -1206,73 +1174,11 @@ export default function SettingsPage() {
                         )
                       }
                     >
-                      <option value="immediate">Immediate</option>
-                      <option value="daily">Daily digest</option>
-                      <option value="weekly">Weekly</option>
+                      <option value="immediate">{t("immediate")}</option>
+                      <option value="daily">{t("daily_digest")}</option>
+                      <option value="weekly">{t("weekly")}</option>
                     </select>
                   </div>
-                </div>
-              </div>
-
-              <div>
-                <div className="text-sm font-semibold">Alert rules</div>
-                <div className="mt-2 space-y-2">
-                  {state.notifications.alertRules.map((rule) => (
-                    <div
-                      key={rule.id}
-                      className="p-2 border border-[#828282] rounded flex items-center justify-between"
-                    >
-                      <div>
-                        <div className="font-medium">{rule.name}</div>
-                        <div className="text-xs text-gray-500 dark:text-gray-300">
-                          Frequency: {rule.frequency} • Enabled:{" "}
-                          {rule.enabled ? "Yes" : "No"}
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-300">
-                          Recipients: {rule.recipients.join(", ")}
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => {
-                            setState((s) => ({
-                              ...s,
-                              notifications: {
-                                ...s.notifications,
-                                alertRules: s.notifications.alertRules.map(
-                                  (r) =>
-                                    r.id === rule.id
-                                      ? { ...r, enabled: !r.enabled }
-                                      : r
-                                ),
-                              },
-                            }));
-                          }}
-                          className="px-2 py-1 border border-[#828282] rounded cursor-pointer"
-                        >
-                          {rule.enabled ? "Disable" : "Enable"}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="md:col-span-2">
-                <div className="text-sm font-semibold">Define recipients</div>
-                <div className="mt-2 text-xs text-gray-500 dark:text-gray-300">
-                  Assign recipients by Role name or user group. For demo enter
-                  role names.
-                </div>
-                <div className="mt-2">
-                  <input
-                    placeholder="Role or user group comma-separated"
-                    className="w-full border rounded px-3 py-2"
-                    defaultValue="Org Admin"
-                    onBlur={(e) => {
-                      /* demo only */
-                    }}
-                  />
                 </div>
               </div>
             </div>
@@ -1280,29 +1186,29 @@ export default function SettingsPage() {
         )}
 
         {/* BACKUPS */}
-        {activeTab === "Backups" && (
+        {activeTab === "backups" && (
           <Card
-            title="Backups & Export"
-            subtitle="Configure exports, backups and storage"
+            title={t("backups_export")}
+            subtitle={t("configure_exports_backups_and_storage")}
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <div className="text-sm font-semibold">Manual Export</div>
+                <div className="text-sm font-semibold">{t("manual_export")}</div>
                 <div className="mt-2 flex items-center gap-3">
                   <Toggle
                     checked={state.backups.manualExportEnabled}
                     onChange={(v) => update("backups.manualExportEnabled", v)}
                   />
                   <div className="text-sm text-gray-500 dark:text-gray-300">
-                    Enable manual data export
+                    {t("enable_manual_data_export")}
                   </div>
                 </div>
               </div>
 
               <div>
-                <div className="text-sm font-semibold">Automated backups</div>
+                <div className="text-sm font-semibold">{t("automated_backups")}</div>
                 <div className="mt-2">
-                  <label className="text-xs pr-2">Frequency</label>
+                  <label className="text-xs pr-2">{t("frequency")}</label>
                   <select
                     className="mt-1 border border-[#828282] dark:bg-gray-900 rounded px-3 py-1"
                     value={state.backups.automatedBackupFrequency}
@@ -1310,14 +1216,14 @@ export default function SettingsPage() {
                       update("backups.automatedBackupFrequency", e.target.value)
                     }
                   >
-                    <option value="daily">Daily</option>
-                    <option value="weekly">Weekly</option>
-                    <option value="monthly">Monthly</option>
+                    <option value="daily">{t("daily")}</option>
+                    <option value="weekly">{t("weekly")}</option>
+                    <option value="monthly">{t("monthly")}</option>
                   </select>
                 </div>
 
                 <div className="mt-3">
-                  <label className="text-xs pr-2">Storage</label>
+                  <label className="text-xs pr-2">{t("storage")}</label>
                   <select
                     className="mt-1 border border-[#828282] dark:bg-gray-900 rounded px-3 py-1"
                     value={state.backups.backupStorage}
@@ -1325,9 +1231,9 @@ export default function SettingsPage() {
                       update("backups.backupStorage", e.target.value)
                     }
                   >
-                    <option value="internal">Internal</option>
-                    <option value="external">External</option>
-                    <option value="both">Both</option>
+                    <option value="internal">{t("internal")}</option>
+                    <option value="external">{t("external")}</option>
+                    <option value="both">{t("both")}</option>
                   </select>
                 </div>
 
@@ -1347,9 +1253,7 @@ export default function SettingsPage() {
 
               <div className="md:col-span-2">
                 <div className="mt-3 text-sm text-gray-500 dark:text-gray-300">
-                  Backups should be verified regularly. You can toggle automated
-                  backups and configure external storage providers in the infra
-                  layer.
+                  {t("backups_should_be_verified_regularly_you_can_toggl")}
                 </div>
               </div>
             </div>
@@ -1357,10 +1261,10 @@ export default function SettingsPage() {
         )}
 
         {/* COMPLIANCE */}
-        {activeTab === "Compliance" && (
+        {activeTab === "compliance" && (
           <Card
-            title="Compliance & Retention"
-            subtitle="Retention, locks, field-level controls and export masking"
+            title={t("compliance_retention")}
+            subtitle={t("retention_locks_field_level_controls_and_export_ma")}
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -1383,7 +1287,7 @@ export default function SettingsPage() {
 
               <div>
                 <label className="text-sm font-medium">
-                  Lock RoPA records after approval / audit submission
+                  {t("lock_ropa_records_after_approval_audit_submission")}
                 </label>
                 <div className="mt-2 flex items-center gap-3">
                   <Toggle
@@ -1391,7 +1295,7 @@ export default function SettingsPage() {
                     onChange={(v) => update("compliance.lockAfterApproval", v)}
                   />
                   <div className="text-sm text-gray-500 dark:text-gray-300">
-                    Lock records to prevent edits after approval
+                    {t("lock_records_to_prevent_edits_after_approval")}
                   </div>
                 </div>
               </div>
@@ -1416,7 +1320,7 @@ export default function SettingsPage() {
 
               <div>
                 <label className="text-sm font-medium">
-                  Mask personal names / emails in exports
+                  {t("mask_personal_names_emails_in_exports")}
                 </label>
                 <div className="mt-2 flex items-center gap-3">
                   <Toggle
@@ -1426,19 +1330,17 @@ export default function SettingsPage() {
                     }
                   />
                   <div className="text-sm text-gray-500 dark:text-gray-300">
-                    When enabled exported reports/logs will mask PII
+                    {t("when_enabled_exported_reports_logs_will_mask_pii")}
                   </div>
                 </div>
               </div>
 
               <div className="md:col-span-2">
                 <label className="text-sm font-medium">
-                  Field visibility & role-based control
+                  {t("field_visibility_role_based_control")}
                 </label>
                 <div className="mt-2 text-sm text-gray-500 dark:text-gray-300">
-                  Manage field-level visibility and whether fields are
-                  required/optional by role. For demo, this opens a role-based
-                  editor.
+                  {t("manage_field_level_visibility_and_whether_fields_a")}
                 </div>
               </div>
             </div>

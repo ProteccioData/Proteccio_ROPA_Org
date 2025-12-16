@@ -2,6 +2,10 @@
   "terms_of_service": "Terms of Service",
   "ropa_application_by_proteccio_data": "RoPA Application by Proteccio Data",
   "last_updated_dec_12_2025": "Last Updated: Dec 12, 2025",
+
+  "language_disclaimer_title": "Language Disclaimer",
+  "language_disclaimer_text": "This Terms of Service is provided in multiple languages for convenience only. In the event of any inconsistency, discrepancy, or conflict between the English version and any translated version, the English version shall prevail and be legally binding.",
+
   "welcome" : "Welcome to the RoPA (Record of Processing Activities) Application (“Application”), owned and operated by Proteccio Data (“Company”, “we”, “us”, or “our”). By accessing, registering, or using the Application, you (“User”, “Customer”, “Organization”, “you”, or “your”) agree to be bound by these Terms of Service (“Terms”). These Terms create a legally binding agreement. If you do not agree, do not use the Application." ,
   "1_definitions": "1. Definitions",
   "1_1_application": "1.1 “Application”",

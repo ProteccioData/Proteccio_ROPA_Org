@@ -1,8 +1,5 @@
 {
-  "this_is_a_sample_article_body_replace_with_real_ht": "This is a sample article body. Replace with real HTML or render markdown.",
-  "tip_fetch_article_content_from_your_cms_and_saniti": "Tip: fetch article content from your CMS and sanitize HTML.",
-  "content": "Content...",
-  "articles": "Articles",
-  "latest_posts_published_by_admins_tap_to_read_in_fu": "Latest posts published by admins. Tap to read in full.",
-  "read": "Read"
+  "articles": "लेखाः",
+  "latest_posts_published_by_admins_tap_to_read_in_fu": "प्रशासकैः प्रकाशिताः नवीनतमाः लेखाः। पूर्णरूपेण पठितुं स्पृशत।",
+  "read": "पठतु"
 }

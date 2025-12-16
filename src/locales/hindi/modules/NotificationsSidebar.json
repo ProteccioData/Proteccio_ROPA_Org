@@ -1,9 +1,13 @@
 {
-  "inbox": "Inbox",
-  "mark_all_read": "Mark all read",
-  "all_caught_up": "All caught up!",
-  "check_back_later_for_updates": "Check back later for updates.",
-  "notifications": "Notifications",
-  "mark_as_read": "Mark as read",
-  "delete": "हटाएं"
+  "inbox": "इनबॉक्स",
+  "you_have": "आपके पास",
+  "unread_updates": "अपठित अपडेट",
+  "all": "सभी",
+  "unread": "अपठित",
+  "mark_all_read": "सभी को पढ़ा हुआ चिह्नित करें",
+  "all_caught_up": "सब कुछ अपडेट है!",
+  "check_back_later_for_updates": "अपडेट के लिए बाद में फिर से देखें।",
+  "notifications": "सूचनाएँ",
+  "mark_as_read": "पढ़ा हुआ चिह्नित करें",
+  "delete": "हटाएँ"
 }

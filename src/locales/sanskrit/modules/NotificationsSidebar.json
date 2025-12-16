@@ -1,9 +1,13 @@
 {
-  "inbox": "Inbox",
-  "mark_all_read": "Mark all read",
-  "all_caught_up": "All caught up!",
-  "check_back_later_for_updates": "Check back later for updates.",
-  "notifications": "Notifications",
-  "mark_as_read": "Mark as read",
-  "delete": "हटयतु"
+  "inbox": "आगमन-पेटिका",
+  "you_have": "भवतः सन्ति",
+  "unread_updates": "अपठित-अद्यतनानि",
+  "all": "सर्वे",
+  "unread": "अपठितम्",
+  "mark_all_read": "सर्वाणि पठितानि चिनोतु",
+  "all_caught_up": "सर्वं अद्यतनम् अस्ति!",
+  "check_back_later_for_updates": "अद्यतनानां कृते पश्चात् पुनः पश्यतु।",
+  "notifications": "सूचनाः",
+  "mark_as_read": "पठितं चिनोतु",
+  "delete": "विलोपयतु"
 }

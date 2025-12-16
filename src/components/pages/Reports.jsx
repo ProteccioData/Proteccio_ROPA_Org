@@ -39,6 +39,8 @@ import {
 } from "../../services/ReportService";
 import { useToast } from "../ui/ToastProvider";
 import ConfirmationModal from "../ui/ConfirmationModal";
+import { useTranslation } from "react-i18next";
+import { addTranslationNamespace } from "../../i18n/config";
 
 const formatDate = (value) =>
   value ? new Date(value).toLocaleDateString() : "—";
@@ -675,6 +677,18 @@ export default function ReportsPage() {
     id: null,
     loading: false,
   });
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    Promise.all([
+      addTranslationNamespace("en" , "pages" , "Reports"),
+      addTranslationNamespace("hindi" , "pages" , "Reports"),
+      addTranslationNamespace("sanskrit" , "pages" , "Reports"),
+      addTranslationNamespace("telugu" , "pages" , "Reports"),
+    ]).then(() => setReady(true))
+  }, [])
+
+  const { t } = useTranslation("pages" , {keyPrefix:"Reports"})
 
   const { addToast } = useToast();
 
@@ -757,19 +771,19 @@ export default function ReportsPage() {
 
   const statsData = [
     {
-      label: "Reports Generated",
+      label: `${t("reports_generated")}`,
       value: stats.generated,
       color: "bg-[#5DEE92]",
       textColor: "text-black",
     },
     {
-      label: "Scheduled",
+      label: `${t("scheduled")}`,
       value: stats.scheduled,
       color: "bg-gray-200 dark:bg-gray-800",
       textColor: "text-gray-700 dark:text-gray-300",
     },
     {
-      label: "Pending",
+      label: `${t("pending")}`,
       value: stats.pending,
       color: "bg-gray-200 dark:bg-gray-800",
       textColor: "text-gray-700 dark:text-gray-300",
@@ -888,6 +902,8 @@ export default function ReportsPage() {
     }
   };
 
+  if (!ready) return <div> Loading.... </div>
+
   return (
     <div className="p-6 min-h-screen">
       {/* Stats Cards */}
@@ -909,21 +925,21 @@ export default function ReportsPage() {
           className="col-span-1 flex items-center justify-center gap-2 bg-[#5DEE92] text-black px-4 py-4 rounded-lg text-xl font-medium hover:bg-green-500 transition cursor-pointer"
         >
           <PlusCircle size={20} />
-          New Report
+          {t("new_report")}
         </button>
         <button
           onClick={() => setIsScheduleDownloadOpen(true)}
           className="col-span-1 flex items-center justify-center gap-2 bg-[#5DEE92] text-black px-4 py-4 rounded-lg text-xl font-medium hover:bg-green-500 transition cursor-pointer"
         >
           <Clock size={20} />
-          Schedule Report Download
+          {t("schedule_report_download")}
         </button>
         <button
           onClick={() => setIsFilterOpen(true)}
           className="flex items-center justify-center gap-2 bg-[#5DEE92] text-black px-4 py-2 rounded-lg text-xl font-medium hover:bg-green-500 transition"
         >
           <Filter size={20} />
-          Filter
+          {t("filter")}
         </button>
       </div>
 
@@ -954,7 +970,7 @@ export default function ReportsPage() {
             <div className="space-y-2 mb-4">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500 dark:text-gray-400">
-                  Last Generated:
+                  {t("last_generated")}
                 </span>
                 <span className="text-gray-900 dark:text-gray-100 font-medium">
                   {report.generated_at
@@ -964,7 +980,7 @@ export default function ReportsPage() {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500 dark:text-gray-400">
-                  File Size:
+                  {t("file_size")}
                 </span>
                 <span className="text-gray-900 dark:text-gray-100 font-medium">
                   {report.file_size
@@ -1003,7 +1019,7 @@ export default function ReportsPage() {
                 }
               >
                 <Download className="w-4 h-4" />
-                Download
+                {t("download")}
               </button>
               <button
                 onClick={() => handleDelete(report.id)}
@@ -1029,14 +1045,14 @@ export default function ReportsPage() {
             </button>
 
             <h2 className="text-xl font-semibold mb-4">
-              Schedule Report Download
+              {t("schedule_report_download")}
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Report Type */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
-                  Report Type
+                  {t("report_type")}
                 </label>
 
                 <select
@@ -1046,26 +1062,26 @@ export default function ReportsPage() {
                   }
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:border-green-400"
                 >
-                  <option value="">Select report type</option>
-                  <option value="full_ropa">Full ROPA</option>
+                  <option value="">{t("select_report_type")}</option>
+                  <option value="full_ropa">{t("full_ropa")}</option>
                   <option value="departmental_summary">
-                    Departmental Summary
+                    {t("departmental_summary")}
                   </option>
                   <option value="third_party_sharing">
-                    Third Party Sharing
+                    {t("third_party_sharing")}
                   </option>
-                  <option value="data_categories">Data Categories</option>
-                  <option value="legal_basis">Legal Basis</option>
-                  <option value="risk_impact">Risk Impact</option>
-                  <option value="change_history">Change History</option>
-                  <option value="custom">Custom Report</option>
+                  <option value="data_categories">{t("data_categories")}</option>
+                  <option value="legal_basis">{t("legal_basis")}</option>
+                  <option value="risk_impact">{t("risk_impact")}</option>
+                  <option value="change_history">{t("change_history")}</option>
+                  <option value="custom">{t("custom_report")}</option>
                 </select>
               </div>
 
               {/* Frequency */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
-                  Frequency
+                  {t("frequency")}
                 </label>
                 <select
                   value={form.frequency}
@@ -1074,18 +1090,18 @@ export default function ReportsPage() {
                   }
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:border-green-400"
                 >
-                  <option value="daily">Daily</option>
-                  <option value="weekly">Weekly</option>
-                  <option value="monthly">Monthly</option>
-                  <option value="quarterly">Quarterly</option>
-                  <option value="yearly">Yearly</option>
+                  <option value="daily">{t("daily")}</option>
+                  <option value="weekly">{t("weekly")}</option>
+                  <option value="monthly">{t("monthly")}</option>
+                  <option value="quarterly">{t("quarterly")}</option>
+                  <option value="yearly">{t("yearly")}</option>
                 </select>
               </div>
 
               {/* Date */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
-                  Start Date
+                  {t("start_date")}
                 </label>
                 <input
                   type="date"
@@ -1101,7 +1117,7 @@ export default function ReportsPage() {
                 className="w-full bg-[#5DEE92] hover:bg-green-500 text-black font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer"
               >
                 <Clock size={18} />
-                Confirm Schedule
+                {t("confirm_schedule")}
               </button>
             </form>
           </div>
@@ -1120,13 +1136,13 @@ export default function ReportsPage() {
               <X size={20} />
             </button>
 
-            <h2 className="text-xl font-semibold mb-4">Generate New Report</h2>
+            <h2 className="text-xl font-semibold mb-4">{t("generate_new_report")}</h2>
 
             <form onSubmit={handleCreateReport} className="space-y-4">
               {/* Report Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
-                  Report Name
+                  {t("report_name")}
                 </label>
                 <input
                   type="text"
@@ -1142,7 +1158,7 @@ export default function ReportsPage() {
               {/* Frequency */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
-                  Frequency
+                  {t("frequency")}
                 </label>
                 <select
                   value={form.frequency}
@@ -1151,16 +1167,16 @@ export default function ReportsPage() {
                   }
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:border-green-400"
                 >
-                  <option value="daily">Daily</option>
-                  <option value="weekly">Weekly</option>
-                  <option value="monthly">Monthly</option>
+                  <option value="daily">{t("daily")}</option>
+                  <option value="weekly">{t("weekly")}</option>
+                  <option value="monthly">{t("monthly")}</option>
                 </select>
               </div>
 
               {/* Date */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
-                  Start Date
+                  {t("start_date")}
                 </label>
                 <input
                   type="date"
@@ -1177,23 +1193,25 @@ export default function ReportsPage() {
                 }
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-400 focus:border-green-400"
               >
-                <option value="">Select report type</option>
-                <option value="full_ropa">Full ROPA</option>
-                <option value="departmental_summary">
-                  Departmental Summary
-                </option>
-                <option value="third_party_sharing">Third Party Sharing</option>
-                <option value="data_categories">Data Categories</option>
-                <option value="legal_basis">Legal Basis</option>
-                <option value="risk_impact">Risk Impact</option>
-                <option value="change_history">Change History</option>
-                <option value="custom">Custom Report</option>
+                <option value="">{t("select_report_type")}</option>
+                <option value="full_ropa">{t("full_ropa")}</option>
+                  <option value="departmental_summary">
+                    {t("departmental_summary")}
+                  </option>
+                  <option value="third_party_sharing">
+                    {t("third_party_sharing")}
+                  </option>
+                  <option value="data_categories">{t("data_categories")}</option>
+                  <option value="legal_basis">{t("legal_basis")}</option>
+                  <option value="risk_impact">{t("risk_impact")}</option>
+                  <option value="change_history">{t("change_history")}</option>
+                  <option value="custom">{t("custom_report")}</option>
               </select>
 
               {/* Report Format */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
-                  Report Format
+                  {t("report_type")}
                 </label>
                 <select
                   onChange={(e) => setForm({ ...form, format: e.target.value })}
@@ -1212,7 +1230,7 @@ export default function ReportsPage() {
                 className="w-full bg-[#5DEE92] hover:bg-green-500 text-black font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer"
               >
                 <Clock size={18} />
-                Confirm Schedule
+                {t("confirm_schedule")}
               </button>
             </form>
           </div>
@@ -1235,7 +1253,7 @@ export default function ReportsPage() {
             {/* Header */}
             <div className="flex justify-between items-center mb-5">
               <h2 className="text-xl font-semibold flex items-center gap-2">
-                <Filter size={18} /> Filters
+                <Filter size={18} /> {t("filters")}
               </h2>
               <button
                 onClick={() => setIsFilterOpen(false)}
@@ -1249,7 +1267,7 @@ export default function ReportsPage() {
             <div className="space-y-5">
               {/* Search */}
               <div>
-                <label className="text-sm font-medium block">Search</label>
+                <label className="text-sm font-medium block">{t("search")}</label>
                 <input
                   className="w-full mt-1 border rounded-lg px-3 py-2 text-sm
             bg-gray-50 dark:bg-gray-800 dark:text-gray-200"
@@ -1257,13 +1275,13 @@ export default function ReportsPage() {
                   onChange={(e) =>
                     setFilter({ ...filter, search: e.target.value })
                   }
-                  placeholder="Search reports..."
+                  placeholder={t("search_reports")}
                 />
               </div>
 
               {/* Report Type */}
               <div>
-                <label className="text-sm font-medium block">Report Type</label>
+                <label className="text-sm font-medium block">{t("report_type")}</label>
                 <select
                   value={filter.type}
                   onChange={(e) =>
@@ -1272,25 +1290,25 @@ export default function ReportsPage() {
                   className="w-full mt-1 border rounded-lg px-3 py-2 text-sm
             bg-gray-50 dark:bg-gray-800 dark:text-gray-200"
                 >
-                  <option value="">All</option>
-                  <option value="full_ropa">Full ROPA</option>
+                  <option value="">{t("all")}</option>
+                  <option value="full_ropa">{t("full_ropa")}</option>
                   <option value="departmental_summary">
-                    Departmental Summary
+                    {t("departmental_summary")}
                   </option>
                   <option value="third_party_sharing">
-                    Third Party Sharing
+                    {t("third_party_sharing")}
                   </option>
-                  <option value="data_categories">Data Categories</option>
-                  <option value="legal_basis">Legal Basis</option>
-                  <option value="risk_impact">Risk Impact</option>
-                  <option value="change_history">Change History</option>
-                  <option value="custom">Custom</option>
+                  <option value="data_categories">{t("data_categories")}</option>
+                  <option value="legal_basis">{t("legal_basis")}</option>
+                  <option value="risk_impact">{t("risk_impact")}</option>
+                  <option value="change_history">{t("change_history")}</option>
+                  <option value="custom">{t("custom_report")}</option>
                 </select>
               </div>
 
               {/* Format */}
               <div>
-                <label className="text-sm font-medium block">Format</label>
+                <label className="text-sm font-medium block">{t("format")}</label>
                 <select
                   value={filter.format}
                   onChange={(e) =>
@@ -1299,7 +1317,7 @@ export default function ReportsPage() {
                   className="w-full mt-1 border rounded-lg px-3 py-2 text-sm
             bg-gray-50 dark:bg-gray-800 dark:text-gray-200"
                 >
-                  <option value="">All</option>
+                  <option value="">{t("all")}</option>
                   <option value="pdf">PDF</option>
                   <option value="docx">DOCX</option>
                   <option value="csv">CSV</option>
@@ -1309,7 +1327,7 @@ export default function ReportsPage() {
 
               {/* Status */}
               <div>
-                <label className="text-sm font-medium block">Status</label>
+                <label className="text-sm font-medium block">{t("status")}</label>
                 <select
                   value={filter.status}
                   onChange={(e) =>
@@ -1318,11 +1336,11 @@ export default function ReportsPage() {
                   className="w-full mt-1 border rounded-lg px-3 py-2 text-sm
             bg-gray-50 dark:bg-gray-800 dark:text-gray-200"
                 >
-                  <option value="">All</option>
-                  <option value="pending">Pending</option>
-                  <option value="generating">Generating</option>
-                  <option value="completed">Completed</option>
-                  <option value="failed">Failed</option>
+                  <option value="">{t("all")}</option>
+                  <option value="pending">{t("pending")}</option>
+                  <option value="generating">{t("generating")}</option>
+                  <option value="completed">{t("completed")}</option>
+                  <option value="failed">{t("failed")}</option>
                 </select>
               </div>
 
@@ -1332,7 +1350,7 @@ export default function ReportsPage() {
                 className="w-full bg-[#5DEE92] text-black py-3 rounded-lg font-medium
           hover:bg-green-500 transition cursor-pointer"
               >
-                Apply Filters
+                {t("apply_filters")}
               </button>
             </div>
           </div>

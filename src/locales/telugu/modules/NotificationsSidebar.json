@@ -1,9 +1,13 @@
 {
-  "inbox": "Inbox",
-  "mark_all_read": "Mark all read",
-  "all_caught_up": "All caught up!",
-  "check_back_later_for_updates": "Check back later for updates.",
-  "notifications": "Notifications",
-  "mark_as_read": "Mark as read",
+  "inbox": "ఇన్‌బాక్స్",
+  "you_have": "మీకు ఉన్నాయి",
+  "unread_updates": "చదవని నవీకరణలు",
+  "all": "అన్నీ",
+  "unread": "చదవని",
+  "mark_all_read": "అన్నిటిని చదివినట్లుగా గుర్తించండి",
+  "all_caught_up": "అన్ని నవీకరణలు పూర్తయ్యాయి!",
+  "check_back_later_for_updates": "నవీకరణల కోసం తర్వాత మళ్లీ చూడండి.",
+  "notifications": "నోటిఫికేషన్లు",
+  "mark_as_read": "చదివినట్లుగా గుర్తించండి",
   "delete": "తొలగించండి"
 }
