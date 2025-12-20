@@ -21,8 +21,6 @@ import {
 } from "lucide-react";
 import { useToast } from "../ui/ToastProvider";
 import { useTranslation } from "react-i18next";
-import { useToast } from "../ui/ToastProvider";
-import { useTranslation } from "react-i18next";
 import { addTranslationNamespace } from "../../i18n/config";
 import {
   uploadLogo,
