@@ -58,9 +58,8 @@ function mockActionItems(count = 200) {
     ).toISOString();
     return {
       id: `AIT-${1000 + i}`,
-      title: `Action item ${i + 1} — Improve data flow in ${
-        deps[i % deps.length]
-      }`,
+      title: `Action item ${i + 1} — Improve data flow in ${deps[i % deps.length]
+        }`,
       assignedTo: i % 3 === 0 ? "team_alpha" : `user_${i % 6}`,
       assignedToName: i % 3 === 0 ? "Team Alpha" : `User ${i % 6}`,
       department: deps[i % deps.length],
@@ -190,13 +189,13 @@ export default function ActionDashboard({
   const [searchDebounced, setSearchDebounced] = useState("");
 
   useEffect(() => {
-    addTranslationNamespace("en" , "pages" , "ActionItem");
-    addTranslationNamespace("hindi" , "pages" , "ActionItem");
-    addTranslationNamespace("sanskrit" , "pages" , "ActionItem");
-    addTranslationNamespace("telugu" , "pages" , "ActionItem");
-  } , []);
+    addTranslationNamespace("en", "pages", "ActionItem");
+    addTranslationNamespace("hindi", "pages", "ActionItem");
+    addTranslationNamespace("sanskrit", "pages", "ActionItem");
+    addTranslationNamespace("telugu", "pages", "ActionItem");
+  }, []);
 
-  const { t } = useTranslation("pages" , {keyPrefix:"ActionItem"})
+  const { t } = useTranslation("pages", { keyPrefix: "ActionItem" })
 
   function RechartsHeatmap({ heatmapMatrix, onCellClick }) {
     // const aggregated = useMemo(() => {
@@ -211,7 +210,7 @@ export default function ActionDashboard({
     //   items.forEach((it) => {
     //     const col = Math.max(1, Math.min(5, it.likelihood)) - 1;
     //     const row = 5 - Math.max(1, Math.min(5, it.impact)); // invert Y so 5 is top
-  
+
     //     grid[row][col].count += 1;
     //     grid[row][col].sumLikelihood += it.likelihood;
     //     grid[row][col].sumImpact += it.impact;
@@ -219,7 +218,7 @@ export default function ActionDashboard({
     //   });
     //   return grid;
     // }, [items]);
-  
+
     const aggregated = useMemo(() => {
       // Backend matrix is [likelihood][impact]
       // But your UI expects matrix[row][col] where row=impact, col=likelihood
@@ -227,7 +226,7 @@ export default function ActionDashboard({
       const transposed = Array(5)
         .fill(0)
         .map(() => Array(5).fill(0));
-  
+
       heatmapMatrix.forEach((likelihoodRow, lIdx) => {
         likelihoodRow.forEach((count, iIdx) => {
           const uiRow = 5 - (iIdx + 1); // invert impact
@@ -235,10 +234,10 @@ export default function ActionDashboard({
           transposed[uiRow][uiCol] = { count };
         });
       });
-  
+
       return transposed;
     }, [heatmapMatrix]);
-  
+
     const maxCount = useMemo(() => {
       let m = 1;
       aggregated.forEach((row) =>
@@ -246,13 +245,13 @@ export default function ActionDashboard({
       );
       return m;
     }, [aggregated]);
-  
+
     // tooltip state
     const [tooltip, setTooltip] = useState(null);
-  
+
     // Hoisted onLeave handler
     const onLeave = () => setTooltip(null);
-  
+
     // Customized renderer uses chart width/height to compute cell positions
     const CustomizedGrid = (props) => {
       const { width, height } = props;
@@ -266,12 +265,12 @@ export default function ActionDashboard({
       const cellW = gridWidth / cols;
       const cellH = gridHeight / rows;
       const pad = 8;
-  
+
       const onHover = (evt, rIdx, cIdx, cell) => {
         // compute true axis values
         const trueLikelihood = cIdx + 1; // left -> right
         const trueImpact = 5 - rIdx; // bottom -> top
-  
+
         const rect = evt.currentTarget.getBoundingClientRect();
         setTooltip({
           x: rect.left + rect.width / 2,
@@ -279,19 +278,19 @@ export default function ActionDashboard({
           likelihood: trueLikelihood,
           impact: trueImpact,
           count: cell.count,
-  
+
           // Backend matrix DOES NOT provide sums → replace with null or "-"
           sumLikelihood: null,
           sumImpact: null,
-  
+
           // Add fallback values
           avgLikelihood: trueLikelihood,
           avgImpact: trueImpact,
-  
+
           items: cell.items,
         });
       };
-  
+
       const handleKeyDown = (e, rIdx, cIdx, cell) => {
         if (e.key === "Enter") {
           const trueLikelihood = cIdx + 1;
@@ -303,7 +302,7 @@ export default function ActionDashboard({
           });
         }
       };
-  
+
       return (
         <g
           onMouseLeave={onLeave}
@@ -321,7 +320,7 @@ export default function ActionDashboard({
               {i}
             </text>
           ))}
-  
+
           {/* Impact axis (Y-axis left), bottom → top */}
           {[1, 2, 3, 4, 5].map((i) => (
             <text
@@ -335,7 +334,7 @@ export default function ActionDashboard({
               {i}
             </text>
           ))}
-  
+
           {/* Cells */}
           {aggregated.map((row, rIdx) =>
             row.map((cell, cIdx) => {
@@ -344,21 +343,20 @@ export default function ActionDashboard({
               const w = cellW - pad;
               const h = cellH - pad;
               const norm = maxCount <= 1 ? 1 : Math.min(1, cell.count / maxCount);
-  
+
               // true axis mapping
               const trueLikelihood = cIdx + 1; // left → right
               const trueImpact = 5 - rIdx; // bottom → top
-  
+
               // color based on true coords
               const color = chooseHeatColor(trueLikelihood, trueImpact);
               const scale = 0.9 + 0.1 * norm;
-  
+
               return (
                 <g
                   key={`cell-${rIdx}-${cIdx}`}
-                  transform={`translate(${x + (w * (1 - scale)) / 2}, ${
-                    y + (h * (1 - scale)) / 2
-                  }) scale(${scale})`}
+                  transform={`translate(${x + (w * (1 - scale)) / 2}, ${y + (h * (1 - scale)) / 2
+                    }) scale(${scale})`}
                 >
                   <rect
                     x={0}
@@ -402,7 +400,7 @@ export default function ActionDashboard({
         </g>
       );
     };
-  
+
     return (
       <motion.div
         initial={{ opacity: 0, y: 6 }}
@@ -415,7 +413,7 @@ export default function ActionDashboard({
         <p className="text-xs text-gray-500 dark:text-gray-400">
           {t("click_a_cell")}
         </p>
-  
+
         <div className="mt-4" style={{ height: 320 }} onMouseLeave={onLeave}>
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart
@@ -428,7 +426,7 @@ export default function ActionDashboard({
               <Customized component={<CustomizedGrid />} />
             </ComposedChart>
           </ResponsiveContainer>
-  
+
           {/* Tooltip DOM */}
           {tooltip && (
             <div
@@ -458,15 +456,15 @@ export default function ActionDashboard({
       </motion.div>
     );
   }
-  
+
   function RiskDistribution({ backendData }) {
     const counts = backendData;
     const total = Object.values(counts).reduce((a, b) => a + b, 0) || 1;
-  
+
     return (
       <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-4 shadow">
         <h4 className="font-semibold text-gray-900 dark:text-white">
-          {t("risk_distribution")}
+          Risk Category
         </h4>
         <div className="mt-3 space-y-3">
           {Object.entries(counts).map(([k, v]) => {
@@ -492,7 +490,7 @@ export default function ActionDashboard({
       </div>
     );
   }
-  
+
   // ---------- Table row ----------
   function TaskRow({ item, onOpen, onEdit }) {
     const riskColor = chooseHeatColor(item.impact, item.likelihood);
@@ -535,12 +533,14 @@ export default function ActionDashboard({
             </button>
             <button
               title="Delete"
+              onClick={() => onEdit && onEdit(item, 'delete')}
               className={` hover:text-red-500 cursor-pointer`}
             >
               <Trash2 className="w-4 h-4" />
             </button>
             <button
               title="Archive"
+              onClick={() => onEdit && onEdit(item, 'archive')}
               className={` hover:text-gray-500 cursor-pointer`}
             >
               <Archive className="w-4 h-4" />
@@ -618,7 +618,21 @@ export default function ActionDashboard({
     setViewModalOpen(true);
   }
 
-  function handleEdit(item) {
+  function handleEdit(item, action = 'edit') {
+    if (action === 'delete') {
+      if (confirm(`Are you sure you want to delete "${item.title}"?`)) {
+        // Mock delete
+        setBackendItems(prev => prev.filter(i => i.id !== item.id));
+      }
+      return;
+    }
+    if (action === 'archive') {
+      if (confirm(`Are you sure you want to archive "${item.title}"?`)) {
+        // Mock archive
+        setBackendItems(prev => prev.filter(i => i.id !== item.id));
+      }
+      return;
+    }
     setSelectedItem(item);
     setEditModalOpen(true);
   }
@@ -1136,8 +1150,8 @@ export default function ActionDashboard({
               ) : null}
             </div> */}
 
-            <RechartsHeatmap 
-              heatmapMatrix={heatmapMatrix} 
+            <RechartsHeatmap
+              heatmapMatrix={heatmapMatrix}
               onCellClick={({ likelihood, impact }) => {
                 // Calculate risk score and get category
                 const score = impact * likelihood;

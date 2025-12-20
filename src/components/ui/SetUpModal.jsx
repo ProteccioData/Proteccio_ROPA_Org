@@ -149,7 +149,7 @@ export const BulkImportModal = ({ isOpen, onClose, title, onFileUpload, accepted
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     const files = e.dataTransfer.files;
     if (files && files[0]) {
       handleFileSelection(files[0]);
@@ -160,7 +160,7 @@ export const BulkImportModal = ({ isOpen, onClose, title, onFileUpload, accepted
     // Validate file type
     const fileExtension = file.name.split('.').pop().toLowerCase();
     const allowedExtensions = acceptedFormats.map(format => format.replace('.', ''));
-    
+
     if (!allowedExtensions.includes(fileExtension)) {
       alert(`Please upload a file with one of these formats: ${acceptedFormats.join(', ')}`);
       return;
@@ -173,7 +173,7 @@ export const BulkImportModal = ({ isOpen, onClose, title, onFileUpload, accepted
     if (!selectedFile) return;
 
     setUploadStatus('uploading');
-    
+
     // Simulate upload progress
     const interval = setInterval(() => {
       setUploadProgress(prev => {
@@ -193,7 +193,7 @@ export const BulkImportModal = ({ isOpen, onClose, title, onFileUpload, accepted
     }, 200);
 
     // In real implementation, you would upload to your backend
-    // await onFileUpload(selectedFile);
+    await onFileUpload(selectedFile);
   };
 
   const downloadTemplate = () => {
@@ -230,11 +230,10 @@ export const BulkImportModal = ({ isOpen, onClose, title, onFileUpload, accepted
 
         {/* Upload Section */}
         <div
-          className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-            dragActive 
-              ? 'border-[#5DEE92] bg-green-50 dark:bg-green-900/20' 
+          className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${dragActive
+              ? 'border-[#5DEE92] bg-green-50 dark:bg-green-900/20'
               : 'border-gray-300 dark:border-gray-600 hover:border-[#5DEE92]'
-          }`}
+            }`}
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
           onDragOver={handleDrag}
@@ -247,7 +246,7 @@ export const BulkImportModal = ({ isOpen, onClose, title, onFileUpload, accepted
             className="hidden"
             id="bulk-upload"
           />
-          
+
           {!selectedFile ? (
             <>
               <Upload size={48} className="mx-auto text-gray-400 mb-4" />
@@ -274,16 +273,16 @@ export const BulkImportModal = ({ isOpen, onClose, title, onFileUpload, accepted
                   {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
                 </p>
               </div>
-              
+
               {uploadStatus === 'uploading' && (
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                  <div 
+                  <div
                     className="bg-[#5DEE92] h-2 rounded-full transition-all duration-300"
                     style={{ width: `${uploadProgress}%` }}
                   ></div>
                 </div>
               )}
-              
+
               {uploadStatus === 'success' && (
                 <div className="text-green-600 font-semibold">
                   ✓ Upload successful!
@@ -315,7 +314,7 @@ export const BulkImportModal = ({ isOpen, onClose, title, onFileUpload, accepted
         >
           Cancel
         </button>
-        
+
         <div className="flex gap-3">
           {selectedFile && (
             <button
@@ -325,17 +324,16 @@ export const BulkImportModal = ({ isOpen, onClose, title, onFileUpload, accepted
               Change File
             </button>
           )}
-          
+
           <motion.button
             whileHover={{ scale: selectedFile ? 1.05 : 1 }}
             whileTap={{ scale: selectedFile ? 0.95 : 1 }}
             onClick={handleUpload}
             disabled={!selectedFile || uploadStatus === 'uploading'}
-            className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-              selectedFile && uploadStatus !== 'uploading'
+            className={`px-6 py-2 rounded-lg font-medium transition-colors ${selectedFile && uploadStatus !== 'uploading'
                 ? 'bg-[#5DEE92] text-black hover:bg-green-500'
                 : 'bg-gray-300 dark:bg-gray-600 text-gray-500 cursor-not-allowed'
-            }`}
+              }`}
           >
             {uploadStatus === 'uploading' ? 'Uploading...' : 'Upload File'}
           </motion.button>

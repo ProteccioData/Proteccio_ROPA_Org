@@ -84,6 +84,13 @@ export default function EditRoPAModal({
       delete payload.linked_assessment_id;
       delete payload.flow_stage; // locked per your instruction
 
+      // Clean payload: convert empty strings to null for ENUMs/Numbers
+      Object.keys(payload).forEach(key => {
+        if (payload[key] === "") {
+          payload[key] = null;
+        }
+      });
+
       // Send update
       const res = await updateRopa(ropa.id, payload);
       dirtyRef.current = false;
@@ -180,11 +187,10 @@ export default function EditRoPAModal({
               <button
                 key={t.key}
                 onClick={() => setActiveTab(t.key)}
-                className={`px-3 py-2 rounded-lg ${
-                  activeTab === t.key
+                className={`px-3 py-2 rounded-lg ${activeTab === t.key
                     ? "bg-[#5DEE92] text-black"
                     : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
-                } border border-[#828282]`}
+                  } border border-[#828282]`}
               >
                 {t.label}
               </button>

@@ -12,6 +12,9 @@ import {
   apiDisable2FA,
   apiRegenerateBackupCodes,
   apiVerify2FALogin,
+  apiEndSession,
+  apiEndAllSessions,
+  apiSignOutFromAllDevices,
 } from "../../services/ProfileService";
 import { useToast } from "../ui/ToastProvider";
 import TwoFactorDisable from "../modules/TwoFactorDisable";
@@ -28,7 +31,7 @@ export default function ProfileSettings({
   const containerRef = useRef(null);
 
   // profile states
-  const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [profileError, setProfileError] = useState(null);
 
@@ -148,16 +151,40 @@ export default function ProfileSettings({
   //   return () => node.classList.remove("keyboard-nav-disabled");
   // }, [keyboardNav]);
 
-  // handlers for mock sessions (still UI-only)
-  function handleEndSession(sessionId) {
-    setSessions((s) => s.filter((x) => x.id !== sessionId));
+  // Session Handlers
+  async function handleEndSession(sessionId) {
+    try {
+      await apiEndSession(sessionId);
+      setSessions((s) => s.filter((x) => x.id !== sessionId));
+      addToast("success", t("session_ended"));
+    } catch (err) {
+      console.error("Failed to end session", err);
+      addToast("error", t("failed_end_session"));
+    }
   }
-  function handleEndAllSessions() {
-    setSessions([]);
+
+  async function handleEndAllSessions() {
+    if (!confirm(t("confirm_end_all"))) return;
+    try {
+      await apiEndAllSessions();
+      setSessions([]); // Clear all in UI
+      addToast("success", t("all_sessions_ended"));
+    } catch (err) {
+      console.error("Failed to end all sessions", err);
+      addToast("error", t("failed_end_all"));
+    }
   }
-  function handleSignOutAll() {
-    alert(translations[lang].signed_out_all);
-    handleEndAllSessions();
+
+  async function handleSignOutAll() {
+    if (!confirm(t("confirm_sign_out_all"))) return;
+    try {
+      await apiSignOutFromAllDevices();
+      // Redirect to login or logout
+      window.location.href = "/login";
+    } catch (err) {
+      console.error("Failed to sign out all", err);
+      addToast("error", t("failed_sign_out_all"));
+    }
   }
 
   // LOCK account remains UI-only until backend exists
@@ -172,7 +199,7 @@ export default function ProfileSettings({
     }));
   }
 
-  // Open edit modal and pass current user data into modal when saved
+  // Open edit modal and pass current profile data into modal when saved
   async function handleSaveProfile(payload) {
     setBusy(true);
     try {
@@ -260,23 +287,23 @@ export default function ProfileSettings({
               </div>
             ) : profileError ? (
               <div className="text-red-600">{profileError}</div>
-            ) : user ? (
+            ) : profile ? (
               <>
                 <div className="flex items-center gap-3">
                   <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#5DEE92] to-[#38b36c] flex items-center justify-center text-black text-xl font-semibold">
-                    {user.avatarInitial}
+                    {profile.avatarInitial}
                   </div>
                   <div>
                     <p className="font-semibold text-gray-900 dark:text-white">
-                      {user.firstName} {user.lastName}
+                      {profile.firstName} {profile.lastName}
                     </p>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {user.jobTitle} • {user.department}
+                      {profile.jobTitle} • {profile.department}
                     </p>
                     <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                       {t("role")}:{" "}
                       <span className="font-medium text-gray-700 dark:text-gray-200">
-                        {user.role}
+                        {profile.role}
                       </span>
                     </p>
                   </div>
@@ -288,20 +315,19 @@ export default function ProfileSettings({
                   </small>
                   <div className="flex items-center gap-2">
                     <span
-                      className={`px-2 py-1 rounded-full text-xs ${
-                        user.status === "Active"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-yellow-100 text-yellow-700"
-                      }`}
+                      className={`px-2 py-1 rounded-full text-xs ${profile.status === "Active"
+                        ? "bg-green-100 text-green-700"
+                        : "bg-yellow-100 text-yellow-700"
+                        }`}
                     >
-                      {user.status}
+                      {profile.status}
                     </span>
                     {/* <div className="ml-auto flex gap-2">
                       <button
                         onClick={handleLockAccount}
                         className="text-sm px-3 py-1 rounded-md border hover:opacity-90 transition bg-gray-50 dark:bg-gray-700/60 dark:text-white "
                       >
-                        {user.status === "Locked"
+                        {profile.status === "Locked"
                           ? t('unlock')
                           : t('lock_account')}
                       </button>
@@ -313,7 +339,7 @@ export default function ProfileSettings({
                       {t("last_login")}
                     </p>
                     <p className="text-sm text-gray-700 dark:text-gray-200">
-                      {formatDate(user.lastLogin.time)} • {user.lastLogin.ip}
+                      {formatDate(profile.lastLogin.time)} • {profile.lastLogin.ip}
                     </p>
                   </div>
                 </div>
@@ -341,7 +367,7 @@ export default function ProfileSettings({
                   </div>
                 </div>
 
-                {user.role === "org_admin" && (
+                {profile.role === "org_admin" && (
                   <aside className="col-span-1 mt-8 rounded-2xl  ">
                     <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
                       {t("active_sessions") || "Active Users Sessions"}
@@ -431,16 +457,16 @@ export default function ProfileSettings({
             </div>
 
             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <InfoRow label={t("first_name")} value={user?.firstName || "-"} />
-              <InfoRow label={t("last_name")} value={user?.lastName || "-"} />
-              {/* <InfoRow label={t('job_title')} value={user?.jobTitle || "-"} /> */}
+              <InfoRow label={t("first_name")} value={profile?.firstName || "-"} />
+              <InfoRow label={t("last_name")} value={profile?.lastName || "-"} />
+              {/* <InfoRow label={t('job_title')} value={profile?.jobTitle || "-"} /> */}
               <InfoRow
                 label={t("department")}
-                value={user?.department || "-"}
+                value={profile?.department || "-"}
               />
-              <InfoRow label={t("timezone")} value={user?.timezone || "-"} />
-              <InfoRow label={t("email")} value={user?.email || "-"} />
-              <InfoRow label={t("role")} value={user?.role || "-"} />
+              <InfoRow label={t("timezone")} value={profile?.timezone || "-"} />
+              <InfoRow label={t("email")} value={profile?.email || "-"} />
+              <InfoRow label={t("role")} value={profile?.role || "-"} />
               {/* <InfoRow label={t('access_level')} value={t('access_desc')} /> */}
             </div>
 
@@ -507,7 +533,7 @@ export default function ProfileSettings({
                     <Select
                       label=""
                       value={"15m"}
-                      onChange={() => {}}
+                      onChange={() => { }}
                       options={[
                         { value: "15m", label: "15 min" },
                         { value: "30m", label: "30 min" },
@@ -529,7 +555,7 @@ export default function ProfileSettings({
                     </div>
                     <div>
                       <button
-                        onClick={() => {}}
+                        onClick={() => { }}
                         className="px-3 py-2 rounded-md border dark:text-white"
                       >
                         {t("view_all")}
@@ -571,7 +597,7 @@ export default function ProfileSettings({
                       </button>
                       <button
                         onClick={handleSignOutAll}
-                        className="px-3 py-2 bg-[#5DEE92] text-black rounded-md"
+                        className="px-3 py-2 bg-red-500 text-white rounded-md"
                       >
                         {t("sign_out_all")}
                       </button>
@@ -617,25 +643,26 @@ export default function ProfileSettings({
                 {t("download_data")}
               </button>
             </div>
-          </section>
-        </motion.main>
+          </section >
+        </motion.main >
 
         {/* Edit Profile Modal */}
-        <AnimatePresence>
-          {editOpen && user && (
+        < AnimatePresence >
+          {editOpen && profile && (
             <Modal onClose={() => setEditOpen(false)}>
               <EditProfileForm
-                initial={mapUIToBackendProfile(user)}
+                initial={mapUIToBackendProfile(profile)}
                 onCancel={() => setEditOpen(false)}
                 onSave={handleSaveProfile}
                 busy={busy}
               />
             </Modal>
-          )}
-        </AnimatePresence>
+          )
+          }
+        </AnimatePresence >
 
         {/* Change Password Modal */}
-        <AnimatePresence>
+        < AnimatePresence >
           {showChangePassword && (
             <Modal onClose={() => setShowChangePassword(false)}>
               <ChangePasswordForm
@@ -645,31 +672,35 @@ export default function ProfileSettings({
               />
             </Modal>
           )}
-        </AnimatePresence>
-      </div>
+        </AnimatePresence >
+      </div >
       {/* 2FA Setup Modal */}
-      {showSetup2FA && (
-        <TwoFactorSetup
-          currentEmail={user.email}
-          onSetupComplete={() => {
-            setTwoFAEnabled(true);
-            setShowSetup2FA(false);
-          }}
-          onCancel={() => setShowSetup2FA(false)}
-        />
-      )}
+      {
+        showSetup2FA && (
+          <TwoFactorSetup
+            currentEmail={profile.email}
+            onSetupComplete={() => {
+              setTwoFAEnabled(true);
+              setShowSetup2FA(false);
+            }}
+            onCancel={() => setShowSetup2FA(false)}
+          />
+        )
+      }
 
       {/* 2FA Disable Modal */}
-      {showDisable2FA && (
-        <TwoFactorDisable
-          onDisableComplete={() => {
-            setTwoFAEnabled(false);
-            setShowDisable2FA(false);
-          }}
-          onCancel={() => setShowDisable2FA(false)}
-        />
-      )}
-    </div>
+      {
+        showDisable2FA && (
+          <TwoFactorDisable
+            onDisableComplete={() => {
+              setTwoFAEnabled(false);
+              setShowDisable2FA(false);
+            }}
+            onCancel={() => setShowDisable2FA(false)}
+          />
+        )
+      }
+    </div >
   );
 }
 
@@ -718,14 +749,12 @@ function Toggle({ label, checked, setChecked }) {
       <button
         onClick={() => setChecked(!checked)}
         aria-pressed={checked}
-        className={`relative inline-flex items-center h-6 w-10 rounded-full transition-colors focus:outline-none ${
-          checked ? "bg-[#5DEE92]" : "bg-gray-300 dark:bg-gray-600"
-        }`}
+        className={`relative inline-flex items-center h-6 w-10 rounded-full transition-colors focus:outline-none ${checked ? "bg-[#5DEE92]" : "bg-gray-300 dark:bg-gray-600"
+          }`}
       >
         <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-            checked ? "translate-x-4" : "translate-x-1"
-          }`}
+          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${checked ? "translate-x-4" : "translate-x-1"
+            }`}
         />
       </button>
     </label>
@@ -782,9 +811,9 @@ function EditProfileForm({ initial = {}, onCancel, onSave, busy }) {
   const { t } = useTranslation("pages", { keyPrefix: "ProfileSettings" });
   const [full_name, setFullName] = useState(initial.full_name || "");
   const [department, setDepartment] = useState(initial.department || "");
-  const [userName, setUserName] = useState(initial.userName || "");
-  const [userDept, setUserDept] = useState(initial.userDept || "");
-  const [userRole, setUserRole] = useState(initial.userRole || "");
+  const [profileName, setUserName] = useState(initial.profileName || "");
+  const [profileDept, setUserDept] = useState(initial.profileDept || "");
+  const [profileRole, setUserRole] = useState(initial.profileRole || "");
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -793,7 +822,7 @@ function EditProfileForm({ initial = {}, onCancel, onSave, busy }) {
       alert("Full name must be at least 2 characters");
       return;
     }
-    await onSave({ full_name, department, userName, userDept, userRole });
+    await onSave({ full_name, department, profileName, profileDept, profileRole });
   }
 
   return (
@@ -815,19 +844,19 @@ function EditProfileForm({ initial = {}, onCancel, onSave, busy }) {
           className="w-full rounded-md border px-3 py-2 bg-white dark:bg-gray-800"
         />
         <input
-          value={userName}
+          value={profileName}
           onChange={(e) => setUserName(e.target.value)}
           placeholder="Username"
           className="w-full rounded-md border px-3 py-2 bg-white dark:bg-gray-800"
         />
         <input
-          value={userDept}
+          value={profileDept}
           onChange={(e) => setUserDept(e.target.value)}
           placeholder="User Dept"
           className="w-full rounded-md border px-3 py-2 bg-white dark:bg-gray-800"
         />
         <input
-          value={userRole}
+          value={profileRole}
           onChange={(e) => setUserRole(e.target.value)}
           placeholder="Role"
           className="w-full rounded-md border px-3 py-2 bg-white dark:bg-gray-800"
@@ -941,24 +970,24 @@ function formatDate(iso) {
 }
 
 function mapBackendProfileToUI(payload = {}) {
-  // Expected backend shape: payload.user-like or payload itself (we handled service)
+  // Expected backend shape: payload.profile-like or payload itself (we handled service)
   const p = payload || {};
   const full = p.full_name || `${p.firstName || ""} ${p.lastName || ""}`.trim();
   const [firstName = "", ...rest] = full.split(" ");
   const lastName = rest.join(" ") || p.lastName || "";
   return {
-    id: p.id || p.userId || null,
+    id: p.id || p.profileId || null,
     full_name: full,
     firstName,
     lastName,
-    userName: p.userName || "",
-    userDept: p.userDept || p.department || "",
-    userRole: p.userRole || p.role || "",
-    department: p.department || p.userDept || "",
-    jobTitle: p.jobTitle || p.userRole || "",
+    profileName: p.profileName || "",
+    profileDept: p.profileDept || p.department || "",
+    profileRole: p.profileRole || p.role || "",
+    department: p.department || p.profileDept || "",
+    jobTitle: p.jobTitle || p.profileRole || "",
     timezone: p.timezone || "Asia/Kolkata",
     email: p.email || "",
-    role: p.userRole || p.role || "",
+    role: p.profileRole || p.role || "",
     status: p.status || "Active",
     avatarInitial:
       (full && full.charAt(0).toUpperCase()) ||
@@ -972,13 +1001,13 @@ function mapBackendProfileToUI(payload = {}) {
 }
 
 function mapUIToBackendProfile(u = {}) {
-  // Convert UI user object back to payload for editing
+  // Convert UI profile object back to payload for editing
   return {
     full_name: u.full_name || `${u.firstName || ""} ${u.lastName || ""}`.trim(),
     department: u.department,
-    userName: u.userName,
-    userDept: u.userDept,
-    userRole: u.userRole,
+    profileName: u.profileName,
+    profileDept: u.profileDept,
+    profileRole: u.profileRole,
   };
 }
 

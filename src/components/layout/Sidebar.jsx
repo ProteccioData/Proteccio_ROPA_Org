@@ -25,7 +25,7 @@ export default function Sidebar({ collapsed, setCollapsed }) {
   const { theme, toggleTheme } = useTheme();
   const { user, permissions } = useAuth(); // ⬅ logged-in user
   const { initializing } = useAuth();
-  const {t} = useTranslation("layout" , {keyPrefix: "Sidebar"})
+  const { t } = useTranslation("layout", { keyPrefix: "Sidebar" })
 
   useEffect(() => {
     addTranslationNamespace("en", "layout", "Sidebar");
@@ -94,12 +94,12 @@ export default function Sidebar({ collapsed, setCollapsed }) {
 
     ...(isOrgAdmin || isSuperAdmin
       ? [
-          {
-            name: t("user_setup"),
-            icon: User2,
-            path: "/user-setup",
-          },
-        ]
+        {
+          name: t("user_setup"),
+          icon: User2,
+          path: "/user-setup",
+        },
+      ]
       : []),
 
     { name: t("action_items"), icon: ListCheck, path: "/action-item" },
@@ -112,9 +112,8 @@ export default function Sidebar({ collapsed, setCollapsed }) {
     >
       {/* Top section */}
       <div
-        className={`p-4 flex justify-between ${
-          collapsed ? "items-center" : ""
-        } gap-4`}
+        className={`p-4 flex justify-between ${collapsed ? "items-center" : ""
+          } gap-4`}
       >
         <button
           onClick={toggleTheme}
@@ -141,11 +140,10 @@ export default function Sidebar({ collapsed, setCollapsed }) {
           className={`w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 
                 hover:bg-gray-200 dark:hover:bg-gray-600 
                 flex items-center justify-center transition-all duration-200 border border-[#828282] dark:border-gray-400 hover:cursor-pointer
-                ${
-                  collapsed
-                    ? "absolute -right-4 bg-white dark:bg-gray-800 shadow-md"
-                    : ""
-                }`}
+                ${collapsed
+              ? "absolute -right-4 bg-white dark:bg-gray-800 shadow-md"
+              : ""
+            }`}
         >
           {collapsed ? (
             <ChevronRight className="w-4 h-4 text-gray-900 dark:text-gray-300" />
@@ -157,11 +155,10 @@ export default function Sidebar({ collapsed, setCollapsed }) {
 
       {/* Nav */}
       <nav
-        className={`flex-1 overflow-y-auto ${
-          collapsed
+        className={`flex-1 overflow-y-auto ${collapsed
             ? "px-4 flex flex-col items-center"
             : "px-4 flex flex-col gap-2"
-        } space-y-2`}
+          } space-y-2`}
       >
         {menuItems
           .filter((item) => {
@@ -173,11 +170,10 @@ export default function Sidebar({ collapsed, setCollapsed }) {
               {({ isActive }) => (
                 <div
                   className={`flex items-center gap-3 w-full rounded-md px-3 py-2 text-sm transition
-                  ${
-                    isActive
+                  ${isActive
                       ? "bg-[#5DEE92] text-black"
                       : "hover:bg-gray-200 dark:hover:bg-gray-700"
-                  }`}
+                    }`}
                 >
                   <Icon size={`${collapsed ? 24 : 20}`} />
                   {!collapsed && <span className="font-medium">{name}</span>}
@@ -189,21 +185,19 @@ export default function Sidebar({ collapsed, setCollapsed }) {
 
       {/* Bottom section */}
       <div
-        className={`py-4 flex gap-2 ${
-          collapsed
+        className={`py-4 flex gap-2 ${collapsed
             ? "flex-col justify-center items-center"
             : "justify-between items-center gap-2 px-4"
-        }`}
+          }`}
       >
-        { isOrgAdmin && (<NavLink
+        {(isOrgAdmin || isSuperAdmin) && (<NavLink
           to="/settings"
           className={({ isActive }) =>
             `flex items-center justify-center rounded-full w-10 h-10 text-sm transition gap-2
-              ${
-                isActive
-                  ? "bg-[#5DEE92] text-black"
-                  : "hover:bg-gray-200 hover:text-black dark:hover:bg-gray-700 dark:hover:text-gray-200"
-              }`
+              ${isActive
+              ? "bg-[#5DEE92] text-black"
+              : "hover:bg-gray-200 hover:text-black dark:hover:bg-gray-700 dark:hover:text-gray-200"
+            }`
           }
         >
           <Settings size={20} />

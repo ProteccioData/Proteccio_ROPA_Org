@@ -61,3 +61,10 @@ export const deleteAssessmentDocument = (assessmentId, documentId) => {
 export const deleteAssessment = (id) => {
   return axiosInstance.delete(`/portal/assessments/${id}`);
 };
+
+export const archiveAssessment = (id) => {
+  return axiosInstance.post(`/portal/assessments/${id}/archive`);
+};
+export const unarchiveAssessment = (id) => {
+  return axiosInstance.post(`/portal/assessments/${id}/unarchive`);
+};

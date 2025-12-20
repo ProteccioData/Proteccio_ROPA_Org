@@ -15,7 +15,7 @@ import { Tabs } from "../ui/tabs.jsx";
 import LIAssessmentModal from "../modules/AddLIA";
 import DPIAModal from "../modules/AddDPIA";
 import TIAModal from "../modules/AddTIA";
-import { getAssessmentStats } from "../../services/AssessmentService";
+import { getAssessmentStats, archiveAssessment } from "../../services/AssessmentService";
 import CreateAssessmentModal from "../modules/CreateAssessmentModel";
 import { useTranslation } from "react-i18next";
 import { addTranslationNamespace } from "../../i18n/config";
@@ -28,7 +28,7 @@ export default function Assessments() {
   const [createType, setCreateType] = useState(null);
   const [createdAssessment, setCreatedAssessment] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
-  const [ready , setReady] = useState(false);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -39,11 +39,11 @@ export default function Assessments() {
     ]).then(() => setReady(true));
   }, []);
 
-  
+
   const { t } = useTranslation("pages", { keyPrefix: "Assessments" });
-  
+
   const handleClose = () => setOpenModal(null);
-  
+
   useEffect(() => {
     const loadStats = async () => {
       try {
@@ -57,10 +57,10 @@ export default function Assessments() {
         setLoadingStats(false);
       }
     };
-    
+
     loadStats();
   }, []);
-  
+
   // Reusable Stat Card
   const StatCard = ({
     icon: Icon,
@@ -71,10 +71,10 @@ export default function Assessments() {
     onButtonClick,
   }) => (
     <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.4 }}
-    className="flex flex-col justify-between rounded-xl border border-[#828282] dark:border-gray-700 bg-white dark:bg-gray-900 p-5 shadow-sm"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="flex flex-col justify-between rounded-xl border border-[#828282] dark:border-gray-700 bg-white dark:bg-gray-900 p-5 shadow-sm"
     >
       <div className="flex items-start gap-3">
         <Icon className="h-16 w-16 text-gray-700 dark:text-gray-200" />
@@ -98,19 +98,19 @@ export default function Assessments() {
         <button
           onClick={onButtonClick}
           className="rounded-md bg-[#5DEE92] px-3 py-1.5 text-sm font-medium text-gray-900 hover:opacity-90 transition hover:cursor-pointer"
-          >
+        >
           {buttonText}
         </button>
       </div>
     </motion.div>
   );
-  
+
   const tabData = [
     { title: `${t("data_protection_impact_assessment")}`, value: "dpia" },
     { title: `${t("legitimate_interest_assessment")}`, value: "lia" },
     { title: `${t("transfer_impact_assessment")}`, value: "tia" },
   ];
-  
+
   if (!ready) return <div> Loading... </div>
 
   return (

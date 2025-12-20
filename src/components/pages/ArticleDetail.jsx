@@ -5,6 +5,7 @@ import {
   getArticleById,
   downloadArticleCover,
 } from "../../services/ArticleService";
+import { useToast } from "../ui/ToastProvider";
 
 // const mockArticles = [
 //   {
@@ -41,6 +42,7 @@ export default function ArticleDetail() {
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const { addToast } = useToast();
 
   useEffect(() => {
     async function loadArticle() {

@@ -10,7 +10,7 @@ export const CONFIG_TYPE_MAP = {
   data_element: "data_element",      // UI plural → backend singular
   data_deletion: "data_deletion",
   data_subject: "data_subject",      // UI plural → backend singular
-  data_transfer: "data_transfer",    
+  data_transfer: "data_transfer",
   department: "department",
   organization: "organization",
   purpose: "purpose",
@@ -60,6 +60,15 @@ export const updateConfig = (frontendType, id, data) => {
 export const deleteConfig = (frontendType, id) => {
   const type = CONFIG_TYPE_MAP[frontendType];
   return axiosInstance.delete(`/portal/setup/${type}/${id}`);
+};
+
+export const bulkImportConfig = (frontendType, file) => {
+  const type = CONFIG_TYPE_MAP[frontendType];
+  const formData = new FormData();
+  formData.append("file", file);
+  return axiosInstance.post(`/portal/setup/bulk-import/${type}`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
 };
 
 // ===============================
@@ -112,6 +121,25 @@ export const bulkImportAssets = (file) => {
   return axiosInstance.post(`/portal/setup/assets/bulk-import`, formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
+};
+
+export const uploadLogo = async (file) => {
+  const formData = new FormData();
+  formData.append("logo", file);
+  const res = await axiosInstance.post("/portal/organization-settings/logo", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data;
+};
+
+export const exportSettings = async () => {
+  const res = await axiosInstance.get("/portal/organization-settings/export");
+  return res.data;
+};
+
+export const importSettings = async (settingsData) => {
+  const res = await axiosInstance.post("/portal/organization-settings/import", { settings: settingsData });
+  return res.data;
 };
 
 // ===============================

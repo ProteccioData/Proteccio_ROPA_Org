@@ -1,4 +1,4 @@
-import axiosInstance from "../utils/axiosInstance"; 
+import axiosInstance from "../utils/axiosInstance";
 
 export const getAllRopas = async ({
   page = 1,
@@ -40,6 +40,14 @@ export const deleteRopa = async (id) => {
   return axiosInstance.delete(`/portal/ropas/${id}`);
 };
 
+export const archiveRopa = async (id) => {
+  return axiosInstance.post(`/portal/ropas/${id}/archive`);
+};
+
+export const unarchiveRopa = async (id) => {
+  return axiosInstance.post(`/portal/ropas/${id}/unarchive`);
+};
+
 
 export const moveRopaNext = async (id, next_review_date = null) => {
   return axiosInstance.post(`/portal/ropas/${id}/move-next`, { next_review_date });
@@ -58,7 +66,7 @@ export const getRopaGraphData = (params) => {
   return axiosInstance.get("/portal/ropas/graph", { params });
 }
 
-export const getRopaRiskHeatmap = () => 
+export const getRopaRiskHeatmap = () =>
   axiosInstance.get("/portal/ropas/risk-heatmap");
 
 

@@ -13,7 +13,7 @@ import {
 import { useEffect } from "react";
 import {
   getAssessments,
-  deleteAssessment,
+  archiveAssessment,
 } from "../../services/AssessmentService";
 import ViewAssessmentModal from "../modules/ViewAssessmentModal";
 import { useAssessmentView } from "../hooks/useAssessmentView";
@@ -24,11 +24,10 @@ import { addTranslationNamespace } from "../../i18n/config";
 
 const Badge = ({ text, color }) => (
   <span
-    className={`px-3 py-1 text-xs font-medium rounded-md ${
-      color === "green"
+    className={`px-3 py-1 text-xs font-medium rounded-md ${color === "green"
         ? "bg-green-100 text-green-700"
         : "bg-yellow-100 text-yellow-700"
-    }`}
+      }`}
   >
     {text}
   </span>
@@ -42,7 +41,7 @@ const TableRow = ({
   createdBy,
   date,
   onView,
-  onDelete,
+  onArchive,
 }) => (
   <motion.tr
     initial={{ opacity: 0, y: 10 }}
@@ -81,11 +80,10 @@ const TableRow = ({
         className="h-4 w-4 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300"
       />
       <SquarePen className="h-4 w-4 cursor-pointer hover:text-blue-500" />
-      <Trash2
-        onClick={() => onDelete(id)}
-        className="h-4 w-4 cursor-pointer hover:text-red-500"
+      <Archive
+        onClick={() => onArchive(id)}
+        className="h-4 w-4 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300"
       />
-      <Archive className="h-4 w-4 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300" />
     </td>
   </motion.tr>
 );
@@ -104,7 +102,7 @@ const formatDate = (date) => {
   });
 };
 
-const AssessmentTable = ({ title, data, onViewAssessment, onDelete }) => (
+const AssessmentTable = ({ title, data, onViewAssessment, onArchive }) => (
   <div className="rounded-xl border border-[#828282] dark:border-gray-700 bg-white dark:bg-gray-900 mt-4 shadow-sm">
     <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
       <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -162,7 +160,7 @@ const AssessmentTable = ({ title, data, onViewAssessment, onDelete }) => (
                 item.next_review_date ? formatDate(item.next_review_date) : "-"
               }
               onView={(id) => onViewAssessment(item.id)}
-              onDelete={(id) => onDelete(item.id)}
+              onArchive={(id) => onArchive(item.id)}
             />
           ))}
         </tbody>
@@ -183,7 +181,7 @@ export const Tabs = ({
   const [tabs, setTabs] = useState(propTabs);
   const [hovering, setHovering] = useState(false);
   const [records, setRecords] = useState([]);
-  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [confirmArchiveOpen, setConfirmArchiveOpen] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
 
@@ -214,32 +212,32 @@ export const Tabs = ({
     load();
   }, [reloadKey]);
 
-  const handleDeleteClick = (id) => {
+  const handleArchiveClick = (id) => {
     setSelectedId(id);
-    setConfirmDeleteOpen(true);
+    setConfirmArchiveOpen(true);
   };
 
-  const confirmDelete = async () => {
+  const confirmArchive = async () => {
     setProcessing(true);
     try {
-      await deleteAssessment(selectedId);
+      await archiveAssessment(selectedId);
 
-      addToast("success", "Assessment Deleted successfully.");
+      addToast("success", "Assessment Archived successfully.");
 
       // Update UI
       setRecords((prev) =>
-        prev.filter((item) => item.assessment_id !== selectedId)
+        prev.filter((item) => item.id !== selectedId)
       );
     } catch (error) {
       addToast({
         title: "Error",
-        description: "Failed to delete assessment.",
+        description: "Failed to archive assessment.",
         variant: "destructive",
       });
     }
 
     setProcessing(false);
-    setConfirmDeleteOpen(false);
+    setConfirmArchiveOpen(false);
   };
 
   // FIX 1 — this must be inside the Tabs component
@@ -265,15 +263,15 @@ export const Tabs = ({
         assessment={assessment}
       />
 
-      {/* DELETE CONFIRMATION */}
+      {/* ARCHIVE CONFIRMATION */}
       <ConfirmationModal
-        isOpen={confirmDeleteOpen}
-        onClose={() => setConfirmDeleteOpen(false)}
-        onConfirm={confirmDelete}
-        title="Delete Assessment"
-        message="Are you sure you want to delete this assessment? This action cannot be undone."
-        type="danger"
-        confirmText="Delete"
+        isOpen={confirmArchiveOpen}
+        onClose={() => setConfirmArchiveOpen(false)}
+        onConfirm={confirmArchive}
+        title="Archive Assessment"
+        message="Are you sure you want to archive this assessment? You can unarchive it later from the settings if needed."
+        type="warning"
+        confirmText="Archive"
         cancelText="Cancel"
         isLoading={processing}
       />
@@ -321,7 +319,7 @@ export const Tabs = ({
         onViewAssessment={onViewAssessment} // Pass it down
         key={active.value}
         className={cn("mt-10", contentClassName)}
-        onDelete={handleDeleteClick}
+        onArchive={handleArchiveClick}
       />
     </>
   );
@@ -334,7 +332,7 @@ export const FadeInDiv = ({
   active,
   records,
   onViewAssessment,
-  onDelete,
+  onArchive,
 }) => {
   const isActive = (tab) => tab.value === tabs[0].value;
 
@@ -360,8 +358,8 @@ export const FadeInDiv = ({
                 ? 1
                 : 1 - idx * 0.05
               : idx === 0
-              ? 1
-              : 0, // hide background cards until hover
+                ? 1
+                : 0, // hide background cards until hover
           }}
           animate={{
             y: isActive(tab) ? [0, 20, 0] : 0,
@@ -378,7 +376,7 @@ export const FadeInDiv = ({
               title={tab.title}
               data={filterByType(tab.value)}
               onViewAssessment={onViewAssessment}
-              onDelete={onDelete}
+              onArchive={onArchive}
             />
           </div>
         </motion.div>

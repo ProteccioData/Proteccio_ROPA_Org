@@ -80,13 +80,13 @@ const RoPA = ({ initialItems = null }) => {
   const [availableYears, setAvailableYears] = useState([]);
 
   useEffect(() => {
-    addTranslationNamespace("en" , "pages" , "RoPA");
-    addTranslationNamespace("hindi" , "pages" , "RoPA");
-    addTranslationNamespace("sanskrit" , "pages" , "RoPA");
-    addTranslationNamespace("telugu" , "pages" , "RoPA"); 
-  } , [])
+    addTranslationNamespace("en", "pages", "RoPA");
+    addTranslationNamespace("hindi", "pages", "RoPA");
+    addTranslationNamespace("sanskrit", "pages", "RoPA");
+    addTranslationNamespace("telugu", "pages", "RoPA");
+  }, [])
 
-  const { t } = useTranslation("pages" , {keyPrefix: "RoPA"})
+  const { t } = useTranslation("pages", { keyPrefix: "RoPA" })
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
@@ -403,9 +403,8 @@ const RoPA = ({ initialItems = null }) => {
               return (
                 <g
                   key={`cell-${rIdx}-${cIdx}`}
-                  transform={`translate(${x + (w * (1 - scale)) / 2}, ${
-                    y + (h * (1 - scale)) / 2
-                  }) scale(${scale})`}
+                  transform={`translate(${x + (w * (1 - scale)) / 2}, ${y + (h * (1 - scale)) / 2
+                    }) scale(${scale})`}
                 >
                   <rect
                     x={0}
@@ -510,18 +509,59 @@ const RoPA = ({ initialItems = null }) => {
   return (
     <div>
       <div className="min-h-screen  dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-500">
-        {/* Top Stats */}
+        {/* ROW 1 — Four Cards in a Single Row */}
+        <div className="grid grid-cols-4 gap-4 mb-6">
+          {[
+            {
+              title: `${t("infovoyage")}`,
+              value: cat("InfoVoyage"),
+              color: "bg-[#5de992] text-black",
+            },
+            {
+              title: `${t("checksync")}`,
+              value: cat("CheckSync"),
+              color: "bg-white dark:bg-gray-800",
+            },
+            {
+              title: `${t("beam")}`,
+              value: cat("Beam"),
+              color: "bg-white dark:bg-gray-800",
+            },
+            {
+              title: `${t("offdoff")}`,
+              value: cat("OffDoff"),
+              color: "bg-gray-200 dark:bg-gray-700",
+            },
+          ].map((item, i) => (
+            <motion.div
+              key={i}
+              custom={i + 1}
+              initial="hidden"
+              animate="visible"
+              variants={cardVariants}
+              whileHover={{
+                scale: 1.05,
+                boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
+              }}
+              className={`${item.color} rounded-xl p-4 shadow-lg flex flex-col gap-4 justify-center transition-all duration-300`}
+            >
+              <h2 className="text-xl font-medium">{item.title}</h2>
+              <div className="text-4xl font-bold">{item.value}</div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Top Stats: Chart & Heatmap */}
         <div className="grid grid-cols-4 gap-4 mb-6">
           {/* LEFT: Total RoPA Chart */}
           <motion.div
             initial="hidden"
             animate="visible"
             variants={cardVariants}
-            className={`col-span-2 bg-white dark:bg-gray-800 rounded-xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 ${
-              isFullscreen
-                ? "fixed inset-0 z-50 flex flex-col p-6 bg-white dark:bg-gray-900"
-                : ""
-            }`}
+            className={`col-span-2 bg-white dark:bg-gray-800 rounded-xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 ${isFullscreen
+              ? "fixed inset-0 z-50 flex flex-col p-6 bg-white dark:bg-gray-900"
+              : ""
+              }`}
           >
             {/* --- your chart card stays exactly the same --- */}
             {/* COPY your existing chart card content here */}
@@ -633,47 +673,7 @@ const RoPA = ({ initialItems = null }) => {
             <RechartsHeatmap items={items} />
           </motion.div>
 
-          {/* ROW 2 — Four Cards in a Single Row */}
-          <div className="col-span-4 grid grid-cols-4 gap-4">
-            {[
-              {
-                title: `${t("infovoyage")}`,
-                value: cat("InfoVoyage"),
-                color: "bg-[#5de992] text-black",
-              },
-              {
-                title: `${t("checksync")}`,
-                value: cat("CheckSync"),
-                color: "bg-white dark:bg-gray-800",
-              },
-              {
-                title: `${t("beam")}`,
-                value: cat("Beam"),
-                color: "bg-white dark:bg-gray-800",
-              },
-              {
-                title: `${t("offdoff")}`,
-                value: cat("OffDoff"),
-                color: "bg-gray-200 dark:bg-gray-700",
-              },
-            ].map((item, i) => (
-              <motion.div
-                key={i}
-                custom={i + 1}
-                initial="hidden"
-                animate="visible"
-                variants={cardVariants}
-                whileHover={{
-                  scale: 1.05,
-                  boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
-                }}
-                className={`${item.color} rounded-xl p-4 shadow-lg flex flex-col gap-4 justify-center transition-all duration-300`}
-              >
-                <h2 className="text-xl font-medium">{item.title}</h2>
-                <div className="text-4xl font-bold">{item.value}</div>
-              </motion.div>
-            ))}
-          </div>
+
         </div>
 
         {/* Records Table */}

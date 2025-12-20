@@ -181,7 +181,7 @@ export default function UserManagement() {
   const [loadingTeams, setLoadingTeams] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [permissionsStructure, setPermissionsStructure] = useState(null);
-  const [ready , setReady] = useState(false);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -192,7 +192,7 @@ export default function UserManagement() {
     ]).then(() => setReady(true));
   }, []);
 
-  const { t } = useTranslation("pages", {keyPrefix:"UserManagement"});
+  const { t } = useTranslation("pages", { keyPrefix: "UserManagement" });
 
   // Confirmation modal state
   const [confirmModal, setConfirmModal] = useState({
@@ -522,7 +522,7 @@ export default function UserManagement() {
 
     return (
       <ModalShell
-        title={isEdit ? `${t("edit_team")}` : `${t("create_team")}`}
+        title={isEdit ? `${t("edit_user_group")}` : `${t("create_user_group")}`}
         onClose={onClose}
         footer={
           <>
@@ -544,7 +544,7 @@ export default function UserManagement() {
         <div className="space-y-6">
           <div>
             <label className="block text-sm dark:text-gray-400 font-medium">
-              {t("team_name")}
+              {t("user_group_name")}
             </label>
             <input
               value={name}
@@ -786,11 +786,10 @@ export default function UserManagement() {
                 <button
                   key={t.id}
                   onClick={() => toggleTeam(t.id)}
-                  className={`px-3 py-1 rounded-md text-sm ${
-                    assigned.includes(t.id)
+                  className={`px-3 py-1 rounded-md text-sm ${assigned.includes(t.id)
                       ? "bg-[#5DEE92]"
                       : "border border-[#828282]"
-                  }`}
+                    }`}
                 >
                   {t.name}
                 </button>
@@ -1661,10 +1660,10 @@ export default function UserManagement() {
                     <div className="w-11 h-11 rounded-full bg-[#5DEE92] text-black flex items-center justify-center font-semibold">
                       {u.name
                         ? u.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .slice(0, 2)
-                            .join("")
+                          .split(" ")
+                          .map((n) => n[0])
+                          .slice(0, 2)
+                          .join("")
                         : ""}
                     </div>
 

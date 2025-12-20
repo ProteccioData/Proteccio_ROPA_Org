@@ -21,7 +21,19 @@ import {
 } from "lucide-react";
 import { useToast } from "../ui/ToastProvider";
 import { useTranslation } from "react-i18next";
+import { useToast } from "../ui/ToastProvider";
+import { useTranslation } from "react-i18next";
 import { addTranslationNamespace } from "../../i18n/config";
+import {
+  uploadLogo,
+  exportSettings,
+  importSettings,
+  getOrganizationSettings,
+  updateOrganizationSettings,
+  getInvitations,
+  sendInvite as apiSendInvite,
+  revokeInvite as apiRevokeInvite,
+} from "../../services/SetupService";
 
 /* ---------- CONFIG ---------- */
 const STORAGE_KEY = "settings:v1";
@@ -142,17 +154,106 @@ const DEFAULT_STATE = {
 };
 
 /* ---------- Storage helpers ---------- */
-function loadSettings() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULT_STATE;
-    return JSON.parse(raw);
-  } catch {
-    return DEFAULT_STATE;
-  }
+/* ---------- Storage helpers ---------- */
+// Removed localStorage functions in favor of API calls
+function mapBackendToFrontend(backendData) {
+  if (!backendData) return DEFAULT_STATE;
+  return {
+    general: {
+      organizationName: backendData.organization_name || "",
+      logoUrl: backendData.logo_url || null,
+      address: backendData.address || "",
+      registrationNumber: backendData.registration_number || "",
+      timeZone: backendData.default_timezone || "Asia/Kolkata",
+      defaultLanguage: backendData.default_language || "English",
+      secondaryLanguages: backendData.secondary_languages || [],
+      defaultCountry: backendData.default_country || "India",
+      templatesEnabled: backendData.templates_enabled ?? true,
+      maskPersonalInfoInExports: backendData.mask_personal_info_in_exports ?? false,
+      theme: backendData.theme || "emerald",
+      customThemes: [],
+    },
+    // Access roles/users are separate, but Invites will be fetched separately
+    access: {
+      inviteQueue: [],
+      roles: DEFAULT_STATE.access.roles, // Keep default roles for now/mock
+      users: [],
+    },
+    security: {
+      passwordPolicy: {
+        minLength: backendData.password_min_length || 8,
+        requireNumbers: backendData.password_require_numbers ?? true,
+        requireSpecial: backendData.password_require_special ?? false,
+        expiryDays: backendData.password_expiry_days || 90,
+      },
+      twoFA: backendData.two_fa_policy || "optional",
+      sessionTimeoutMinutes: backendData.session_timeout_minutes || 30,
+      ipAllowlist: backendData.ip_allowlist || [],
+      ipDenylist: backendData.ip_denylist || [],
+      encryption: { aes: "AES-256", tls: ["1.2", "1.3"] },
+    },
+    notifications: {
+      onScreen: backendData.on_screen_notifications ?? true,
+      email: backendData.email_notifications ?? true,
+      alertRules: backendData.alert_rules || DEFAULT_STATE.notifications.alertRules,
+      notificationFrequency: backendData.notification_frequency || "immediate",
+    },
+    backups: {
+      manualExportEnabled: backendData.manual_export_enabled ?? true,
+      automatedBackupFrequency: backendData.automated_backup_frequency || "daily",
+      backupStorage: backendData.backup_storage || "both",
+      backupExternalLocation: backendData.backup_external_location || "",
+      autoBackupEnabled: backendData.auto_backup_enabled ?? true,
+    },
+    compliance: {
+      dataRetentionYears: backendData.data_retention_years || 6,
+      lockAfterApproval: backendData.lock_after_approval ?? true,
+      autoLockAfterDaysInactive: backendData.auto_lock_after_days_inactive || 365,
+      roleFieldControl: backendData.role_field_control ?? true,
+      maskPersonalDataInExports: backendData.mask_personal_data_in_exports ?? false,
+    },
+  };
 }
-function saveSettings(state) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+
+function mapFrontendToBackend(state) {
+  return {
+    organization_name: state.general.organizationName,
+    // logo_url handled separately via upload
+    address: state.general.address,
+    registration_number: state.general.registrationNumber,
+    default_timezone: state.general.timeZone,
+    default_language: state.general.defaultLanguage,
+    secondary_languages: state.general.secondaryLanguages,
+    default_country: state.general.defaultCountry,
+    templates_enabled: state.general.templatesEnabled,
+    mask_personal_info_in_exports: state.general.maskPersonalInfoInExports,
+    theme: state.general.theme,
+
+    password_min_length: state.security.passwordPolicy.minLength,
+    password_require_numbers: state.security.passwordPolicy.requireNumbers,
+    password_require_special: state.security.passwordPolicy.requireSpecial,
+    password_expiry_days: state.security.passwordPolicy.expiryDays,
+    two_fa_policy: state.security.twoFA,
+    session_timeout_minutes: state.security.sessionTimeoutMinutes,
+    ip_allowlist: state.security.ipAllowlist,
+    ip_denylist: state.security.ipDenylist,
+
+    on_screen_notifications: state.notifications.onScreen,
+    email_notifications: state.notifications.email,
+    alert_rules: state.notifications.alertRules,
+    notification_frequency: state.notifications.notificationFrequency,
+
+    manual_export_enabled: state.backups.manualExportEnabled,
+    automated_backup_frequency: state.backups.automatedBackupFrequency,
+    backup_storage: state.backups.backupStorage,
+    auto_backup_enabled: state.backups.autoBackupEnabled,
+
+    data_retention_years: state.compliance.dataRetentionYears,
+    lock_after_approval: state.compliance.lockAfterApproval,
+    auto_lock_after_days_inactive: state.compliance.autoLockAfterDaysInactive,
+    role_field_control: state.compliance.roleFieldControl,
+    mask_personal_data_in_exports: state.compliance.maskPersonalDataInExports,
+  };
 }
 
 /* ---------- UI primitives ---------- */
@@ -258,8 +359,9 @@ function Modal({ title, onClose, children, footer }) {
 
 /* ---------- Main Settings Page ---------- */
 export default function SettingsPage() {
-  const initial = useMemo(() => loadSettings(), []);
-  const [state, setState] = useState(initial);
+  // Initial state from defaults, will be populated by API
+  const [state, setState] = useState(DEFAULT_STATE);
+  const [loading, setLoading] = useState(true);
 
   const [activeTab, setActiveTab] = useState("general"); // tabs: General, Access, Security, Notifications, Backups, Compliance
 
@@ -279,13 +381,45 @@ export default function SettingsPage() {
   }, []);
 
   const { t } = useTranslation("pages", { keyPrefix: "Settings" });
-
   const { addToast } = useToast();
 
-  /* Keep settings saved */
+  /* Load data from Backend */
   useEffect(() => {
-    saveSettings(state);
-  }, [state]);
+    async function fetchData() {
+      try {
+        setLoading(true);
+        const [settingsData, invitesData] = await Promise.all([
+          getOrganizationSettings(),
+          getInvitations().catch(() => ({ invitations: [] }))
+        ]);
+
+        const mappedState = mapBackendToFrontend(settingsData.settings || settingsData); // Handle variable structure
+
+        // Merge invitations
+        mappedState.access.inviteQueue = invitesData.invitations || [];
+
+        setState(mappedState);
+      } catch (err) {
+        console.error("Failed to load settings", err);
+        addToast("error", "Failed to load settings");
+      } finally {
+        setLoading(false);
+      }
+    }
+    if (ready) fetchData();
+  }, [ready]);
+
+  /* Save Handler */
+  const handleSaveSettings = async () => {
+    try {
+      const payload = mapFrontendToBackend(state);
+      await updateOrganizationSettings(payload);
+      addToast("success", t("settings_saved_successfully") || "Settings saved successfully");
+    } catch (err) {
+      console.error(err);
+      addToast("error", t("failed_to_save_settings") || "Failed to save settings");
+    }
+  };
 
   /* Handlers for nested updates */
   const update = (path, value) => {
@@ -329,29 +463,39 @@ export default function SettingsPage() {
   }
 
   /* Invite user simulation */
-  function sendInvite(email) {
-    const invite = {
-      id: uid("inv_"),
-      email,
-      status: "pending",
-      invitedAt: nowISO(),
-    };
-    setState((s) => ({
-      ...s,
-      access: {
-        ...s.access,
-        inviteQueue: [invite, ...(s.access.inviteQueue || [])],
-      },
-    }));
+  /* Invite user API */
+  async function sendInvite(email) {
+    if (!email) return;
+    try {
+      const res = await apiSendInvite(email);
+      addToast("success", `Invite sent to ${email}`);
+      // Refresh invites
+      const invites = await getInvitations();
+      setState(s => ({
+        ...s,
+        access: { ...s.access, inviteQueue: invites.invitations || [] }
+      }));
+    } catch (err) {
+      console.error(err);
+      addToast("error", "Failed to send invite");
+    }
   }
-  function revokeInvite(inviteId) {
-    setState((s) => ({
-      ...s,
-      access: {
-        ...s.access,
-        inviteQueue: s.access.inviteQueue.filter((i) => i.id !== inviteId),
-      },
-    }));
+
+  async function revokeInvite(inviteId) {
+    if (!confirm("Revoke this invitation?")) return;
+    try {
+      await apiRevokeInvite(inviteId);
+      addToast("success", "Invitation revoked");
+      // Refresh invites
+      const invites = await getInvitations();
+      setState(s => ({
+        ...s,
+        access: { ...s.access, inviteQueue: invites.invitations || [] }
+      }));
+    } catch (err) {
+      console.error(err);
+      addToast("error", "Failed to revoke invitation");
+    }
   }
 
   /* IP list management helpers */
@@ -381,12 +525,23 @@ export default function SettingsPage() {
   }, [state.general.theme]);
 
   /* Logo upload handling (store objectURL locally for demo) */
-  function handleLogoUpload(file) {
+  /* Logo upload handling */
+  const handleLogoUpload = async (file) => {
     if (!file) return;
-    const url = URL.createObjectURL(file);
-    update("general.logoUrl", url);
-  }
+    try {
+      const res = await uploadLogo(file);
+      // res should contain new logo url
+      if (res.logo_url) {
+        update("general.logoUrl", res.logo_url);
+        addToast("success", t("logo_uploaded_successfully"));
+      }
+    } catch (err) {
+      console.error(err);
+      addToast("error", t("failed_to_upload_logo"));
+    }
+  };
 
+  /* Handle bulk file upload (CSV / JSON) */
   /* Handle bulk file upload (CSV / JSON) */
   async function handleFileUpload(file) {
     if (!file) return;
@@ -399,7 +554,15 @@ export default function SettingsPage() {
     try {
       let data = [];
       if (file.name.endsWith(".json")) {
-        data = JSON.parse(text);
+        const json = JSON.parse(text);
+        // Attempt to detect if it's a settings export
+        if (json.settings && !Array.isArray(json.settings)) {
+          await importSettings(json.settings);
+          setState((prev) => ({ ...prev, ...json.settings }));
+          addToast("success", t("settings_imported_successfully"));
+          return;
+        }
+        data = json;
       } else {
         // Parse CSV
         const [header, ...rows] = text.trim().split("\n");
@@ -420,6 +583,25 @@ export default function SettingsPage() {
     }
   }
 
+  const handleBulkExport = async () => {
+    try {
+      const data = await exportSettings();
+      const blob = new Blob([JSON.stringify(data, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `proteccio_settings_${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      addToast("success", t("settings_exported_successfully"));
+    } catch (err) {
+      console.error(err);
+      addToast("error", t("failed_to_export_settings"));
+    }
+  };
+
   /* ---------- Render: Tabs Nav ---------- */
   const TABS = [
     { id: "general", labelKey: "general" },
@@ -436,7 +618,7 @@ export default function SettingsPage() {
     { id: "disabled", labelKey: "disabled" },
   ];
 
-  if (!ready) return <div>Loading...</div>;
+  if (!ready || loading) return <div className="p-6">Loading settings...</div>;
 
   return (
     <div className="p-6 dark:text-white" style={{ fontFamily: BRAND.font }}>
@@ -449,7 +631,13 @@ export default function SettingsPage() {
         </div>
 
         <div className="flex gap-2 items-center">
-          <div className="text-sm text-gray-600 dark:text-gray-300">
+          <button
+            onClick={handleSaveSettings}
+            className="px-4 py-2 bg-[#5DEE92] text-black rounded font-medium shadow hover:shadow-md transition"
+          >
+            {t("save_changes") || "Save Changes"}
+          </button>
+          <div className="text-sm text-gray-600 dark:text-gray-300 ml-4">
             {t("active_tab")}
           </div>
           <div
@@ -468,11 +656,10 @@ export default function SettingsPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2 rounded-2xl font-medium cursor-pointer ${
-                activeTab === tab.id
-                  ? "bg-[#5DEE92] text-black"
-                  : "bg-white dark:bg-[#071019] border border-[#828282]"
-              }`}
+              className={`px-4 py-2 rounded-2xl font-medium cursor-pointer ${activeTab === tab.id
+                ? "bg-[#5DEE92] text-black"
+                : "bg-white dark:bg-[#071019] border border-[#828282]"
+                }`}
             >
               {t(tab.labelKey)}
             </button>
@@ -969,11 +1156,10 @@ export default function SettingsPage() {
                           <motion.button
                             key={mode}
                             onClick={() => update("security.twoFA", mode.id)}
-                            className={`relative z-10 flex-1 px-4 py-2 text-sm font-medium capitalize transition-colors duration-200 ${
-                              isActive
-                                ? "text-black"
-                                : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                            }`}
+                            className={`relative z-10 flex-1 px-4 py-2 text-sm font-medium capitalize transition-colors duration-200 ${isActive
+                              ? "text-black"
+                              : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                              }`}
                           >
                             {isActive && (
                               <motion.div

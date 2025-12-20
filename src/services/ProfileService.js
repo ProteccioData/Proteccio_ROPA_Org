@@ -90,3 +90,24 @@ export const apiVerify2FALogin = async ({ email, token, backupCode }) => {
   });
   return res.data;
 };
+
+/**
+ * -------------------------
+ * Session Management API
+ * -------------------------
+ */
+
+export const apiEndSession = async (sessionId) => {
+  const res = await axiosInstance.delete(`/portal/sessions/${sessionId}`);
+  return res.data;
+};
+
+export const apiEndAllSessions = async () => {
+  const res = await axiosInstance.delete("/portal/sessions");
+  return res.data;
+};
+
+export const apiSignOutFromAllDevices = async () => {
+  const res = await axiosInstance.post("/portal/sessions/sign-out-all");
+  return res.data;
+};

@@ -38,6 +38,7 @@ import {
   deleteAsset,
   uploadAssetAttachment,
   bulkImportAssets,
+  bulkImportConfig,
   getConfigs,
   getConfigById,
   createConfig,
@@ -509,57 +510,19 @@ export default function Setup() {
   };
 
   const handleFileUpload = async (file, configType) => {
-    console.log(`Uploading ${file.name} for ${configType}`);
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const content = e.target.result;
-      console.log("File content:", content);
-
-      switch (configType) {
-        case "assets":
-          processAssetImport(content);
-          break;
-        case "data_collection":
-          processDataCollectionImport(content);
-          break;
-        default:
-          processGenericImport(content, configType);
+    try {
+      if (configType === "assets") {
+        await bulkImportAssets(file);
+      } else {
+        await bulkImportConfig(configType, file);
       }
-    };
-    reader.readAsText(file);
-  };
-
-  const processAssetImport = (content) => {
-    const rows = content.split("\n").slice(1);
-    const assets = rows.map((row) => {
-      const [
-        name,
-        type,
-        assetId,
-        description,
-        purchaseDate,
-        location,
-        status,
-        owner,
-        warranty,
-        supplierManaged,
-      ] = row.split(",");
-      return {
-        asset_name: name,
-        asset_type: type,
-        asset_id_custom: assetId,
-        short_description: description,
-        purchase_date: purchaseDate,
-        location,
-        condition_status: status,
-        owner_assigned_to: owner,
-        warranty_info: warranty,
-        is_supplier_vendor_managed: supplierManaged,
-      };
-    });
-
-    console.log("Processed assets:", assets);
+      addToast("success", "Imported successfully");
+      await preloadAllCounts(); // Refresh counts and lists
+      setBulkImportModal(null);
+    } catch (err) {
+      console.error("Bulk import error:", err);
+      addToast("error", err.response?.data?.error || "Import failed");
+    }
   };
 
   const handleBulkImport = (configType) => {
@@ -633,8 +596,8 @@ export default function Setup() {
       return m === "physical"
         ? "Physical"
         : m === "virtual"
-        ? "Virtual"
-        : value;
+          ? "Virtual"
+          : value;
     }
     if (key === "condition_status" && typeof value === "string") {
       const map = {
@@ -1838,15 +1801,15 @@ export default function Setup() {
             value={
               formValues.owner_assigned_to
                 ? {
-                    label: formValues.owner_assigned_to_label,
-                    value: formValues.owner_assigned_to,
-                  }
+                  label: formValues.owner_assigned_to_label,
+                  value: formValues.owner_assigned_to,
+                }
                 : selectedItem?.owner
-                ? {
+                  ? {
                     label: `${selectedItem.owner.full_name} (${selectedItem.owner.email})`,
                     value: selectedItem.owner.id,
                   }
-                : null
+                  : null
             }
             onChange={(opt) => {
               setFormValues((prev) => ({
@@ -3006,7 +2969,7 @@ export default function Setup() {
               // try to set value
               try {
                 el.value = typeof val === "string" ? val.toLowerCase() : val;
-              } catch (e) {}
+              } catch (e) { }
             } else {
               // for dates: if ISO -> set YYYY-MM-DD
               if (
@@ -3140,29 +3103,12 @@ export default function Setup() {
       ))}
 
       <BulkImportModal
-        isOpen={bulkImportModal === "assets"}
+        isOpen={bulkImportModal !== null}
         onClose={() => setBulkImportModal(null)}
-        title="Bulk Import Assets"
-        onFileUpload={async (file) => {
-          try {
-            await bulkImportAssets(file);
-            addToast("success", "Imported successfully");
-            await loadModuleData("assets_management");
-          } catch (err) {
-            addToast("error", "Import failed");
-          }
-        }}
-        acceptedFormats={[".csv", ".xlsx", ".json"]}
-        templateDownload={generateAssetTemplate}
-      />
-
-      <BulkImportModal
-        isOpen={bulkImportModal === "data_collection"}
-        onClose={() => setBulkImportModal(null)}
-        title="Bulk Import Data Collections"
-        onFileUpload={(file) => handleFileUpload(file, "data_collection")}
-        acceptedFormats={[".csv", ".xlsx", ".json"]}
-        templateDownload={generateDataCollectionTemplate}
+        title={`Bulk Import ${bulkImportModal?.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}`}
+        onFileUpload={(file) => handleFileUpload(file, bulkImportModal)}
+        acceptedFormats={[".json"]}
+        templateDownload={() => JSON.stringify([{ name: "Example Item", description: "Example Description" }], null, 2)}
       />
     </div>
   );

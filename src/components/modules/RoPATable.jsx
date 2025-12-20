@@ -15,6 +15,7 @@ import { useNavigate } from "react-router-dom";
 import { getAllRopas } from "../../services/RopaService";
 import ViewROPAModal from "./ViewRopaModel";
 import EditRoPAModal from "./RopaEditModal";
+import { archiveRopa } from "../../services/RopaService";
 import RopaFilterModal from "./RopaFilterModel";
 import { motion } from "framer-motion";
 import { useToast } from "../ui/ToastProvider";
@@ -41,13 +42,13 @@ export default function RoPARecords() {
   const { user, permissions } = useAuth();
 
   useEffect(() => {
-    addTranslationNamespace("en" , "modules" , "RoPATable");
-    addTranslationNamespace("hindi" , "modules" , "RoPATable");
-    addTranslationNamespace("sanskrit" , "modules" , "RoPATable");
-    addTranslationNamespace("telugu" , "modules" , "RoPATable");
+    addTranslationNamespace("en", "modules", "RoPATable");
+    addTranslationNamespace("hindi", "modules", "RoPATable");
+    addTranslationNamespace("sanskrit", "modules", "RoPATable");
+    addTranslationNamespace("telugu", "modules", "RoPATable");
   }, [])
 
-  const { t } = useTranslation("modules" , {keyPrefix:"RoPATable"})
+  const { t } = useTranslation("modules", { keyPrefix: "RoPATable" })
 
   console.log("USER =", user);
   console.log("PERMISSIONS =", permissions);
@@ -120,6 +121,18 @@ export default function RoPARecords() {
     // Allowed → open edit modal
     setEditRopa(ropa);
     setEditOpen(true);
+  };
+
+  const handleArchive = async (id) => {
+    try {
+      await archiveRopa(id);
+      addToast("success", "RoPA archived successfully");
+      setRopas((prev) => prev.filter((r) => r.id !== id));
+      setOpenMenu(null);
+    } catch (err) {
+      console.error("Failed to archive RoPA", err);
+      addToast("error", "Failed to archive RoPA");
+    }
   };
 
   useEffect(() => {
@@ -298,11 +311,13 @@ export default function RoPARecords() {
 
                     {openMenu === ropa.id && (
                       <div
-                        className={`absolute right-0 w-36 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 ${
-                          isLast ? "bottom-full mb-2" : "top-full mt-2"
-                        }`}
+                        className={`absolute right-0 w-36 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 ${isLast ? "bottom-full mb-2" : "top-full mt-2"
+                          }`}
                       >
-                        <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
+                        <button
+                          onClick={() => handleArchive(ropa.id)}
+                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                        >
                           <Archive size={14} className="mr-2" /> {t("archive")}
                         </button>
                         <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
