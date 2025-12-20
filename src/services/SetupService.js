@@ -142,6 +142,30 @@ export const importSettings = async (settingsData) => {
   return res.data;
 };
 
+export const getOrganizationSettings = () => {
+  return axiosInstance.get("/portal/organization-settings");
+};
+
+export const updateOrganizationSettings = (data) => {
+  return axiosInstance.put("/portal/organization-settings", data);
+};
+
+// ===============================
+// INVITATIONS MODULE
+// ===============================
+
+export const getInvitations = (params = {}) => {
+  return axiosInstance.get("/portal/invitations", { params });
+};
+
+export const sendInvite = (data) => {
+  return axiosInstance.post("/portal/invitations", typeof data === 'string' ? { email: data } : data);
+};
+
+export const revokeInvite = (id) => {
+  return axiosInstance.post(`/portal/invitations/${id}/revoke`);
+};
+
 // ===============================
 // SECURITY SAFEGAURDS — COMBINED UI
 // ===============================
