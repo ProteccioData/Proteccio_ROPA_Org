@@ -85,7 +85,7 @@ export default function ProfileSettings({
         if (!mounted) return;
 
         const mapped = mapBackendProfileToUI(payload);
-        setUser(mapped);
+        setProfile(mapped);
 
         // if backend supplies 2fa status or language in future, set here:
         // setTwoFA(Boolean(payload.twoFA));
@@ -94,7 +94,7 @@ export default function ProfileSettings({
         console.error("Failed to load profile:", err);
         setProfileError(err.response?.data?.error || "Failed to load profile");
         // keep a minimal fallback so UI doesn't break
-        if (mounted) setUser(mapBackendProfileToUI(currentUser || {}));
+        if (mounted) setProfile(mapBackendProfileToUI(currentUser || {}));
       } finally {
         if (mounted) setLoadingProfile(false);
       }
@@ -193,7 +193,7 @@ export default function ProfileSettings({
       alert(translations[lang].admin_only);
       return;
     }
-    setUser((u) => ({
+    setProfile((u) => ({
       ...u,
       status: u.status === "Locked" ? "Active" : "Locked",
     }));
@@ -205,7 +205,7 @@ export default function ProfileSettings({
     try {
       const updated = await apiUpdateProfile(payload);
       const mapped = mapBackendProfileToUI(updated);
-      setUser(mapped);
+      setProfile(mapped);
       setEditOpen(false);
     } catch (err) {
       console.error("Update profile failed:", err);

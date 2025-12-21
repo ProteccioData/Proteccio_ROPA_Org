@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Upload,
   FileText,
@@ -15,6 +15,10 @@ import {
 } from "lucide-react";
 import { useToast } from "../ui/ToastProvider";
 import ActionItemModal from "./AddActionItem";
+import { useAuth } from "../../context/AuthContext";
+import { getOrganizationSettings, getConfigs, getAssets } from "../../services/SetupService";
+import { createRopa } from "../../services/RopaService";
+import axiosInstance from "../../utils/axiosInstance";
 
 // User roles and permissions
 const USER_ROLES = {
@@ -23,52 +27,6 @@ const USER_ROLES = {
   DEPARTMENT_HEAD: "department_head",
   PRIVACY_SME: "privacy_sme",
 };
-
-// Current user (this would typically come from auth context)
-const currentUser = {
-  id: "user1",
-  name: "John Doe",
-  role: USER_ROLES.PROCESS_OWNER, // Change this to test different roles
-  email: "john.doe@company.com",
-};
-
-// Mock user database
-const users = [
-  {
-    id: "user1",
-    name: "John Doe",
-    role: USER_ROLES.PROCESS_OWNER,
-    email: "john.doe@company.com",
-  },
-  {
-    id: "user2",
-    name: "Alice Smith",
-    role: USER_ROLES.PROCESS_EXPERT,
-    email: "alice.smith@company.com",
-  },
-  {
-    id: "user3",
-    name: "Bob Wilson",
-    role: USER_ROLES.DEPARTMENT_HEAD,
-    email: "bob.wilson@company.com",
-  },
-  {
-    id: "user4",
-    name: "Carol Davis",
-    role: USER_ROLES.PRIVACY_SME,
-    email: "carol.davis@company.com",
-  },
-  {
-    id: "user5",
-    name: "David Brown",
-    role: USER_ROLES.PROCESS_EXPERT,
-    email: "david.brown@company.com",
-  },
-];
-
-// Risk assessment options
-const likelihoodOptions = ["Very Low", "Low", "Medium", "High", "Very High"];
-const impactOptions = ["Very Low", "Low", "Medium", "High", "Very High"];
 
 // Calculate risk score and category
 const calculateRisk = (likelihood, impact) => {
@@ -268,24 +226,141 @@ const RoPAPage = () => {
   const [showAssessmentLink, setShowAssessmentLink] = useState(false);
   const [showActionItemForm, setShowActionItemForm] = useState(false);
   const [showCreateAssessment, setShowCreateAssessment] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { addToast } = useToast();
+  const { user: currentUser } = useAuth();
+  const [users, setUsers] = useState([]);
+  const [orgSettings, setOrgSettings] = useState(null);
 
-  // New state for workflow management
-  const [workflow, setWorkflow] = useState({
-    assignedTo: null,
-    status: "draft",
-    ropaId: `ROPA-${Date.now().toString().slice(-6)}`,
-    createdAt: new Date(),
-    createdBy: currentUser,
-    currentAssignee: currentUser,
-    riskAssessment: {
-      likelihood: "",
-      impact: "",
-      score: 0,
-      category: "",
-      color: "",
-    },
+  // Dynamic Options States
+  const [actingRoles] = useState(["Fiduciary", "Processor", "Joint Fiduciary", "Joint Processor"]);
+  const [mainLevels] = useState(["1. HR Onboarding", "2. HR Hiring", "3. HR Firing", "4. Marketing", "5. Sales", "6. Finance"]);
+  const [subLevels] = useState(["1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "1.10"]);
+
+  const [dynamicOptions, setDynamicOptions] = useState({
+    organizations: [],
+    departments: [],
+    departmentHeads: [],
+    countries: ["United States", "India", "United Kingdom", "Germany", "France", "Japan", "Canada", "Australia"],
+    states: ["California", "Texas", "New York", "Maharashtra", "Karnataka", "Delhi", "London", "Berlin"],
+    processOwners: [],
+    processExperts: [],
+    dpoOptions: [],
+    privacyManagers: [],
+    dataSubjectTypes: [],
+    dataElements: [],
+    dataCollectionSources: [],
+    purposes: [],
+    retentionPeriods: [],
+    deletionMethods: [],
+    physicalApplications: [],
+    physicalApplicationIds: [],
+    virtualApplications: [],
+    virtualApplicationIds: [],
+    securityMeasures: [],
+    accessMeasures: [],
+    complianceMeasures: [],
+    dataGovernance: [],
+    operationalMeasures: [],
+    transparencyMeasures: [],
+    ethicalMeasures: [],
+    physicalSecurityMeasures: [],
+    technicalMeasures: [],
+    riskManagementMeasures: [],
+    legalBases: [],
+    frequencies: [],
+    dataRights: [],
   });
+
+  // Fetch Users & Org Settings
+  useEffect(() => {
+    const initData = async () => {
+      try {
+        const [orgRes, usersRes] = await Promise.all([
+          getOrganizationSettings(),
+          axiosInstance.get("/portal/teams/users"), // Assuming this endpoint exists for all users in org
+        ]);
+
+        setOrgSettings(orgRes.data.settings);
+        setUsers(usersRes.data.users || []);
+
+        // Auto-set organization name if available
+        if (orgRes.data.settings?.orgName) {
+          handleInputChange("operationalLens", "organizationName", orgRes.data.settings.orgName);
+        }
+
+        // Categorize users for dropdowns
+        const experts = (usersRes.data.users || []).filter(u => u.role === USER_ROLES.PROCESS_EXPERT || u.role === "org_admin");
+        const owners = (usersRes.data.users || []).filter(u => u.role === USER_ROLES.PROCESS_OWNER || u.role === "org_admin");
+
+        setDynamicOptions(prev => ({
+          ...prev,
+          processExperts: experts.map(u => `${u.full_name} (${u.email})`),
+          processOwners: owners.map(u => `${u.full_name} (${u.email})`),
+          privacyManagers: (usersRes.data.users || []).filter(u => u.role === USER_ROLES.PRIVACY_SME).map(u => u.full_name),
+        }));
+
+      } catch (err) {
+        console.error("Failed to fetch initial data", err);
+      }
+    };
+    initData();
+  }, []);
+
+  // Fetch Config Modules
+  useEffect(() => {
+    const fetchConfigs = async () => {
+      try {
+        const fetchMapping = {
+          departments: "department",
+          dataSubjectTypes: "data_subject",
+          dataElements: "data_element",
+          dataCollectionSources: "data_collection",
+          purposes: "purpose",
+          deletionMethods: "data_deletion",
+          securityMeasures: "security_technical", // mapping to technical for now
+          accessMeasures: "security_access",
+          complianceMeasures: "security_compliance",
+          dataGovernance: "security_data_governance",
+          operationalMeasures: "security_operational",
+          transparencyMeasures: "security_transparency",
+          ethicalMeasures: "security_ethical",
+          physicalSecurityMeasures: "security_physical",
+          technicalMeasures: "security_technical",
+          riskManagementMeasures: "security_risk_management",
+          legalBases: "legal_basis",
+        };
+
+        const results = await Promise.all(
+          Object.entries(fetchMapping).map(async ([key, type]) => {
+            try {
+              const res = await getConfigs(type);
+              return { [key]: res.data.configs.map(c => c.name) };
+            } catch (e) {
+              return { [key]: [] };
+            }
+          })
+        );
+
+        const assetRes = await getAssets();
+        const physical = assetRes.data.assets.filter(a => a.type === 'physical');
+        const virtual = assetRes.data.assets.filter(a => a.type === 'virtual');
+
+        setDynamicOptions(prev => ({
+          ...prev,
+          ...Object.assign({}, ...results),
+          physicalApplications: physical.map(a => a.name),
+          physicalApplicationIds: physical.map(a => a.asset_id),
+          virtualApplications: virtual.map(a => a.name),
+          virtualApplicationIds: virtual.map(a => a.asset_id),
+        }));
+
+      } catch (err) {
+        console.error("Failed to fetch configs", err);
+      }
+    };
+    fetchConfigs();
+  }, []);
 
   // Action Items state
   const [actionItems, setActionItems] = useState([]);
@@ -384,12 +459,12 @@ const RoPAPage = () => {
   // Permission checks - UPDATED BASED ON NEW REQUIREMENTS
   const canEditInfoVoyage = () => {
     if (currentStage !== "infovoyage") return false;
-    
+
     // Process Owner can edit when in draft status
     if (currentUser.role === USER_ROLES.PROCESS_OWNER) {
       return workflow.status === "draft" || workflow.status === "returned";
     }
-    
+
     // Process Expert can edit when assigned and in assigned/returned status
     if (currentUser.role === USER_ROLES.PROCESS_EXPERT) {
       return true
@@ -398,7 +473,7 @@ const RoPAPage = () => {
       //   (workflow.status === "assigned" || workflow.status === "returned")
       // );
     }
-    
+
     return false;
   };
 
@@ -468,14 +543,29 @@ const RoPAPage = () => {
     );
   };
 
+  const isFirstSave = useRef(true);
+
   const handleAutoSave = async () => {
-    if (saving) return;
+    if (saving || isSubmitting) return;
 
     try {
       setSaving(true);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      const payload = {
+        ...formData,
+        workflow: {
+          ...workflow,
+          status: "draft",
+        }
+      };
+
+      // In a real scenario, first save would be POST, then PUT.
+      // For now, we'll use createRopa (POST) which handles upsert or unique IDs if possible
+      // or we just trust the workflow.ropaId unique constraint.
+      await createRopa(payload);
+
       setLastSaved(new Date());
-      console.log("Auto-saved:", formData);
+      isFirstSave.current = false;
     } catch (error) {
       console.error("Auto-save failed:", error);
     } finally {
@@ -889,22 +979,19 @@ const RoPAPage = () => {
     return (
       <div>
         <label
-          className={`block text-sm font-medium mb-1 ${
-            error ? "text-red-600" : "text-gray-700 dark:text-gray-400"
-          }`}
+          className={`block text-sm font-medium mb-1 ${error ? "text-red-600" : "text-gray-700 dark:text-gray-400"
+            }`}
         >
           {props.label} {isRequired && "*"}
         </label>
         <input
           {...props}
           readOnly={readOnly}
-          className={`w-full px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-100 border rounded-md ${
-            readOnly ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed" : ""
-          } ${
-            error
+          className={`w-full px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-100 border rounded-md ${readOnly ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed" : ""
+            } ${error
               ? "border-red-500 focus:border-red-500"
               : "border-[#828282] focus:border-blue-500"
-          } ${props.className || ""}`}
+            } ${props.className || ""}`}
         />
         {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
       </div>
@@ -921,22 +1008,19 @@ const RoPAPage = () => {
     return (
       <div>
         <label
-          className={`block text-sm font-medium mb-1 ${
-            error ? "text-red-600" : "text-gray-700 dark:text-gray-400"
-          }`}
+          className={`block text-sm font-medium mb-1 ${error ? "text-red-600" : "text-gray-700 dark:text-gray-400"
+            }`}
         >
           {props.label} {isRequired && "*"}
         </label>
         <select
           {...props}
           disabled={readOnly}
-          className={`w-full px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-100 border rounded-md ${
-            readOnly ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed" : ""
-          } ${
-            error
+          className={`w-full px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-100 border rounded-md ${readOnly ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed" : ""
+            } ${error
               ? "border-red-500 focus:border-red-500"
               : "border-[#828282] focus:border-blue-500"
-          } ${props.className || ""}`}
+            } ${props.className || ""}`}
         >
           {props.children}
         </select>
@@ -961,18 +1045,16 @@ const RoPAPage = () => {
     return (
       <div>
         <label
-          className={`block text-sm font-medium mb-2 ${
-            error ? "text-red-600" : "text-gray-700 dark:text-gray-400"
-          }`}
+          className={`block text-sm font-medium mb-2 ${error ? "text-red-600" : "text-gray-700 dark:text-gray-400"
+            }`}
         >
           {label} {required && "*"}
         </label>
         <div
-          className={`space-y-2 max-h-40 overflow-y-auto border rounded-md p-3 ${
-            readOnly
-              ? "bg-gray-100 dark:bg-gray-800 border-gray-300"
-              : "border-[#828282]"
-          }`}
+          className={`space-y-2 max-h-40 overflow-y-auto border rounded-md p-3 ${readOnly
+            ? "bg-gray-100 dark:bg-gray-800 border-gray-300"
+            : "border-[#828282]"
+            }`}
         >
           {options.map((option) => (
             <label key={option} className="flex items-center space-x-2">
@@ -1003,22 +1085,19 @@ const RoPAPage = () => {
     return (
       <div>
         <label
-          className={`block text-sm font-medium mb-1 ${
-            error ? "text-red-600" : "text-gray-700 dark:text-gray-400"
-          }`}
+          className={`block text-sm font-medium mb-1 ${error ? "text-red-600" : "text-gray-700 dark:text-gray-400"
+            }`}
         >
           {props.label} {isRequired && "*"}
         </label>
         <textarea
           {...props}
           readOnly={readOnly}
-          className={`w-full px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-100 border rounded-md ${
-            readOnly ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed" : ""
-          } ${
-            error
+          className={`w-full px-3 py-2 bg-white dark:bg-gray-700 dark:text-gray-100 border rounded-md ${readOnly ? "bg-gray-100 dark:bg-gray-800 cursor-not-allowed" : ""
+            } ${error
               ? "border-red-500 focus:border-red-500"
               : "border-[#828282] focus:border-blue-500"
-          } ${props.className || ""}`}
+            } ${props.className || ""}`}
         />
         {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
       </div>
@@ -1129,7 +1208,7 @@ const RoPAPage = () => {
   const sendReturnToInfoVoyageEmail = () => {
     const processExpert = workflow.assignedTo;
     const processOwner = workflow.createdBy;
-    
+
     const subject = `RoPA Returned for Additional Input - ${workflow.ropaId}`;
     const body = `
       The RoPA has been returned to InfoVoyage stage for additional input.
@@ -1171,20 +1250,40 @@ const RoPAPage = () => {
     setShowSubmitConfirm(true);
   };
 
-  const confirmSubmitInfoVoyage = () => {
-    setWorkflow((prev) => ({
-      ...prev,
-      status: "submitted",
-      currentAssignee: users.find((u) => u.role === USER_ROLES.PRIVACY_SME),
-    }));
-    setCurrentStage("checksync");
-    setShowSubmitConfirm(false);
-    
-    addToast("success", "RoPA submitted to Privacy SME");
-    
-    // Send email notifications
-    sendPrivacySMESubmissionEmail();
-    sendProcessOwnerSubmissionEmail();
+  const confirmSubmitInfoVoyage = async () => {
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        ...formData,
+        workflow: {
+          ...workflow,
+          status: "submitted",
+          currentAssigneeId: users.find((u) => u.role === USER_ROLES.PRIVACY_SME)?.id,
+        }
+      };
+
+      const res = await createRopa(payload);
+
+      setWorkflow((prev) => ({
+        ...prev,
+        status: "submitted",
+        currentAssignee: users.find((u) => u.role === USER_ROLES.PRIVACY_SME),
+      }));
+
+      setCurrentStage("checksync");
+      setShowSubmitConfirm(false);
+
+      addToast("success", "RoPA created and submitted to Privacy SME successfully!");
+
+      // Send email notifications
+      sendPrivacySMESubmissionEmail();
+      sendProcessOwnerSubmissionEmail();
+    } catch (err) {
+      console.error("Failed to create RoPA", err);
+      addToast("error", "Failed to create RoPA. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleMoveToPreviousStage = () => {
@@ -1247,7 +1346,7 @@ const RoPAPage = () => {
     });
     setShowActionItemForm(false);
     addToast("success", "Action item created successfully");
-    
+
     // Send email notification to assigned user
     if (assignedUser) {
       sendActionItemAssignmentEmail(actionItem, assignedUser);
@@ -1379,11 +1478,11 @@ const RoPAPage = () => {
         </div>
         {(!formData.operationalLens.title ||
           !formData.operationalLens.description) && (
-          <p className="text-xs text-red-500 mt-2">
-            * Please fill in at least RoPA Title and Description before
-            assigning
-          </p>
-        )}
+            <p className="text-xs text-red-500 mt-2">
+              * Please fill in at least RoPA Title and Description before
+              assigning
+            </p>
+          )}
       </div>
     );
   };
@@ -1442,30 +1541,28 @@ const RoPAPage = () => {
     <div className="space-y-6">
       {/* Workflow Status Indicator */}
       <div
-        className={`p-4 rounded-lg border ${
-          workflow.status === "draft"
-            ? "bg-gray-50 border-gray-200"
-            : workflow.status === "assigned"
+        className={`p-4 rounded-lg border ${workflow.status === "draft"
+          ? "bg-gray-50 border-gray-200"
+          : workflow.status === "assigned"
             ? "bg-blue-50 border-blue-200"
             : workflow.status === "submitted"
-            ? "bg-green-50 border-green-200"
-            : "bg-yellow-50 border-yellow-200"
-        }`}
+              ? "bg-green-50 border-green-200"
+              : "bg-yellow-50 border-yellow-200"
+          }`}
       >
         <div className="flex items-center justify-between">
           <div>
             <h3 className="font-medium">
               Status:
               <span
-                className={`ml-2 ${
-                  workflow.status === "draft"
-                    ? "text-gray-700"
-                    : workflow.status === "assigned"
+                className={`ml-2 ${workflow.status === "draft"
+                  ? "text-gray-700"
+                  : workflow.status === "assigned"
                     ? "text-blue-700"
                     : workflow.status === "submitted"
-                    ? "text-green-700"
-                    : "text-yellow-700"
-                }`}
+                      ? "text-green-700"
+                      : "text-yellow-700"
+                  }`}
               >
                 {workflow.status.charAt(0).toUpperCase() +
                   workflow.status.slice(1)}
@@ -1562,7 +1659,7 @@ const RoPAPage = () => {
             children: (
               <>
                 <option value="">Select Department</option>
-                {departments.map((dept) => (
+                {dynamicOptions.departments.map((dept) => (
                   <option key={dept} value={dept}>
                     {dept}
                   </option>
@@ -1582,7 +1679,7 @@ const RoPAPage = () => {
             children: (
               <>
                 <option value="">Select Department Head</option>
-                {departmentHeads.map((head) => (
+                {dynamicOptions.departmentHeads.map((head) => (
                   <option key={head} value={head}>
                     {head}
                   </option>
@@ -1594,33 +1691,29 @@ const RoPAPage = () => {
             "operationalLens",
             "countryOfProcessing",
             "Country of Processing Activity",
-            countries
+            dynamicOptions.countries
           )}
           {renderMultiSelect(
             "operationalLens",
             "stateProvince",
             "State/Province",
-            states
+            dynamicOptions.states
           )}
           {renderMultiSelect(
             "operationalLens",
             "usingDepartments",
             "Which department uses this processing activity?",
-            departments
+            dynamicOptions.departments
           )}
           {renderSelect("operationalLens", "processOwner", {
             value: formData.operationalLens.processOwner,
             onChange: (e) =>
-              handleInputChange(
-                "operationalLens",
-                "processOwner",
-                e.target.value
-              ),
+              handleInputChange("operationalLens", "processOwner", e.target.value),
             label: "Process Owner",
             children: (
               <>
                 <option value="">Select Process Owner</option>
-                {processOwners.map((owner) => (
+                {dynamicOptions.processOwners.map((owner) => (
                   <option key={owner} value={owner}>
                     {owner}
                   </option>
@@ -1632,7 +1725,7 @@ const RoPAPage = () => {
             "operationalLens",
             "processExpert",
             "Process Expert",
-            processExperts
+            dynamicOptions.processExperts
           )}
           {renderSelect("operationalLens", "dataProtectionOfficer", {
             value: formData.operationalLens.dataProtectionOfficer,
@@ -1646,27 +1739,23 @@ const RoPAPage = () => {
             children: (
               <>
                 <option value="">Select DPO</option>
-                {dpoOptions.map((dpo) => (
+                {dynamicOptions.dpoOptions.length > 0 ? dynamicOptions.dpoOptions.map((dpo) => (
                   <option key={dpo} value={dpo}>
                     {dpo}
                   </option>
-                ))}
+                )) : <option value="Default DPO">Default DPO</option>}
               </>
             ),
           })}
           {renderSelect("operationalLens", "privacyManager", {
             value: formData.operationalLens.privacyManager,
             onChange: (e) =>
-              handleInputChange(
-                "operationalLens",
-                "privacyManager",
-                e.target.value
-              ),
+              handleInputChange("operationalLens", "privacyManager", e.target.value),
             label: "Privacy Manager",
             children: (
               <>
                 <option value="">Select Privacy Manager</option>
-                {privacyManagers.map((manager) => (
+                {dynamicOptions.privacyManagers.map((manager) => (
                   <option key={manager} value={manager}>
                     {manager}
                   </option>
@@ -1703,7 +1792,7 @@ const RoPAPage = () => {
             "processGrid",
             "dataSubjectTypes",
             "Type of Data Subjects",
-            dataSubjectTypes
+            dynamicOptions.dataSubjectTypes
           )}
           {renderSelect("processGrid", "numberOfDataSubjects", {
             value: formData.processGrid.numberOfDataSubjects,
@@ -1717,10 +1806,12 @@ const RoPAPage = () => {
             children: (
               <>
                 <option value="">Select Range</option>
-                {numberOfDataSubjects.map((range) => (
+                {dynamicOptions.frequencies.length > 0 ? dynamicOptions.frequencies.map((range) => (
                   <option key={range} value={range}>
                     {range}
                   </option>
+                )) : ["1-100", "101-1000", "1001-10000", "10000+"].map(range => (
+                  <option key={range} value={range}>{range}</option>
                 ))}
               </>
             ),
@@ -1729,25 +1820,25 @@ const RoPAPage = () => {
             "processGrid",
             "dataElements",
             "Data Elements",
-            dataElements
+            dynamicOptions.dataElements
           )}
           {renderMultiSelect(
             "processGrid",
             "dataCollectionSource",
             "Data Collection Source",
-            dataCollectionSources
+            dynamicOptions.dataCollectionSources
           )}
           {renderMultiSelect(
             "processGrid",
             "countryOfDataCollection",
             "Country of Data Collection",
-            countries
+            dynamicOptions.countries
           )}
           {renderMultiSelect(
             "processGrid",
             "purposeOfProcessing",
             "Purpose of Processing",
-            purposes
+            dynamicOptions.purposes
           )}
           {renderSelect("processGrid", "dataRetentionPeriod", {
             value: formData.processGrid.dataRetentionPeriod,
@@ -1842,61 +1933,61 @@ const RoPAPage = () => {
             "defenseGrid",
             "securityMeasures",
             "Security Measures",
-            securityMeasures
+            dynamicOptions.securityMeasures
           )}
           {renderMultiSelect(
             "defenseGrid",
             "accessMeasures",
             "Access Measures",
-            accessMeasures
+            dynamicOptions.accessMeasures
           )}
           {renderMultiSelect(
             "defenseGrid",
             "complianceMeasures",
             "Compliance Measures",
-            complianceMeasures
+            dynamicOptions.complianceMeasures
           )}
           {renderMultiSelect(
             "defenseGrid",
             "dataGovernance",
             "Data Governance",
-            dataGovernance
+            dynamicOptions.dataGovernance
           )}
           {renderMultiSelect(
             "defenseGrid",
             "operationalMeasures",
             "Operational Measures",
-            operationalMeasures
+            dynamicOptions.operationalMeasures
           )}
           {renderMultiSelect(
             "defenseGrid",
             "transparencyMeasures",
             "Transparency Measures",
-            transparencyMeasures
+            dynamicOptions.transparencyMeasures
           )}
           {renderMultiSelect(
             "defenseGrid",
             "ethicalMeasures",
             "Ethical Measures",
-            ethicalMeasures
+            dynamicOptions.ethicalMeasures
           )}
           {renderMultiSelect(
             "defenseGrid",
             "physicalSecurityMeasures",
             "Physical Security Measures",
-            physicalSecurityMeasures
+            dynamicOptions.physicalSecurityMeasures
           )}
           {renderMultiSelect(
             "defenseGrid",
             "technicalMeasures",
             "Technical Measures",
-            technicalMeasures
+            dynamicOptions.technicalMeasures
           )}
           {renderMultiSelect(
             "defenseGrid",
             "riskManagementMeasures",
             "Risk Management Measures",
-            riskManagementMeasures
+            dynamicOptions.riskManagementMeasures
           )}
           {renderTextarea("defenseGrid", "additionalComments", {
             value: formData.defenseGrid.additionalComments,
@@ -1975,7 +2066,7 @@ const RoPAPage = () => {
             children: (
               <>
                 <option value="">Select Purpose</option>
-                {purposes.map((purpose) => (
+                {dynamicOptions.purposes.map((purpose) => (
                   <option key={purpose} value={purpose}>
                     {purpose}
                   </option>
@@ -1995,7 +2086,7 @@ const RoPAPage = () => {
             children: (
               <>
                 <option value="">Select Legal Basis</option>
-                {legalBases.map((basis) => (
+                {dynamicOptions.legalBases.map((basis) => (
                   <option key={basis} value={basis}>
                     {basis}
                   </option>
@@ -2285,13 +2376,12 @@ const RoPAPage = () => {
                   Risk Category
                 </label>
                 <div
-                  className={`w-full px-3 py-2 border rounded-md text-white text-center font-medium ${
-                    workflow.riskAssessment.color === "green"
-                      ? "bg-green-500"
-                      : workflow.riskAssessment.color === "orange"
+                  className={`w-full px-3 py-2 border rounded-md text-white text-center font-medium ${workflow.riskAssessment.color === "green"
+                    ? "bg-green-500"
+                    : workflow.riskAssessment.color === "orange"
                       ? "bg-orange-500"
                       : "bg-red-500"
-                  }`}
+                    }`}
                 >
                   {workflow.riskAssessment.category}
                 </div>
@@ -2329,13 +2419,12 @@ const RoPAPage = () => {
                 <div className="flex justify-between items-start mb-2">
                   <h5 className="font-medium">{item.title}</h5>
                   <span
-                    className={`px-2 py-1 rounded text-xs ${
-                      item.status === "open"
-                        ? "bg-yellow-100 text-yellow-800"
-                        : item.status === "completed"
+                    className={`px-2 py-1 rounded text-xs ${item.status === "open"
+                      ? "bg-yellow-100 text-yellow-800"
+                      : item.status === "completed"
                         ? "bg-green-100 text-green-800"
                         : "bg-red-100 text-red-800"
-                    }`}
+                      }`}
                   >
                     {item.status.toUpperCase()}
                   </span>
@@ -2586,13 +2675,12 @@ const RoPAPage = () => {
                   Risk Category
                 </label>
                 <div
-                  className={`w-full px-3 py-2 border rounded-md text-white text-center font-medium ${
-                    calculateRisk(newActionItem.likelihood, newActionItem.impact).color === "green"
-                      ? "bg-green-500"
-                      : calculateRisk(newActionItem.likelihood, newActionItem.impact).color === "orange"
+                  className={`w-full px-3 py-2 border rounded-md text-white text-center font-medium ${calculateRisk(newActionItem.likelihood, newActionItem.impact).color === "green"
+                    ? "bg-green-500"
+                    : calculateRisk(newActionItem.likelihood, newActionItem.impact).color === "orange"
                       ? "bg-orange-500"
                       : "bg-red-500"
-                  }`}
+                    }`}
                 >
                   {calculateRisk(newActionItem.likelihood, newActionItem.impact).category}
                 </div>
@@ -2660,7 +2748,7 @@ const RoPAPage = () => {
             <X className="w-5 h-5" />
           </button>
         </div>
-        
+
         <div className="space-y-4">
           <p className="text-gray-600">Assessment creation workflow would go here...</p>
           <div className="flex justify-end space-x-3">
@@ -2784,14 +2872,13 @@ const RoPAPage = () => {
           <div
             className={`relative flex items-center justify-center text-sm font-medium cursor-pointer 
             transition-all duration-500 ease-in-out transform
-            ${
-              stage.id === currentStage
+            ${stage.id === currentStage
                 ? "bg-[#5DEE92] text-black px-4 py-2 rounded-full min-w-[120px] h-10 scale-105 shadow-md"
                 : stage.id === "infovoyage" &&
                   infovoyageTabs.some((tab) => tab.id === currentTab)
-                ? "bg-[#5DEE92] text-black w-10 h-10 rounded-full hover:px-4 hover:min-w-[100px] hover:scale-105"
-                : "bg-white text-black border-4 border-[#5DEE92] w-10 h-10 rounded-full hover:px-4 hover:min-w-[120px] hover:scale-105"
-            }`}
+                  ? "bg-[#5DEE92] text-black w-10 h-10 rounded-full hover:px-4 hover:min-w-[100px] hover:scale-105"
+                  : "bg-white text-black border-4 border-[#5DEE92] w-10 h-10 rounded-full hover:px-4 hover:min-w-[120px] hover:scale-105"
+              }`}
             onMouseEnter={() => setHoveredStep(stage.id)}
             onMouseLeave={() => setHoveredStep(null)}
           >
@@ -2799,22 +2886,21 @@ const RoPAPage = () => {
               {stage.id === currentStage
                 ? stage.title
                 : hoveredStep === stage.id
-                ? stage.shortTitle
-                : stage.id === "infovoyage" &&
-                  infovoyageTabs.some((tab) => tab.id === currentTab)
-                ? "✓"
-                : index + 1}
+                  ? stage.shortTitle
+                  : stage.id === "infovoyage" &&
+                    infovoyageTabs.some((tab) => tab.id === currentTab)
+                    ? "✓"
+                    : index + 1}
             </span>
           </div>
           {index < stages.length - 1 && (
             <div
               className={`w-8 lg:w-24 h-0.5 mx-2 rounded-full transition-colors duration-500 ease-in-out
-              ${
-                stage.id === "infovoyage" &&
-                infovoyageTabs.some((tab) => tab.id === currentTab)
+              ${stage.id === "infovoyage" &&
+                  infovoyageTabs.some((tab) => tab.id === currentTab)
                   ? "bg-[#5DEE92]"
                   : "bg-gray-200"
-              }`}
+                }`}
             />
           )}
         </div>
@@ -2828,11 +2914,10 @@ const RoPAPage = () => {
         <button
           key={tab.id}
           onClick={() => setCurrentTab(tab.id)}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
-            currentTab === tab.id
-              ? "bg-[#5DEE92] text-black"
-              : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
-          }`}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${currentTab === tab.id
+            ? "bg-[#5DEE92] text-black"
+            : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+            }`}
         >
           {tab.title}
         </button>
@@ -3063,8 +3148,8 @@ const RoPAPage = () => {
                     {workflow.status === "assigned"
                       ? "Awaiting Process Expert input..."
                       : workflow.status === "submitted"
-                      ? "Submitted to Privacy SME for review"
-                      : "No edit permissions"}
+                        ? "Submitted to Privacy SME for review"
+                        : "No edit permissions"}
                   </div>
                 )}
               </div>

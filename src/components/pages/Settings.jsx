@@ -32,6 +32,12 @@ import {
   sendInvite as apiSendInvite,
   revokeInvite as apiRevokeInvite,
 } from "../../services/SetupService";
+import {
+  apiGetTeams,
+  apiCreateTeam,
+  apiUpdateTeam,
+  apiDeleteTeam,
+} from "../../services/UserSetupService";
 
 /* ---------- CONFIG ---------- */
 const STORAGE_KEY = "settings:v1";
@@ -386,15 +392,17 @@ export default function SettingsPage() {
     async function fetchData() {
       try {
         setLoading(true);
-        const [settingsData, invitesData] = await Promise.all([
+        const [settingsData, invitesData, teamsData] = await Promise.all([
           getOrganizationSettings(),
-          getInvitations().catch(() => ({ invitations: [] }))
+          getInvitations().catch(() => ({ invitations: [] })),
+          apiGetTeams().catch(() => ({ teams: [] }))
         ]);
 
-        const mappedState = mapBackendToFrontend(settingsData.settings || settingsData); // Handle variable structure
+        const mappedState = mapBackendToFrontend(settingsData.settings || settingsData);
 
-        // Merge invitations
+        // Merge invitations and teams
         mappedState.access.inviteQueue = invitesData.invitations || [];
+        mappedState.access.roles = teamsData.teams || teamsData.roles || []; // handle possible key differences
 
         setState(mappedState);
       } catch (err) {
@@ -437,27 +445,46 @@ export default function SettingsPage() {
   };
 
   /* Role CRUD */
-  function saveRole(role) {
-    setState((s) => {
-      const next = { ...s };
-      const exists = next.access.roles.find((r) => r.id === role.id);
-      if (exists)
-        next.access.roles = next.access.roles.map((r) =>
-          r.id === role.id ? role : r
-        );
-      else next.access.roles = [role, ...next.access.roles];
-      return next;
-    });
-    setShowRoleModal(false);
-    setRoleToEdit(null);
+  async function saveRole(roleData) {
+    try {
+      if (roleData.id && !roleData.id.toString().startsWith("role_")) {
+        // Existing backend role (not a temp mock ID)
+        await apiUpdateTeam(roleData.id, roleData);
+        addToast("success", "Role updated successfully");
+      } else {
+        // New role
+        await apiCreateTeam(roleData);
+        addToast("success", "Role created successfully");
+      }
+      // Refresh roles
+      const teamsRes = await apiGetTeams();
+      setState((s) => ({
+        ...s,
+        access: { ...s.access, roles: teamsRes.teams || teamsRes.roles || [] }
+      }));
+      setShowRoleModal(false);
+      setRoleToEdit(null);
+    } catch (err) {
+      console.error(err);
+      addToast("error", "Failed to save role");
+    }
   }
-  function deleteRole(roleId) {
+
+  async function deleteRole(roleId) {
     if (!confirm("Delete this role?")) return;
-    setState((s) => {
-      const next = { ...s };
-      next.access.roles = next.access.roles.filter((r) => r.id !== roleId);
-      return next;
-    });
+    try {
+      await apiDeleteTeam(roleId);
+      addToast("success", "Role deleted successfully");
+      // Refresh roles
+      const teamsRes = await apiGetTeams();
+      setState((s) => ({
+        ...s,
+        access: { ...s.access, roles: teamsRes.teams || teamsRes.roles || [] }
+      }));
+    } catch (err) {
+      console.error(err);
+      addToast("error", "Failed to delete role");
+    }
   }
 
   /* Invite user simulation */
@@ -540,7 +567,6 @@ export default function SettingsPage() {
   };
 
   /* Handle bulk file upload (CSV / JSON) */
-  /* Handle bulk file upload (CSV / JSON) */
   async function handleFileUpload(file) {
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
@@ -550,53 +576,80 @@ export default function SettingsPage() {
 
     const text = await file.text();
     try {
-      let data = [];
       if (file.name.endsWith(".json")) {
         const json = JSON.parse(text);
-        // Attempt to detect if it's a settings export
-        if (json.settings && !Array.isArray(json.settings)) {
-          await importSettings(json.settings);
-          setState((prev) => ({ ...prev, ...json.settings }));
-          addToast("success", t("settings_imported_successfully"));
+        // Comprehensive Import (Settings + Teams)
+        if (json.settings || json.teams) {
+          await importSettings(json);
+          // Re-fetch all to get final state
+          const [settingsRes, teamsRes] = await Promise.all([
+            getOrganizationSettings(),
+            apiGetTeams()
+          ]);
+          const mapped = mapBackendToFrontend(settingsRes.settings || settingsRes);
+          mapped.access.roles = teamsRes.teams || teamsRes.roles || [];
+          setState(mapped);
+          addToast("success", t("settings_imported_successfully") || "Data imported successfully");
           return;
         }
-        data = json;
       } else {
-        // Parse CSV
+        // Parse CSV - For now simple mapping to General Settings or list
         const [header, ...rows] = text.trim().split("\n");
         const keys = header.split(",");
-        data = rows.map((r) => {
+        const data = rows.map((r) => {
           const vals = r.split(",");
           return Object.fromEntries(
             keys.map((k, i) => [k.trim(), vals[i]?.trim()])
           );
         });
+        update("general.importedData", data);
+        addToast("success", `Imported ${data.length} record(s) correctly. Review the preview below.`);
       }
-
-      update("general.importedData", data);
-      addToast("success", `Imported ${data.length} record(s) successfully.`);
     } catch (err) {
       console.error(err);
       addToast("error", "Invalid file format or parse error.");
     }
   }
 
+  const handleCsvExport = () => {
+    const generalData = state.general;
+    const headers = Object.keys(generalData).filter(k => typeof generalData[k] !== 'object');
+    const values = headers.map(h => `"${generalData[h]}"`);
+
+    const csvContent = [headers.join(","), values.join(",")].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `org_general_settings_${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    addToast("success", "CSV exported successfully");
+  };
+
   const handleBulkExport = async () => {
+    const format = document.getElementById('exportFormat')?.value || 'json';
+
+    if (format === 'csv') {
+      handleCsvExport();
+      return;
+    }
+
     try {
-      const data = await exportSettings();
+      const data = await exportSettings(); // Returns { settings, teams, exported_at }
       const blob = new Blob([JSON.stringify(data, null, 2)], {
         type: "application/json",
       });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `proteccio_settings_${Date.now()}.json`;
+      a.download = `proteccio_setup_backup_${Date.now()}.json`;
       a.click();
       URL.revokeObjectURL(url);
-      addToast("success", t("settings_exported_successfully"));
+      addToast("success", t("settings_exported_successfully") || "JSON Export completed successfully");
     } catch (err) {
       console.error(err);
-      addToast("error", t("failed_to_export_settings"));
+      addToast("error", t("failed_to_export_settings") || "Export failed");
     }
   };
 
@@ -974,7 +1027,7 @@ export default function SettingsPage() {
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.97 }}
-                      onClick={() => handleBulkExport(state)}
+                      onClick={handleBulkExport}
                       className="px-5 py-2 bg-[#5DEE92] text-black rounded-lg font-semibold text-sm"
                     >
                       {t("export_all_data")}
