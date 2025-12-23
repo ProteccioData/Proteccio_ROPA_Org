@@ -1,5 +1,6 @@
 {
   "settings": "सेटिंग्स",
+  "save_changes" : "सेटिंग्स सहेजें",
   "centralize_org_wide_configuration_security_complia": "संगठन-स्तरीय कॉन्फ़िगरेशन, सुरक्षा, अनुपालन और ऑडिट को केंद्रीकृत करें",
   "general": "सामान्य",
   "access": "पहुंच",

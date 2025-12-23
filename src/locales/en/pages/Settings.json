@@ -1,5 +1,6 @@
 {
   "settings": "Settings",
+  "save_changes" : "Save Changes",
   "centralize_org_wide_configuration_security_complia": "Centralize org-wide configuration, security, compliance and auditing",
   "general" : "General",
   "access" : "Access",

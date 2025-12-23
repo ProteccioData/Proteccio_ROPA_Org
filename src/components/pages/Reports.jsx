@@ -629,21 +629,6 @@ const buildReportDocx = async (payload = {}) => {
   };
 };
 
-const reportsData = [
-  {
-    title: "User Activity Report",
-    description: "Detailed Analysis of user engagement and activity patterns",
-    lastGenerated: "2025-01-14",
-    fileSize: "2.4 MB",
-  },
-  {
-    title: "System Health Report",
-    description: "Server uptime and infrastructure performance overview",
-    lastGenerated: "2025-01-10",
-    fileSize: "1.8 MB",
-  },
-];
-
 export default function ReportsPage() {
   const [isScheduleDownloadOpen, setIsScheduleDownloadOpen] = useState(false);
   const [isScheduleReportOpen, setIsScheduleReportOpen] = useState(false);
