@@ -1,10 +1,14 @@
 {
-  "edit_action_item": "संपादित करें Action Item",
-  "likelihood": "Likelihood",
-  "select": "चुनें",
-  "impact": "Impact",
+  "edit_action_item": "कार्य आइटम संपादित करें",
+  "likelihood": "संभाव्यता",
+  "select": "चयन करें",
+  "impact": "प्रभाव",
   "description": "विवरण",
   "cancel": "रद्द करें",
-  "save_changes": "सहेजें Changes",
-  "title_is_required": "शीर्षक is required"
+  "save_changes": "परिवर्तन सहेजें",
+  "title_is_required": "शीर्षक आवश्यक है",
+  "title": "शीर्षक",
+  "department": "विभाग",
+  "due_date": "नियत तिथि",
+  "status": "स्थिति"
 }

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
+import { addTranslationNamespace } from "../../i18n/config";
+import { useTranslation } from "react-i18next";
 
 export default function EditActionItemModal({
   isOpen,
@@ -11,6 +13,18 @@ export default function EditActionItemModal({
 
   const [form, setForm] = useState({});
   const [errors, setErrors] = useState({});
+  const [ready , setReady] = useState(false);
+
+  useEffect(() => {
+    Promise.all([
+      addTranslationNamespace("en", "modules", "EditActionItem"),
+      addTranslationNamespace("hindi", "modules", "EditActionItem"),
+      addTranslationNamespace("sanskrit", "modules", "EditActionItem"),
+      addTranslationNamespace("telugu", "modules", "EditActionItem"),
+    ]).then(() => setReady(true))
+  }, [])
+
+  const { t } = useTranslation("modules" , {keyPrefix: "EditActionItem"})
 
   useEffect(() => {
     setForm({
@@ -42,6 +56,8 @@ export default function EditActionItemModal({
     onClose();
   };
 
+  if (!ready) return <div>Loading...</div>
+
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
       <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-2xl p-6 shadow-xl max-h-[90vh] overflow-y-auto">
@@ -49,7 +65,7 @@ export default function EditActionItemModal({
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold dark:text-white">
-            Edit Action Item
+            {t("edit_action_item")}
           </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-700">
             <X className="w-5 h-5" />
@@ -61,7 +77,7 @@ export default function EditActionItemModal({
           {["title", "department", "due_date", "status"].map((field) => (
             <div key={field}>
               <label className="text-xs text-gray-500 dark:text-gray-400 capitalize">
-                {field.replace("_", " ")}
+                {t(field)}
               </label>
               <input
                 type={field === "due_date" ? "date" : "text"}
@@ -78,7 +94,7 @@ export default function EditActionItemModal({
           {/* Likelihood */}
           <div>
             <label className="text-xs text-gray-500 dark:text-gray-400">
-              Likelihood
+              {t("likelihood")}
             </label>
             <select
               value={form.likelihood}
@@ -87,7 +103,7 @@ export default function EditActionItemModal({
               }
               className="w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-700"
             >
-              <option value="">Select</option>
+              <option value="">{t("select")}</option>
               {[1, 2, 3, 4, 5].map((v) => (
                 <option key={v}>{v}</option>
               ))}
@@ -100,7 +116,7 @@ export default function EditActionItemModal({
           {/* Impact */}
           <div>
             <label className="text-xs text-gray-500 dark:text-gray-400">
-              Impact
+              {t("impact")}
             </label>
             <select
               value={form.impact}
@@ -109,7 +125,7 @@ export default function EditActionItemModal({
               }
               className="w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-700"
             >
-              <option value="">Select</option>
+              <option value="">{t("select")}</option>
               {[1, 2, 3, 4, 5].map((v) => (
                 <option key={v}>{v}</option>
               ))}
@@ -123,7 +139,7 @@ export default function EditActionItemModal({
         {/* Description */}
         <div className="mt-4">
           <label className="text-xs text-gray-500 dark:text-gray-400">
-            Description
+            {t("description")}
           </label>
           <textarea
             value={form.description}
@@ -136,13 +152,13 @@ export default function EditActionItemModal({
         {/* Actions */}
         <div className="mt-6 flex justify-end gap-2">
           <button onClick={onClose} className="px-4 py-2 border rounded-md">
-            Cancel
+            {t("cancel")}
           </button>
           <button
             onClick={submit}
             className="px-4 py-2 bg-[#5DEE92] text-black rounded-md shadow"
           >
-            Save Changes
+            {t("save_changes")}
           </button>
         </div>
       </div>

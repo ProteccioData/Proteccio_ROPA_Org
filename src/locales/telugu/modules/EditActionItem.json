@@ -1,10 +1,14 @@
 {
-  "edit_action_item": "సవరించండి Action Item",
+  "edit_action_item": "చర్య అంశాన్ని సవరించండి",
   "likelihood": "సంభావ్యత",
   "select": "ఎంచుకోండి",
   "impact": "ప్రభావం",
   "description": "వివరణ",
   "cancel": "రద్దు చేయండి",
-  "save_changes": "సేవ్ చేయండి Changes",
-  "title_is_required": "శీర్షిక is required"
+  "save_changes": "మార్పులను సేవ్ చేయండి",
+  "title_is_required": "శీర్షిక తప్పనిసరి",
+  "title": "శీర్షిక",
+  "department": "విభాగం",
+  "due_date": "గడువు తేదీ",
+  "status": "స్థితి"
 }

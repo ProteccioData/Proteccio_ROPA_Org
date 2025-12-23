@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import Button from "../ui/Button";
+import { addTranslationNamespace } from "../../i18n/config";
+import { useTranslation } from "react-i18next";
 
 export default function CreateFlowModal({
   open,
@@ -12,12 +14,12 @@ export default function CreateFlowModal({
   viewMode = false, // NEW → when true, all fields disabled
 }) {
   const CATEGORY_OPTIONS = [
-    "Personal Data Flow",
-    "System Integration",
-    "Third-Party Transfer",
-    "Internal Process",
-    "Data Storage",
-    "Other",
+    "personal_data_flow",
+    "system_integration",
+    "third_party_transfer",
+    "internal_process",
+    "data_storage",
+    "other",
   ];
 
   const [name, setName] = useState("");
@@ -27,6 +29,19 @@ export default function CreateFlowModal({
   const [otherCategory, setOtherCategory] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
+
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    Promise.all([
+      addTranslationNamespace("en", "modules", "CreateFlowModal"),
+      addTranslationNamespace("hindi", "modules", "CreateFlowModal"),
+      addTranslationNamespace("telugu", "modules", "CreateFlowModal"),
+      addTranslationNamespace("sanskrit", "modules", "CreateFlowModal"),
+    ]).then(() => setReady(true))
+  }, [])
+
+  const { t } = useTranslation("modules" , {keyPrefix: "CreateFlowModal"})
 
   useEffect(() => {
     if (open && initialData) {
@@ -100,6 +115,8 @@ export default function CreateFlowModal({
 
   const disabled = viewMode || submitting;
 
+  if (!ready) return <div>Loading...</div>
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div
@@ -129,7 +146,7 @@ export default function CreateFlowModal({
           {/* Title */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Title
+              {t("title")}
             </label>
             <input
               disabled={disabled}
@@ -143,7 +160,7 @@ export default function CreateFlowModal({
           {/* Description */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Description
+              {t("description")}
             </label>
             <textarea
               disabled={disabled}
@@ -157,7 +174,7 @@ export default function CreateFlowModal({
           {/* Category */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Category
+              {t("category")}
             </label>
             <select
               value={category}
@@ -165,10 +182,10 @@ export default function CreateFlowModal({
               disabled={disabled}
               className="px-3 py-2 border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800"
             >
-              <option value="">Select Category</option>
+              <option value="">{t("select_category")}</option>
               {CATEGORY_OPTIONS.map((c) => (
                 <option key={c} value={c}>
-                  {c}
+                  {t(c)}
                 </option>
               ))}
             </select>
@@ -194,7 +211,7 @@ export default function CreateFlowModal({
           {!viewMode && (
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Status
+                {t("status")}
               </label>
               <select
                 disabled={disabled}
@@ -202,8 +219,8 @@ export default function CreateFlowModal({
                 onChange={(e) => setStatus(e.target.value)}
                 className="px-3 py-2 border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800"
               >
-                <option value="active">Active</option>
-                <option value="archived">Archived</option>
+                <option value="active">{t("active")}</option>
+                <option value="archived">{t("archived")}</option>
               </select>
             </div>
           )}
@@ -218,14 +235,14 @@ export default function CreateFlowModal({
                 onClick={handleOpenDiagramClick}
                 className="px-3 py-2 rounded border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-800"
               >
-                View Diagram
+                {t("view_diagram")}
               </button>
 
               <button
                 onClick={onClose}
                 className="px-3 py-2 rounded border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-800"
               >
-                Close
+                {t("close")}
               </button>
             </>
           )}
@@ -237,7 +254,7 @@ export default function CreateFlowModal({
                 onClick={handleOpenDiagramClick}
                 className="px-3 py-2 rounded border border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-800"
               >
-                Open Diagram
+                {t("open_diagram")}
               </button>
 
               <button
@@ -245,14 +262,14 @@ export default function CreateFlowModal({
                 disabled={disabled}
                 className="px-4 py-2 rounded bg-[#5DEE92] text-black"
               >
-                {submitting ? "Updating..." : "Update"}
+                {submitting ? "Updating..." : `${t("update")}`}
               </button>
 
               <button
                 onClick={onClose}
                 className="px-3 py-2 rounded border border-gray-200 dark:border-gray-700 text-sm"
               >
-                Cancel
+                {t("cancel")}
               </button>
             </>
           )}
@@ -265,13 +282,13 @@ export default function CreateFlowModal({
                 disabled={disabled}
                 className="px-4 py-2 rounded bg-[#5DEE92] text-black"
               >
-                {submitting ? "Creating..." : "Create"}
+                {submitting ? "Creating..." : `${t("create")}`}
               </button>
               <button
                 onClick={onClose}
                 className="px-3 py-2 rounded border border-gray-200 dark:border-gray-700 text-sm"
               >
-                Cancel
+                {t("cancel")}
               </button>
             </>
           )}

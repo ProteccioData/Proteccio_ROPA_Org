@@ -1,8 +1,22 @@
 {
+  "create_new": "కొత్తదాన్ని సృష్టించండి",
   "title": "శీర్షిక *",
   "description": "వివరణ",
   "select": "ఎంచుకోండి",
-  "title_is_required": "శీర్షిక is required",
-  "enter_assessment_title": "Enter assessment శీర్షిక",
-  "enter_optional_description": "Enter optional వివరణ"
+  "title_is_required": "శీర్షిక తప్పనిసరి",
+  "enter_assessment_title": "మూల్యాంకన శీర్షికను నమోదు చేయండి",
+  "enter_optional_description": "ఐచ్చిక వివరణను నమోదు చేయండి",
+  "impact": "ప్రభావం",
+  "likelihood": "సంభావ్యత",
+  "create": "సృష్టించండి",
+  "rare": "అత్యంత అరుదైనది",
+  "unlikely": "అసంభావ్యమైనది",
+  "possible": "సంభావ్యమైనది",
+  "likely": "సాధ్యమైనది",
+  "almost_certain": "దాదాపు ఖచ్చితం",
+  "insignificant": "అల్పమైనది",
+  "minor": "చిన్నది",
+  "moderate": "మధ్యస్థమైనది",
+  "major": "ముఖ్యమైనది",
+  "severe": "తీవ్రమైనది"
 }

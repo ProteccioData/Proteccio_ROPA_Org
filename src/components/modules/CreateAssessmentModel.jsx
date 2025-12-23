@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -8,22 +8,8 @@ import {
 import { useToast } from "../ui/ToastProvider";
 import { createAssessment } from "../../services/AssessmentService";
 import { motion } from "framer-motion";
-
-const impactScale = {
-  Insignificant: 1,
-  Minor: 2,
-  Moderate: 3,
-  Major: 4,
-  Severe: 5,
-};
-
-const likelihoodScale = {
-  Rare: 1,
-  Unlikely: 2,
-  Possible: 3,
-  Likely: 4,
-  "Almost Certain": 5,
-};
+import { useTranslation } from "react-i18next";
+import { addTranslationNamespace } from "../../i18n/config";
 
 export default function CreateAssessmentModal({
   open,
@@ -42,6 +28,37 @@ export default function CreateAssessmentModal({
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    Promise.all([
+      addTranslationNamespace("en", "modules", "CreateAssessmentModel"),
+      addTranslationNamespace("hindi", "modules", "CreateAssessmentModel"),
+      addTranslationNamespace("sanskrit", "modules", "CreateAssessmentModel"),
+      addTranslationNamespace("telugu", "modules", "CreateAssessmentModel"),
+    ]).then(() => setReady(true));
+  }, []);
+
+  const { t } = useTranslation("modules", {
+    keyPrefix: "CreateAssessmentModel",
+  });
+
+  const impactScale = {
+    insignificant: 1,
+    minor: 2,
+    moderate: 3,
+    major: 4,
+    severe: 5,
+  };
+
+  const likelihoodScale = {
+    rare: 1,
+    unlikely: 2,
+    possible: 3,
+    likely: 4,
+    almost_certain: 5,
+  };
 
   const validate = () => {
     const e = {};
@@ -100,7 +117,7 @@ export default function CreateAssessmentModal({
       <DialogContent className="min-w-3xl rounded-xl border border-[#828282] dark:border-gray-700">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">
-            Create New {type}
+            {t("create_new")} {type}
           </DialogTitle>
         </DialogHeader>
 
@@ -108,7 +125,7 @@ export default function CreateAssessmentModal({
           {/* Title */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Title *
+              {t("title")}
             </label>
             <input
               type="text"
@@ -127,7 +144,7 @@ export default function CreateAssessmentModal({
           {/* Description */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Description
+              {t("description")}
             </label>
             <textarea
               value={form.description}
@@ -141,17 +158,17 @@ export default function CreateAssessmentModal({
           {/* Impact */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Impact (optional)
+              {t("impact")} (optional)
             </label>
             <select
               value={form.impact}
               onChange={(e) => handleChange("impact", e.target.value)}
               className="w-full px-3 py-2 border rounded-md border-[#828282] bg-white dark:bg-gray-700 dark:text-gray-100"
             >
-              <option value="">Select</option>
+              <option value="">{t("select")}</option>
               {Object.keys(impactScale).map((lvl) => (
                 <option key={lvl} value={lvl}>
-                  {lvl}
+                  {t(lvl)}
                 </option>
               ))}
             </select>
@@ -160,17 +177,17 @@ export default function CreateAssessmentModal({
           {/* Likelihood */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Likelihood (optional)
+              {t("likelihood")} (optional)
             </label>
             <select
               value={form.likelihood}
               onChange={(e) => handleChange("likelihood", e.target.value)}
               className="w-full px-3 py-2 border rounded-md border-[#828282] bg-white dark:bg-gray-700 dark:text-gray-100"
             >
-              <option value="">Select</option>
+              <option value="">{t("select")}</option>
               {Object.keys(likelihoodScale).map((lvl) => (
                 <option key={lvl} value={lvl}>
-                  {lvl}
+                  {t(lvl)}
                 </option>
               ))}
             </select>
@@ -187,7 +204,7 @@ export default function CreateAssessmentModal({
                 : "bg-green-600 hover:bg-green-700"
             }`}
           >
-            {loading ? "Creating..." : `Create ${type}`}
+            {loading ? "Creating..." : `${t("create")} ${type}`}
           </motion.button>
         </div>
       </DialogContent>

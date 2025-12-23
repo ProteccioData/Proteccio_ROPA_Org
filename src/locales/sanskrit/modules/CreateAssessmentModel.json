@@ -1,8 +1,22 @@
 {
-  "title": "शीर्षक *",
-  "description": "विवरण",
-  "select": "चिनोतु",
-  "title_is_required": "शीर्षक is required",
-  "enter_assessment_title": "Enter assessment शीर्षक",
-  "enter_optional_description": "Enter optional विवरण"
+  "create_new": "नूतनं निर्मीयताम्",
+  "title": "शीर्षकम् *",
+  "description": "विवरणम्",
+  "select": "चयनं कुरुत",
+  "title_is_required": "शीर्षकं आवश्यकम्",
+  "enter_assessment_title": "मूल्यांकनस्य शीर्षकं प्रविश्यताम्",
+  "enter_optional_description": "ऐच्छिकं विवरणं प्रविश्यताम्",
+  "impact": "प्रभावः",
+  "likelihood": "सम्भाव्यता",
+  "create": "निर्मीयताम्",
+  "rare": "अत्यन्तदुर्लभः",
+  "unlikely": "असंभाव्यः",
+  "possible": "संभाव्यः",
+  "likely": "अधिकसंभाव्यः",
+  "almost_certain": "प्रायः निश्चितः",
+  "insignificant": "नगण्यः",
+  "minor": "लघुः",
+  "moderate": "मध्यमः",
+  "major": "प्रमुखः",
+  "severe": "तीव्रः"
 }

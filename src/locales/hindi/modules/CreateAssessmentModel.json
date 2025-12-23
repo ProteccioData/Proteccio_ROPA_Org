@@ -1,8 +1,23 @@
 {
+  "create_new": "नया बनाएँ",
   "title": "शीर्षक *",
   "description": "विवरण",
-  "select": "चुनें",
-  "title_is_required": "शीर्षक is required",
-  "enter_assessment_title": "Enter assessment शीर्षक",
-  "enter_optional_description": "Enter optional विवरण"
+  "select": "चयन करें",
+  "title_is_required": "शीर्षक आवश्यक है",
+  "enter_assessment_title": "मूल्यांकन का शीर्षक दर्ज करें",
+  "enter_optional_description": "वैकल्पिक विवरण दर्ज करें",
+  "impact": "प्रभाव",
+  "likelihood": "संभाव्यता",
+  "create": "बनाएँ",
+  "rare": "अत्यंत दुर्लभ",
+  "unlikely": "असंभावित",
+  "possible": "संभावित",
+  "likely": "संभाव्य",
+  "almost_certain": "लगभग निश्चित",
+  "insignificant": "नगण्य",
+  "minor": "लघु",
+  "moderate": "मध्यम",
+  "major": "प्रमुख",
+  "severe": "गंभीर",
+  "open": "खुला"
 }

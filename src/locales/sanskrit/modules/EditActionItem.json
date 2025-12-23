@@ -1,10 +1,14 @@
 {
-  "edit_action_item": "सम्पादयतु Action Item",
-  "likelihood": "संभावना",
-  "select": "चिनोतु",
-  "impact": "प्रभाव",
-  "description": "विवरण",
-  "cancel": "रद्द",
-  "save_changes": "सञ्चय Changes",
-  "title_is_required": "शीर्षक is required"
+  "edit_action_item": "कार्यवस्तुं संपादयतु",
+  "likelihood": "संभाव्यता",
+  "select": "चिनुत",
+  "impact": "प्रभावः",
+  "description": "विवरणम्",
+  "cancel": "रद्दं कुरुत",
+  "save_changes": "परिवर्तनानि रक्षतु",
+  "title_is_required": "शीर्षकं आवश्यकम्",
+  "title": "शीर्षकम्",
+  "department": "विभागः",
+  "due_date": "नियततिथि",
+  "status": "स्थितिः"
 }

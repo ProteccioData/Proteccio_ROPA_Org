@@ -1,8 +1,22 @@
 {
+  "create_new" : "Create New",
   "title": "Title *",
   "description": "Description",
   "select": "Select",
   "title_is_required": "Title is required",
   "enter_assessment_title": "Enter assessment title",
-  "enter_optional_description": "Enter optional description"
+  "enter_optional_description": "Enter optional description",
+  "impact" : "Impact",
+  "likelihood" : "Likelihood",
+  "create" : "Create",
+  "insignificant" : "Insignificant",
+  "minor" : "Minor",
+  "moderate" : "Moderate",
+  "major" : "Major",
+  "severe" : "Severe",
+  "rare" : "Rare",
+  "unlikely" : "Unlikely",
+  "possible" : "Possible",
+  "likely" : "Likely",
+  "almost_certain" : "Almost Certain"
 }

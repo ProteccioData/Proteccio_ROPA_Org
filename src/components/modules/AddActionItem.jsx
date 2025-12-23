@@ -1,10 +1,25 @@
 import { useState, useEffect } from "react";
 import { X, Upload, FileText } from "lucide-react";
 import { useToast } from "../ui/ToastProvider";
+import { useTranslation } from "react-i18next";
+import { addTranslationNamespace } from "../../i18n/config";
 
 const ActionItemModal = ({ isOpen, onClose, currentUser, onSave }) => {
   const { addToast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [ready , setReady] = useState(false);
+
+  useEffect(() => {
+    Promise.all([
+      addTranslationNamespace("en" , "modules" , "AddActionItem"),
+      addTranslationNamespace("hindi" , "modules" , "AddActionItem"),
+      addTranslationNamespace("sanskrit" , "modules" , "AddActionItem"),
+      addTranslationNamespace("telugu" , "modules" , "AddActionItem"),
+    ]).then(() => setReady(true));
+  }, [])
+  
+  const { t } = useTranslation("modules" , {keyPrefix: "AddActionItem"})
+
   const [formData, setFormData] = useState({
     actionId: `ACT-${Date.now()}`,
     title: "",
@@ -26,15 +41,15 @@ const ActionItemModal = ({ isOpen, onClose, currentUser, onSave }) => {
     comments: "",
   });
 
-  const likelihoodOptions = ["Rare", "Unlikely", "Possible" , "Likely" , "Almost Certain"];
-  const impactOptions = ["Insignificant", "Minor", "Moderate", "Major", "Severe"];
-  const statusOptions = ["Open", "In Progress", "Completed", "Overdue"];
+  const likelihoodOptions = ["rare", "unlikely", "possible" , "likely" , "almost_certain"];
+  const impactOptions = ["insignificant", "minor", "moderate", "major", "severe"];
+  const statusOptions = ["open", "in_progress", "completed", "overdue"];
   const riskCategoryTable = [
-    { min: 1, max: 5, category: "Low" },
-    { min: 6, max: 10, category: "Medium" },
-    { min: 11, max: 15, category: "High" },
-    { min: 16, max: 20, category: "Very High" },
-    { min: 21, max: 25, category: "Critical" },
+    { min: 1, max: 5, category: "low" },
+    { min: 6, max: 10, category: "medium" },
+    { min: 11, max: 15, category: "high" },
+    { min: 16, max: 20, category: "very_high" },
+    { min: 21, max: 25, category: "critical" },
   ];
   const users = ["User A", "User B", "User C"]; 
   const departments = ["Finance", "HR", "IT"]; 
@@ -112,12 +127,14 @@ const ActionItemModal = ({ isOpen, onClose, currentUser, onSave }) => {
     }
   };
 
+  if (!ready) return <div>Loading ....</div>
+
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-[0.5px] flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-gray-800 dark:border-gray-600 rounded-lg w-full max-w-3xl max-h-[90vh] flex flex-col overflow-y-auto">
         {/* Header */}
         <div className="flex justify-between items-center px-6 py-4 border-b border-gray-300 dark:border-gray-600">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Add Action Item</h2>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{t("add_action_item")}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X className="w-6 h-6" />
           </button>
@@ -127,13 +144,13 @@ const ActionItemModal = ({ isOpen, onClose, currentUser, onSave }) => {
         <div className="px-6 py-4 space-y-4">
           {/* Action ID */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-400">Action Item ID</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-400">{t("action_item_id")}</label>
             <input type="text" value={formData.actionId} readOnly className="w-full px-3 py-2 bg-gray-200 dark:bg-gray-700 rounded-md" />
           </div>
 
           {/* Title */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-400">Title *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-400">{t("title")} </label>
             <input
               type="text"
               maxLength={50}
@@ -146,7 +163,7 @@ const ActionItemModal = ({ isOpen, onClose, currentUser, onSave }) => {
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-400">Description *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-400">{t("description")} </label>
             <textarea
               maxLength={500}
               value={formData.description}
@@ -158,13 +175,13 @@ const ActionItemModal = ({ isOpen, onClose, currentUser, onSave }) => {
 
           {/* Created Date */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-400">Created Date</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-400">{t("created_date")}</label>
             <input type="date" value={formData.createdDate} readOnly className="w-full px-3 py-2 bg-gray-200 dark:bg-gray-700 rounded-md" />
           </div>
 
           {/* Due Date */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-400">Due Date *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-400">{t("due_date")} </label>
             <input
               type="date"
               value={formData.dueDate}
@@ -176,7 +193,7 @@ const ActionItemModal = ({ isOpen, onClose, currentUser, onSave }) => {
 
           {/* Status */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-400">Status *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-400">{t("status")} </label>
             <select
               value={formData.status}
               onChange={(e) => handleInputChange("status", e.target.value)}
@@ -185,7 +202,7 @@ const ActionItemModal = ({ isOpen, onClose, currentUser, onSave }) => {
             >
               {statusOptions.map((s) => (
                 <option key={s} value={s}>
-                  {s}
+                  {t(s)}
                 </option>
               ))}
             </select>
@@ -194,33 +211,33 @@ const ActionItemModal = ({ isOpen, onClose, currentUser, onSave }) => {
           {/* Likelihood & Impact */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-400">Likelihood *</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-400">{t("likelihood")} </label>
               <select
                 value={formData.likelihood}
                 onChange={(e) => handleInputChange("likelihood", e.target.value)}
                 disabled={isReadOnly("likelihood")}
                 className={`w-full px-3 py-2 rounded-md border ${isReadOnly("likelihood") ? "bg-gray-200 dark:bg-gray-700 border-gray-300" : "border-[#828282] dark:border-gray-500"} `}
               >
-                <option value="">Select</option>
+                <option value="">{t("select")}</option>
                 {likelihoodOptions.map((l) => (
                   <option key={l} value={l}>
-                    {l}
+                    {t(l)}
                   </option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-400">Impact *</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-400">{t("impact")} </label>
               <select
                 value={formData.impact}
                 onChange={(e) => handleInputChange("impact", e.target.value)}
                 disabled={isReadOnly("impact")}
                 className={`w-full px-3 py-2 rounded-md border ${isReadOnly("impact") ? "bg-gray-200 dark:bg-gray-700 border-gray-300" : "border-[#828282] dark:border-gray-500"} `}
               >
-                <option value="">Select</option>
+                <option value="">{t("select")}</option>
                 {impactOptions.map((i) => (
                   <option key={i} value={i}>
-                    {i}
+                    {t(i)}
                   </option>
                 ))}
               </select>
@@ -230,25 +247,25 @@ const ActionItemModal = ({ isOpen, onClose, currentUser, onSave }) => {
           {/* Risk Score & Category */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-400">Risk Score</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-400">{t("risk_score")}</label>
               <input type="text" value={formData.riskScore} readOnly className="w-full px-3 py-2 bg-gray-200 dark:bg-gray-700 rounded-md" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-400">Risk Category</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-400">{t("risk_category")}</label>
               <input type="text" value={formData.riskCategory} readOnly className="w-full px-3 py-2 bg-gray-200 dark:bg-gray-700 rounded-md" />
             </div>
           </div>
 
           {/* Assigned To */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-400">Assigned To *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-400">{t("assigned_to")} </label>
             <select
               value={formData.assignedTo}
               onChange={(e) => handleInputChange("assignedTo", e.target.value)}
               disabled={isReadOnly("assignedTo")}
               className={`w-full px-3 py-2 rounded-md border ${isReadOnly("assignedTo") ? "bg-gray-200 dark:bg-gray-700 border-gray-300" : "border-[#828282] dark:border-gray-500"} `}
             >
-              <option value="">Select</option>
+              <option value="">{t("select")}</option>
               {users.map((u) => (
                 <option key={u} value={u}>
                   {u}
@@ -259,7 +276,7 @@ const ActionItemModal = ({ isOpen, onClose, currentUser, onSave }) => {
 
           {/* Documents Upload */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-400">Documents</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-400">{t("documents")}</label>
             <input type="file" multiple onChange={(e) => handleFileUpload(e.target.files)} className="w-full" />
             {formData.documents.length > 0 && (
               <ul className="mt-2 space-y-1">
@@ -277,7 +294,7 @@ const ActionItemModal = ({ isOpen, onClose, currentUser, onSave }) => {
 
           {/* Comments */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-400">Comments</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-400">{t("comments")}</label>
             <textarea
               maxLength={300}
               value={formData.comments}
@@ -290,7 +307,7 @@ const ActionItemModal = ({ isOpen, onClose, currentUser, onSave }) => {
           {/* Linked IDs */}
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-400">Linked RoPA ID</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-400">{t("linked_ropa_id")}</label>
               <input
                 type="text"
                 value={formData.linkedRopaId}
@@ -300,7 +317,7 @@ const ActionItemModal = ({ isOpen, onClose, currentUser, onSave }) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-400">Linked Assessment ID</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-400">{t("linked_assessment_id")}</label>
               <input
                 type="text"
                 value={formData.linkedAssessmentId}
@@ -310,7 +327,7 @@ const ActionItemModal = ({ isOpen, onClose, currentUser, onSave }) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700  dark:text-gray-400">Linked Data Mapping ID</label>
+              <label className="block text-sm font-medium text-gray-700  dark:text-gray-400">{t("linked_data_mapping_id")}</label>
               <input
                 type="text"
                 value={formData.linkedDataMappingId}
