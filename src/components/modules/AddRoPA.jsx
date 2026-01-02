@@ -893,7 +893,7 @@ const RoPAPage = () => {
             error ? "text-red-600" : "text-gray-700 dark:text-gray-400"
           }`}
         >
-          {props.label} {isRequired && "*"}
+          {props.label} {isRequired && <span className="text-red-600">*</span>}
         </label>
         <input
           {...props}
@@ -925,7 +925,7 @@ const RoPAPage = () => {
             error ? "text-red-600" : "text-gray-700 dark:text-gray-400"
           }`}
         >
-          {props.label} {isRequired && "*"}
+          {props.label} {isRequired && <span className="text-red-600">*</span>}
         </label>
         <select
           {...props}
@@ -965,7 +965,7 @@ const RoPAPage = () => {
             error ? "text-red-600" : "text-gray-700 dark:text-gray-400"
           }`}
         >
-          {label} {required && "*"}
+          {label} {required && <span className="text-red-600">*</span>}
         </label>
         <div
           className={`space-y-2 max-h-40 overflow-y-auto border rounded-md p-3 ${
@@ -1007,7 +1007,7 @@ const RoPAPage = () => {
             error ? "text-red-600" : "text-gray-700 dark:text-gray-400"
           }`}
         >
-          {props.label} {isRequired && "*"}
+          {props.label} {isRequired && <span className="text-red-600">*</span>}
         </label>
         <textarea
           {...props}
